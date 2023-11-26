@@ -1,0 +1,11 @@
+{
+    "name": "speedygo",
+    "version-string": "1.0.0",
+    "dependencies": [
+        {
+            "name": "asio",
+            "version>=": "1.28.0"
+        }
+    ],
+    "builtin-baseline": "c7fc2998445046e8ba3a470eeb49ee1520fbd370"
+}
