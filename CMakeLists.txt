@@ -20,4 +20,5 @@ endif()
 add_executable(${PROJECT_NAME}
     "${SOURCE_DIR}/main.cpp"
     "${SOURCE_DIR}/server/server.cpp"
+    "${SOURCE_DIR}/socket/socketUtils.cpp"
 )
