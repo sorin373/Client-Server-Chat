@@ -4,6 +4,8 @@
 
 #include <netinet/in.h>
 
+#define localHostAddress "127.0.0.1"
+
 namespace net
 {
     class SocketUtils
