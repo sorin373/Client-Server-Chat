@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <cstring>
+#include <stdio.h>
+#include <unistd.h>
 
 int main()
 {
@@ -27,16 +29,23 @@ int main()
 
     std::cout << "Successful connection!\n";
     
-    char buffer[20 * 1024];
-    const char msg[] = "GET / HTTP/1.1\r\nHost: google.com\r\n\r\n";
-    send(socketFD, msg, strlen(msg), 0);
+    char *buffer = nullptr;
+    size_t bufferSize = 0;
+    
+    while (true)
+    {
+        ssize_t charCount = getline(&buffer, &bufferSize, stdin);
 
-    size_t bytes_received = recv(socketFD, buffer, sizeof(buffer), 0);
-    if (bytes_received == -1) {
-        std::cerr << "Receive failed\n";
-    } else {
-        std::cout << "Received:\n" << buffer << std::endl;
+        if (charCount > 0)
+        {
+            if (strcasecmp(buffer, "exit\n") == 0)
+                break;
+
+            ssize_t amountSent = send(socketFD, buffer, charCount, 0);
+        }
     }
+
+    close(socketFD);
 
     free(address);
     delete socket;

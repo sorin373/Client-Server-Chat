@@ -4,12 +4,13 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 int main()
 {
     net::SocketUtils *serverSocket = new net::SocketUtils;
     int serverSocketFD = serverSocket->createSocket();
-    
+
     if (serverSocketFD == -1)
     {
         std::cerr << "Socket creation failed\n";
@@ -28,14 +29,27 @@ int main()
     int clientAddressSize = sizeof(clientAddress);
     int clientSocketFD = accept(serverSocketFD, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
 
-    char buffer[20 * 1024];
-    size_t bytes_received = recv(clientSocketFD, buffer, sizeof(buffer), 0);
-    if (bytes_received == -1) {
-        std::cerr << "Receive failed\n";
-    } else {
-        std::cout << "Received:\n" << buffer << std::endl;
+    char buffer[1024];
+
+    while (true)
+    {
+        ssize_t bytes_received = recv(clientSocketFD, buffer, sizeof(buffer), 0);
+
+        if (bytes_received == 0)
+        {
+            std::cerr << "Receive failed\n";
+            break;
+        }
+        else
+        {
+            buffer[bytes_received] = NULL;
+            std::cout << "Received:\n"
+                      << buffer << std::endl;
+        }
     }
 
+    close(clientSocketFD);
+    shutdown(serverSocketFD, SHUT_RDWR);
     free(serverAddress);
     delete serverSocket;
 }

@@ -18,7 +18,6 @@ namespace net
         struct sockaddr_in *IPv4Address(const char *ipAddress, int port);
 
         ~SocketUtils();
-        
     };
 };
 
