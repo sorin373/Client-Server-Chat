@@ -16,7 +16,7 @@ int main()
         return EXIT_FAILURE;
     }
     
-    struct sockaddr_in *address = socket->IPv4Address(localHostAddress, 2000);
+    struct sockaddr_in *address = socket->IPv4Address(localHostAddress, PORT);
 
     int res = socket->connectToServer(socketFD, address);
 
