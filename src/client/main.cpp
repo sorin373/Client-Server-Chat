@@ -34,17 +34,7 @@ int main()
     char *buffer = nullptr;
     size_t bufferSize = 0;
 
-    char *clientName = nullptr;
-    size_t clientNameSize = 0;
-    std::cout << "Name: ";
-    ssize_t clientNameCount = getline(&clientName, &clientNameSize, stdin);
-
-    if (clientName[clientNameCount - 1] == '\n')
-        clientName[clientNameCount - 1] = '\0';
-
-    clientName[clientNameCount - 1] = ':';
-    clientNameCount++;
-    clientName[clientNameCount - 1] = '\0';
+    char *clientName = client->getClientName();
 
     client->__INIT_MESSAGE_LISTENER_THREAD__(socketFD);
     
@@ -56,10 +46,10 @@ int main()
 
         if (charCount > 0)
         {
-            if (strcasecmp(buffer, "exit") == 0)
+            if (strcasecmp(buffer, "exit\n") == 0)
                 break;
 
-            ssize_t amountSent = send(socketFD, clientName, strlen(clientName), 0);
+            ssize_t amountSent = client->sendData<char>(socketFD, clientName, strlen(clientName) + 1);
         }
     }
 

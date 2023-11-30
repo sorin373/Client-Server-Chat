@@ -21,7 +21,7 @@ int main()
 
     struct sockaddr_in *serverAddress = serverSocket->IPv4Address("", PORT);
 
-    int res = bind(serverSocketFD, (struct sockaddr *)serverAddress, sizeof(struct sockaddr_in));
+    int res = __server->bindServer(serverSocketFD, serverAddress);
     if (res == 0)
         std::cout << "Socket was bound successfully!\n";
 
@@ -30,9 +30,7 @@ int main()
     __server->__INIT_SERVER_THREAD__(serverSocketFD);
 
     shutdown(serverSocketFD, SHUT_RDWR);
-
     free(serverAddress);
-
     delete serverSocket;
     delete __server;
 

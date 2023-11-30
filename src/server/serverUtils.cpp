@@ -94,6 +94,11 @@ void net::server::__INIT_SERVER_THREAD__(int serverSocketFileDescriptor)
     workerThread.join();
 }
 
+int net::server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
+{
+    return bind(serverSocketFileDescriptor, (struct sockaddr *)serverAddress, sizeof(struct sockaddr_in));
+}
+
 int net::server::acceptedSocket::getAcceptedSocketFileDescriptor(void) const noexcept
 {
     return acceptedSocketFileDescriptor;

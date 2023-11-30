@@ -31,3 +31,24 @@ void net::client::__INIT_MESSAGE_LISTENER_THREAD__(int clientSocketFileDescripto
     std::thread workerThread(&net::client::__MESSAGE_LISTENER_THREAD__, this, clientSocketFileDescriptor);
     workerThread.detach();
 }
+
+char *net::client::getClientName(size_t *__clientNameSize)
+{
+    char *clientName = nullptr;
+    size_t clientNameSize = 0;
+
+    std::cout << "Name: ";
+    ssize_t clientNameCount = getline(&clientName, &clientNameSize, stdin);
+    
+    if (__clientNameSize != nullptr)
+        *__clientNameSize = clientNameCount;
+
+    if (clientName[clientNameCount - 1] == '\n')
+        clientName[clientNameCount - 1] = '\0';
+
+    clientName[clientNameCount - 1] = ':';
+    clientNameCount++;
+    clientName[clientNameCount - 1] = '\0';
+
+    return clientName;
+}
