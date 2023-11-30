@@ -1,4 +1,5 @@
 #include "../socket/socketUtils.hpp"
+#include "clientUtils.hpp"
 
 #include <iostream>
 #include <cstring>
@@ -8,6 +9,7 @@
 int main()
 {
     net::SocketUtils *socket = new net::SocketUtils;
+    net::client *client = new net::client;
 
     int socketFD = socket->createSocket();
     
@@ -27,21 +29,37 @@ int main()
         return EXIT_FAILURE;
     }
 
-    std::cout << "Successful connection!\n";
+    std::cout << "Connection established!\n";
     
     char *buffer = nullptr;
     size_t bufferSize = 0;
+
+    char *clientName = nullptr;
+    size_t clientNameSize = 0;
+    std::cout << "Name: ";
+    ssize_t clientNameCount = getline(&clientName, &clientNameSize, stdin);
+
+    if (clientName[clientNameCount - 1] == '\n')
+        clientName[clientNameCount - 1] = '\0';
+
+    clientName[clientNameCount - 1] = ':';
+    clientNameCount++;
+    clientName[clientNameCount - 1] = '\0';
+
+    client->__INIT_MESSAGE_LISTENER_THREAD__(socketFD);
     
     while (true)
     {
         ssize_t charCount = getline(&buffer, &bufferSize, stdin);
 
+        strcat(clientName, buffer);
+
         if (charCount > 0)
         {
-            if (strcasecmp(buffer, "exit\n") == 0)
+            if (strcasecmp(buffer, "exit") == 0)
                 break;
 
-            ssize_t amountSent = send(socketFD, buffer, charCount, 0);
+            ssize_t amountSent = send(socketFD, clientName, strlen(clientName), 0);
         }
     }
 

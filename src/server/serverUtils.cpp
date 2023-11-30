@@ -1,6 +1,7 @@
 #include "serverUtils.hpp"
 
 #include <iostream>
+#include <cstring>
 #include <thread>
 #include <stdlib.h>
 #include <netinet/in.h>
@@ -28,47 +29,79 @@ void net::server::acceptConnection(const int serverSocketFileDescriptor, struct 
     __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
 }
 
-void net::server::printReceivedData(const struct acceptedSocket *socket) const noexcept
+void net::server::sendReceivedMessage(char *buffer, int acceptedSocketFileDescriptor)
+{
+    for (auto &socket : connectedSockets)
+    {
+        int socketFD = socket.getAcceptedSocketFileDescriptor();
+        
+        if (socketFD != acceptedSocketFileDescriptor)
+            send(socketFD, buffer, strlen(buffer), 0);
+    }
+}
+
+void net::server::printReceivedData(const struct acceptedSocket *socket)
 {
     char buffer[1024];
 
     while (true)
     {
-        ssize_t bytes_received = recv(socket->getAcceptedSocketFileDescriptor(), buffer, sizeof(buffer), 0);
+        int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
+        ssize_t bytesReceived = recv(acceptedSocketFD, buffer, sizeof(buffer), 0);
 
-        if (bytes_received <= 0)
+        if (bytesReceived <= 0)
         {
             std::cerr << "Receive failed! "
                       << socket->getError() << "\n";
             break;
         }
 
-        buffer[bytes_received] = '\0';
-        std::cout << "Received:\n"
-                  << buffer << std::endl;
+        buffer[bytesReceived] = '\0';
+        std::cout << buffer;
+
+        net::server::sendReceivedMessage(buffer, acceptedSocketFD);
     }
+
+    close(socket->getAcceptedSocketFileDescriptor());
+}
+
+void net::server::__PRINT_THREAD__(struct acceptedSocket *psocket)
+{
+    std::thread printThread(&server::printReceivedData, this, psocket);
+    printThread.detach();
+    
 }
 
 void net::server::__SERVER_THREAD__(int serverSocketFileDescriptor)
 {
-    server::acceptedSocket *newAcceptedSocket = new server::acceptedSocket();
+    while (true)
+    {
+        server::acceptedSocket *newAcceptedSocket = new server::acceptedSocket();
 
-    acceptConnection(serverSocketFileDescriptor, newAcceptedSocket);
-    printReceivedData(newAcceptedSocket);
-    close(newAcceptedSocket->getAcceptedSocketFileDescriptor());
-    
-    delete newAcceptedSocket;
+        acceptConnection(serverSocketFileDescriptor, newAcceptedSocket);
+
+        connectedSockets.push_back(*newAcceptedSocket);
+        
+        __PRINT_THREAD__(newAcceptedSocket);
+    }
+
+    close(serverSocketFileDescriptor);
 }
 
 void net::server::__INIT_SERVER_THREAD__(int serverSocketFileDescriptor)
 {
     std::thread workerThread(&server::__SERVER_THREAD__, this, serverSocketFileDescriptor);
-    workerThread.detach();
+    workerThread.join();
 }
 
 int net::server::acceptedSocket::getAcceptedSocketFileDescriptor(void) const noexcept
 {
     return acceptedSocketFileDescriptor;
+}
+
+std::vector<struct net::server::acceptedSocket> net::server::getConnectedSockets(void) const noexcept
+{
+    return connectedSockets;
 }
 
 int net::server::acceptedSocket::getError(void) const noexcept

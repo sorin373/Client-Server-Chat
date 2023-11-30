@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 add_executable(PinnacleClient
-    "client.cpp"
+    "main.cpp"
+    "clientUtils.cpp"
 )
 
 target_include_directories(PinnacleClient PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../socket)
