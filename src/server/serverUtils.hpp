@@ -40,14 +40,15 @@ namespace net
     public:
         server(const int clientSocketFileDescriptor);
 
+        static bool __INIT__(void);
         void __INIT_SERVER_THREAD__(int serverSocketFileDescriptor);
+        void acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket *__acceptedSocket);
+        int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
+        void sendReceivedMessage(char *buffer, int acceptedSocketFileDescriptor);
+        void printReceivedData(const struct acceptedSocket *socket);
+
         int getClientSocketFileDescriptor(void) const noexcept;
         std::vector<struct acceptedSocket> getConnectedSockets(void) const noexcept;
-        void sendReceivedMessage(char *buffer, int acceptedSocketFileDescriptor);
-        int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
-
-        void printReceivedData(const struct acceptedSocket *socket);
-        void acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket *__acceptedSocket);
 
         ~server() = default;
     };

@@ -69,7 +69,6 @@ void net::server::__PRINT_THREAD__(struct acceptedSocket *psocket)
 {
     std::thread printThread(&server::printReceivedData, this, psocket);
     printThread.detach();
-    
 }
 
 void net::server::__SERVER_THREAD__(int serverSocketFileDescriptor)
@@ -127,4 +126,47 @@ int net::server::getClientSocketFileDescriptor(void) const noexcept
 struct sockaddr_in net::server::acceptedSocket::getIpAddress(void) const noexcept
 {
     return ipAddress;
+}
+
+bool net::server::__INIT__(void)
+{
+    net::SocketUtils *serverSocket = new net::SocketUtils;
+
+    int serverSocketFD = serverSocket->createSocket();
+
+    if (serverSocketFD == -1)
+    {
+        std::cerr << "Failed to create socket!\n";
+        delete serverSocket;
+
+        return EXIT_FAILURE;
+    }
+
+    net::server *__server = new net::server(serverSocketFD);
+
+    struct sockaddr_in *serverAddress = serverSocket->IPv4Address("", PORT);
+
+    int res = __server->bindServer(serverSocketFD, serverAddress);
+    if (res == 0)
+        std::cout << "Server socket bound successfully!\n";
+
+    int listenResult = listen(serverSocketFD, 10);
+    if (listenResult == -1)
+    {
+        shutdown(serverSocketFD, SHUT_RDWR);
+        free(serverAddress);
+        delete serverSocket;
+        delete __server;
+
+        return EXIT_FAILURE;
+    }
+
+    __server->__INIT_SERVER_THREAD__(serverSocketFD);
+
+    shutdown(serverSocketFD, SHUT_RDWR);
+    free(serverAddress);
+    delete serverSocket;
+    delete __server;
+
+    return EXIT_SUCCESS;
 }

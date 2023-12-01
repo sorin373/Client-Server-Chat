@@ -6,8 +6,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-net::SocketUtils::SocketUtils() = default;
-
 int net::SocketUtils::createSocket(void)
 {
     return socket(AF_INET, SOCK_STREAM, 0);
@@ -35,5 +33,3 @@ int net::SocketUtils::connectToServer(int socketFileDescriptor, struct sockaddr_
 {
     return connect(socketFileDescriptor, (struct sockaddr *)address, sizeof(struct sockaddr));
 }
-
-net::SocketUtils::~SocketUtils() = default;
