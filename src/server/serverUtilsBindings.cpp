@@ -2,7 +2,7 @@
 
 extern "C"
 {
-    int __INIT_SERVER_C__(void)
+    int server(void)
     {
         if (!net::server::__INIT__())
             return -1;

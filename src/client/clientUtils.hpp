@@ -3,6 +3,7 @@
 #define __CLIENT_UTILS_HPP__
 
 #include <string>
+#include <sys/socket.h>
 
 namespace net
 {
@@ -14,6 +15,7 @@ namespace net
     public:
         client() = default;
 
+        static bool __INIT__(void);
         void __INIT_MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor);
         char *getClientName(size_t *__clientNameSize = nullptr);
 

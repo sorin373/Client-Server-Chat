@@ -20,3 +20,13 @@ endif()
 add_subdirectory(src/server)
 add_subdirectory(src/client)
 add_subdirectory(src/socket)
+
+set(SRC_FILES 
+   "src/client/clientUtils.cpp"
+   "src/server/serverUtils.cpp"
+   "src/PinnacleBinding.cpp"
+)
+
+add_library(pinnacle SHARED ${SRC_FILES})
+
+target_link_libraries(pinnacle PRIVATE Socket)
