@@ -4,11 +4,11 @@
 
 #include <netinet/in.h>
 
-#define localHostAddress "127.0.0.1"
-#define PORT 3000
-
 namespace net
 {
+    constexpr char localHostAddress[] = "127.0.0.1";
+    constexpr int PORT = 3000;
+
     class SocketUtils
     {
     public:

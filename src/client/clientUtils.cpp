@@ -55,6 +55,11 @@ char *net::client::getClientName(size_t *__clientNameSize)
     return clientName;
 }
 
+template <typename T> ssize_t net::client::sendData(int socketFileDescriptor, const T *data, size_t dataSize)
+{
+    return send(socketFileDescriptor, data, dataSize * sizeof(T), 0);
+}
+
 bool net::client::__INIT__(void)
 {
     net::SocketUtils *socket = new net::SocketUtils;
@@ -67,7 +72,7 @@ bool net::client::__INIT__(void)
         return EXIT_FAILURE;
     }
     
-    struct sockaddr_in *address = socket->IPv4Address(localHostAddress, PORT);
+    struct sockaddr_in *address = socket->IPv4Address(net::localHostAddress, net::PORT);
 
     int res = socket->connectToServer(socketFD, address);
 

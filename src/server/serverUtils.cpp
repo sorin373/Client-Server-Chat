@@ -29,7 +29,8 @@ void net::server::acceptConnection(const int serverSocketFileDescriptor, struct 
     __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
 }
 
-void net::server::sendReceivedMessage(char *buffer, int acceptedSocketFileDescriptor)
+
+template <typename T> void net::server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
 {
     for (auto &socket : connectedSockets)
     {
@@ -40,9 +41,9 @@ void net::server::sendReceivedMessage(char *buffer, int acceptedSocketFileDescri
     }
 }
 
-void net::server::printReceivedData(const struct acceptedSocket *socket)
+template <typename T> void net::server::printReceivedData(const struct acceptedSocket *socket)
 {
-    char buffer[1024];
+    T buffer[1024];
 
     while (true)
     {
@@ -65,13 +66,13 @@ void net::server::printReceivedData(const struct acceptedSocket *socket)
     close(socket->getAcceptedSocketFileDescriptor());
 }
 
-void net::server::__PRINT_THREAD__(struct acceptedSocket *psocket)
+void net::server::printReceivedDataThread(struct acceptedSocket *psocket)
 {
-    std::thread printThread(&server::printReceivedData, this, psocket);
+    std::thread printThread(&server::printReceivedData<char>, this, psocket);
     printThread.detach();
 }
 
-void net::server::__SERVER_THREAD__(int serverSocketFileDescriptor)
+void net::server::handleClientConnections(int serverSocketFileDescriptor)
 {
     while (true)
     {
@@ -81,15 +82,15 @@ void net::server::__SERVER_THREAD__(int serverSocketFileDescriptor)
 
         connectedSockets.push_back(*newAcceptedSocket);
         
-        __PRINT_THREAD__(newAcceptedSocket);
+        printReceivedDataThread(newAcceptedSocket);
     }
 
     close(serverSocketFileDescriptor);
 }
 
-void net::server::__INIT_SERVER_THREAD__(int serverSocketFileDescriptor)
+void net::server::__MASTER_THREAD__(int serverSocketFileDescriptor)
 {
-    std::thread workerThread(&server::__SERVER_THREAD__, this, serverSocketFileDescriptor);
+    std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
     workerThread.join();
 }
 
@@ -144,7 +145,7 @@ bool net::server::__INIT__(void)
 
     net::server *__server = new net::server(serverSocketFD);
 
-    struct sockaddr_in *serverAddress = serverSocket->IPv4Address("", PORT);
+    struct sockaddr_in *serverAddress = serverSocket->IPv4Address("", net::PORT);
 
     int res = __server->bindServer(serverSocketFD, serverAddress);
     if (res == 0)
@@ -161,7 +162,7 @@ bool net::server::__INIT__(void)
         return EXIT_FAILURE;
     }
 
-    __server->__INIT_SERVER_THREAD__(serverSocketFD);
+    __server->__MASTER_THREAD__(serverSocketFD);
 
     shutdown(serverSocketFD, SHUT_RDWR);
     free(serverAddress);
