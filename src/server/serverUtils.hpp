@@ -33,7 +33,6 @@ namespace net
         int clientSocketFileDescriptor;
         std::vector<struct acceptedSocket> connectedSockets;
 
-    private:
         void handleClientConnections(int serverSocketFileDescriptor);
         void printReceivedDataThread(struct acceptedSocket *psocket);
 

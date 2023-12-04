@@ -29,15 +29,13 @@ void net::server::acceptConnection(const int serverSocketFileDescriptor, struct 
     __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
 }
 
-
 template <typename T> void net::server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
 {
     for (auto &socket : connectedSockets)
     {
         int socketFD = socket.getAcceptedSocketFileDescriptor();
         
-        if (socketFD != acceptedSocketFileDescriptor)
-            send(socketFD, buffer, strlen(buffer), 0);
+        if (socketFD != acceptedSocketFileDescriptor) send(socketFD, buffer, strlen(buffer), 0);
     }
 }
 
@@ -145,7 +143,7 @@ bool net::server::__INIT__(void)
 
     net::server *__server = new net::server(serverSocketFD);
 
-    struct sockaddr_in *serverAddress = serverSocket->IPv4Address("", net::PORT);
+    struct sockaddr_in *serverAddress = serverSocket->IPv4Address("");
 
     int res = __server->bindServer(serverSocketFD, serverAddress);
     if (res == 0)

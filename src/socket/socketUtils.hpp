@@ -16,7 +16,7 @@ namespace net
 
         int createSocket(void);
         int connectToServer(int socketFileDescriptor, struct sockaddr_in *address);
-        struct sockaddr_in *IPv4Address(const char *ipAddress, int port);
+        struct sockaddr_in *IPv4Address(const char *ipAddress = net::localHostAddress, int port = net::PORT);
 
         ~SocketUtils() = default;
     };

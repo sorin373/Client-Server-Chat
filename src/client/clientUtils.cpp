@@ -72,7 +72,7 @@ bool net::client::__INIT__(void)
         return EXIT_FAILURE;
     }
     
-    struct sockaddr_in *address = socket->IPv4Address(net::localHostAddress, net::PORT);
+    struct sockaddr_in *address = socket->IPv4Address();
 
     int res = socket->connectToServer(socketFD, address);
 
