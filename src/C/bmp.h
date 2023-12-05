@@ -42,10 +42,12 @@ typedef struct
 
 typedef struct
 {
-    int size;
     BITMAPFILEHEADER fileHeader;
     BITMAPINFOHEADER infoHeader;
-    BYTE *pixelData;
+    RGBTRIPLE **pixelData;
 }__attribute__((__packed__)) BMP;
+
+void printBMP(const BMP *bmp);
+void printBMPInfo(const BMP *bmp);
 
 #endif

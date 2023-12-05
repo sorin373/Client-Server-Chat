@@ -41,7 +41,7 @@ template <typename T> void net::server::sendReceivedMessage(T *buffer, int accep
 
 template <typename T> void net::server::printReceivedData(const struct acceptedSocket *socket)
 {
-    T buffer[1024];
+    T buffer[1025];
 
     while (true)
     {
