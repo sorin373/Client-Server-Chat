@@ -44,10 +44,10 @@ typedef struct
 {
     BITMAPFILEHEADER fileHeader;
     BITMAPINFOHEADER infoHeader;
-    RGBTRIPLE **pixelData;
+    RGBTRIPLE **image;
 }__attribute__((__packed__)) BMP;
 
-void printBMP(const BMP *bmp);
-void printBMPInfo(const BMP *bmp);
+void printBMP(const BMP bmp);
+void printBMPInfo(const BMP bmp);
 
 #endif
