@@ -74,18 +74,23 @@ namespace net
 
         if (pos != nullptr)
         {
-            pos += 5;
-            char *end = strchr(pos, ' ');
+            pos = strstr(pos + 1, "inet ");
 
-            if (end != nullptr)
+            if (pos != nullptr)
             {
-                *end = '\0';
-                return pos;
+                pos += 5;
+                char *end = strchr(pos, ' ');
+
+                if (end != nullptr)
+                {
+                    *end = '\0';
+                    return pos;
+                }
             }
         }
 
         delete[] ifconfigOutput;
-        
+
         return nullptr;
     }
 }

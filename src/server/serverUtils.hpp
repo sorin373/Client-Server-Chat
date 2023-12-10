@@ -44,7 +44,7 @@ namespace net
     public:
         server(const int clientSocketFileDescriptor);
 
-        static bool __INIT__(void);
+        static bool __INIT__(char *portArg = nullptr);
         void __MASTER_THREAD__(int serverSocketFileDescriptor);
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
         int getClientSocketFileDescriptor(void) const noexcept;

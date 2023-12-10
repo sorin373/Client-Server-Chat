@@ -30,31 +30,60 @@ void net::server::acceptConnection(const int serverSocketFileDescriptor, class a
 template <typename T>
 int net::server::handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor)
 {
-    if (strstr(buffer, "GET /index.html") != NULL || strstr(buffer, "GET / HTTP/1.1") != NULL)
+    const char *charBuffer = reinterpret_cast<const char *>(buffer);
+    size_t length = strlen(charBuffer);
+
+    std::unique_ptr<char[]> allocateBuffer(new char[length + 1]);
+    strncpy(allocateBuffer.get(), charBuffer, length);
+    allocateBuffer[length] = '\0';
+
+    char *path = nullptr;
+
+    for (int i = 0, n = strlen(allocateBuffer.get()); i < n; i++)
+        if (allocateBuffer[i] == '/')
+        {
+            path = &allocateBuffer[i];
+            break;
+        }
+
+    for (int i = 0, n = strlen(path); i < n; i++)
+        if (path[i] == ' ')
+            path[i] = '\0';
+
+    std::cout << "PATH: " << path << "\n\n";
+
+    if ((strlen(path) == 1 && path[0] == '/') || path == nullptr)
+        strcpy(path, "/index.html");
+
+    const char root[] = "interface";
+    char fullPath[strlen(root) + strlen(path) + 1];
+    strcpy(fullPath, root);
+    strcat(fullPath, path);
+
+    std::cout << "FULL PATH: " << fullPath << "\n\n";
+
+    std::ifstream file(fullPath, std::ios::binary);
+
+    if (!file.is_open())
     {
-        std::ifstream HTMLfile("index.html");
+        std::cerr << "Failed to open " << fullPath << "!\n";
+        return EXIT_FAILURE;
+    }
 
-        if (!HTMLfile.is_open())
-        {
-            std::cerr << "Failed to open index.html!\n";
-            return EXIT_FAILURE;
-        }
+    std::ostringstream response;
+    response << "HTTP/1.1 200 OK\r\nContent-Length: ";
 
-        std::ostringstream response;
-        response << "HTTP/1.1 200 OK\r\nContent-Length: ";
+    file.seekg(0, std::ios::end);
+    int size = file.tellg();
+    response << size << "\r\n\r\n";
 
-        HTMLfile.seekg(0, std::ios::end);
-        int length = HTMLfile.tellg();
-        response << length << "\r\n\r\n";
+    file.seekg(0, std::ios::beg);
+    response << file.rdbuf();
 
-        HTMLfile.seekg(0, std::ios::beg);
-        response << HTMLfile.rdbuf();
-
-        if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
-        {
-            std::cerr << "Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
+    if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
+    {
+        std::cerr << "Failed to send response.\n";
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
@@ -89,10 +118,12 @@ void net::server::printReceivedData(class acceptedSocket<T> *socket)
             break;
         }
 
+        std::cout << "------------------------------------------------------------------------------------------\n\n";
+
         buffer[bytesReceived] = '\0';
         std::cout << buffer;
 
-        net::server::handleGETrequests(buffer, acceptedSocketFD);
+        handleGETrequests(buffer, acceptedSocketFD);
 
         // net::server::sendReceivedMessage(buffer, acceptedSocketFD);
     }
@@ -181,8 +212,15 @@ std::vector<class net::server::acceptedSocket<S>> net::server::getConnectedSocke
     return connectedSockets;
 }
 
-bool net::server::__INIT__(void)
+bool net::server::__INIT__(char *portArg)
 {
+    int port = 0;
+
+    if (portArg == nullptr)
+        port = net::PORT;
+    else
+        port = atoi(portArg);
+
     net::SocketUtils *serverSocket = new net::SocketUtils;
 
     int serverSocketFD = serverSocket->createSocket();
@@ -197,9 +235,9 @@ bool net::server::__INIT__(void)
 
     net::server *__server = new net::server(serverSocketFD);
 
-    std::cout << serverSocket->getMachineIPv4Address() << ": " << net::PORT << "\n";
+    std::cout << serverSocket->getMachineIPv4Address() << ":" << port << "\n";
 
-    struct sockaddr_in *serverAddress = serverSocket->IPv4Address(serverSocket->getMachineIPv4Address());
+    struct sockaddr_in *serverAddress = serverSocket->IPv4Address(serverSocket->getMachineIPv4Address(), port);
 
     int res = __server->bindServer(serverSocketFD, serverAddress);
     if (res == 0)
@@ -208,6 +246,7 @@ bool net::server::__INIT__(void)
     {
         std::cerr << "Error binding the server!\n";
         perror("bind");
+        return EXIT_FAILURE;
     }
 
     int listenResult = listen(serverSocketFD, 10);

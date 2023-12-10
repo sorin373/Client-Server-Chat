@@ -19,11 +19,11 @@ endif()
 
 add_subdirectory(src/server)
 add_subdirectory(src/client)
-add_subdirectory(src/socket)
 
 set(SRC_FILES 
    "src/client/clientUtils.cpp"
    "src/server/serverUtils.cpp"
+   "src/socket/socketUtils.cpp"
 )
 
-configure_file(${CMAKE_SOURCE_DIR}/src/server/index.html ${CMAKE_BINARY_DIR}/src/server/index.html COPYONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/src/server/index.html ${CMAKE_BINARY_DIR}/src/server/index.html COPYONLY)

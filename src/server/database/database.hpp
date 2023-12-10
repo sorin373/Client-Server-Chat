@@ -33,7 +33,7 @@ namespace net
     public:
         explicit database(sql::Driver *driver, sql::Connection *con, const bool status = false);
 
-        sql::Driver *getDriver(void) const noexcept;
+        sql::Driver *getDriver(void)  const noexcept;
         sql::Connection *getCon(void) const noexcept;
         bool getStatus(void) const noexcept;
         bool fetchTables(void);

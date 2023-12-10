@@ -1,9 +1,13 @@
 #include "serverUtils.hpp"
 
-int main()
+#include <iostream>
+
+int main(int argc, char *argv[])
 {
-    if (!net::server::__INIT__())
-        return -1;
+    system("clear");    
+
+    if (!net::server::__INIT__(argv[1]))
+        return EXIT_FAILURE;
 
     return 0;
 }
