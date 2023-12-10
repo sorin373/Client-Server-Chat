@@ -10,15 +10,16 @@ namespace net
     class client 
     {
     private:
-        void __MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor);
+        template <typename T> void __MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor);
 
     public:
         client() = default;
 
         static bool __INIT__(void);
-        void __INIT_MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor);
-        char *getClientName(size_t *__clientNameSize = nullptr);
+        template <typename T> void __INIT_MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor);
         template <typename T> ssize_t sendData(int socketFileDescriptor, const T *data, size_t dataSize);
+
+        char *getClientName(size_t *__clientNameSize = nullptr);
 
         ~client() = default;
     };

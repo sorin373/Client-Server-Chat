@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 # Define the executable
-add_executable(PinnacleServer "main.cpp" "serverUtils.cpp")
+add_executable(PinnacleServer "main.cpp" "serverUtils.cpp" "database/database.cpp")
 target_include_directories(PinnacleServer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../socket)
 target_link_libraries(PinnacleServer PRIVATE Socket)
-
-add_subdirectory(database)

@@ -7,16 +7,17 @@
 namespace net
 {
     constexpr char localHostAddress[] = "127.0.0.1";
-    constexpr int PORT = 3000;
+    constexpr int PORT = 14001;
 
     class SocketUtils
     {
     public:
         SocketUtils() = default;
-
+        
+        static char *getMachineIPv4Address(void);
         int createSocket(void);
         int connectToServer(int socketFileDescriptor, struct sockaddr_in *address);
-        struct sockaddr_in *IPv4Address(const char *ipAddress = net::localHostAddress, int port = net::PORT);
+        struct sockaddr_in *IPv4Address(const char *ipAddress = localHostAddress, int port = PORT);
 
         ~SocketUtils() = default;
     };

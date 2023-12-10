@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __PINNACLE_ALL_HPP__
 #define __PINNACLE_ALL_HPP__
 

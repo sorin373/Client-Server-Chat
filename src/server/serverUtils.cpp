@@ -2,6 +2,9 @@
 
 #include <iostream>
 #include <cstring>
+#include <sstream>
+#include <fstream>
+#include <string>
 #include <vector>
 #include <thread>
 #include <stdlib.h>
@@ -13,7 +16,8 @@ net::server::server(const int clientSocketFileDescriptor)
     this->clientSocketFileDescriptor = clientSocketFileDescriptor;
 }
 
-template <typename T> void net::server::acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket<T> *__acceptedSocket)
+template <typename T>
+void net::server::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
@@ -23,18 +27,41 @@ template <typename T> void net::server::acceptConnection(const int serverSocketF
     __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
 }
 
-template <typename T> void net::server::handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor)
+template <typename T>
+int net::server::handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor)
 {
-    for (auto &socket : connectedSockets)
+    if (strstr(buffer, "GET /index.html") != NULL || strstr(buffer, "GET / HTTP/1.1") != NULL)
     {
-        int socketFD = socket.getAcceptedSocketFileDescriptor();
+        std::ifstream HTMLfile("index.html");
 
-        if (socketFD == acceptedSocketFileDescriptor)
-            send(socketFD, buffer, strlen(buffer), 0);
+        if (!HTMLfile.is_open())
+        {
+            std::cerr << "Failed to open index.html!\n";
+            return EXIT_FAILURE;
+        }
+
+        std::ostringstream response;
+        response << "HTTP/1.1 200 OK\r\nContent-Length: ";
+
+        HTMLfile.seekg(0, std::ios::end);
+        int length = HTMLfile.tellg();
+        response << length << "\r\n\r\n";
+
+        HTMLfile.seekg(0, std::ios::beg);
+        response << HTMLfile.rdbuf();
+
+        if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
+        {
+            std::cerr << "Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
     }
+
+    return EXIT_SUCCESS;
 }
 
-template <typename T> void net::server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
+template <typename T>
+void net::server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
 {
     for (auto &socket : connectedSockets)
     {
@@ -45,7 +72,8 @@ template <typename T> void net::server::sendReceivedMessage(T *buffer, int accep
     }
 }
 
-template <typename T> void net::server::printReceivedData(struct acceptedSocket<T> *socket)
+template <typename T>
+void net::server::printReceivedData(class acceptedSocket<T> *socket)
 {
     T buffer[1025];
 
@@ -64,17 +92,16 @@ template <typename T> void net::server::printReceivedData(struct acceptedSocket<
         buffer[bytesReceived] = '\0';
         std::cout << buffer;
 
-        socket->addHTTPcontent(*buffer);
+        net::server::handleGETrequests(buffer, acceptedSocketFD);
 
-        
-
-        net::server::sendReceivedMessage(buffer, acceptedSocketFD);
+        // net::server::sendReceivedMessage(buffer, acceptedSocketFD);
     }
 
     close(socket->getAcceptedSocketFileDescriptor());
 }
 
-template <typename T> void net::server::printReceivedDataThread(struct acceptedSocket<T> *psocket)
+template <typename T>
+void net::server::printReceivedDataThread(class acceptedSocket<T> *psocket)
 {
     std::thread printThread(&server::printReceivedData<char>, this, psocket);
     printThread.detach();
@@ -112,10 +139,11 @@ int net::server::getClientSocketFileDescriptor(void) const noexcept
     return clientSocketFileDescriptor;
 }
 
-template <typename S> net::server::acceptedSocket<S>::acceptedSocket() {}
+template <typename S>
+net::server::acceptedSocket<S>::acceptedSocket() {}
 
-template <typename S> void net::server::acceptedSocket<S>::getAcceptedSocket
-    (const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const bool acceptStatus, const int error)
+template <typename S>
+void net::server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const bool acceptStatus, const int error)
 {
     this->ipAddress = ipAddress;
     this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
@@ -123,37 +151,32 @@ template <typename S> void net::server::acceptedSocket<S>::getAcceptedSocket
     this->error = error;
 }
 
-template <typename S> void net::server::acceptedSocket<S>::addHTTPcontent(const S buffer) noexcept
-{
-    content.push_back(buffer);
-}
-
-template <typename S> struct sockaddr_in net::server::acceptedSocket<S>::getIpAddress(void) const noexcept
+template <typename S>
+struct sockaddr_in net::server::acceptedSocket<S>::getIpAddress(void) const noexcept
 {
     return ipAddress;
 }
 
-template <typename S> int net::server::acceptedSocket<S>::getError(void) const noexcept
+template <typename S>
+int net::server::acceptedSocket<S>::getError(void) const noexcept
 {
     return error;
 }
 
-template <typename S> bool net::server::acceptedSocket<S>::getAcceptStatus(void) const noexcept
+template <typename S>
+bool net::server::acceptedSocket<S>::getAcceptStatus(void) const noexcept
 {
     return acceptStatus;
 }
 
-template <typename S> int net::server::acceptedSocket<S>::getAcceptedSocketFileDescriptor(void) const noexcept
+template <typename S>
+int net::server::acceptedSocket<S>::getAcceptedSocketFileDescriptor(void) const noexcept
 {
     return acceptedSocketFileDescriptor;
 }
 
-template <typename S> std::string net::server::acceptedSocket<S>::getContent(void) const noexcept
-{
-    return content;
-}
-
-template <typename S> std::vector<struct net::server::acceptedSocket<S>> net::server::getConnectedSockets(void) const noexcept
+template <typename S>
+std::vector<class net::server::acceptedSocket<S>> net::server::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
 }
@@ -174,11 +197,18 @@ bool net::server::__INIT__(void)
 
     net::server *__server = new net::server(serverSocketFD);
 
-    struct sockaddr_in *serverAddress = serverSocket->IPv4Address();
+    std::cout << serverSocket->getMachineIPv4Address() << ": " << net::PORT << "\n";
+
+    struct sockaddr_in *serverAddress = serverSocket->IPv4Address(serverSocket->getMachineIPv4Address());
 
     int res = __server->bindServer(serverSocketFD, serverAddress);
     if (res == 0)
         std::cout << "Server socket bound successfully!\n";
+    else
+    {
+        std::cerr << "Error binding the server!\n";
+        perror("bind");
+    }
 
     int listenResult = listen(serverSocketFD, 10);
     if (listenResult == -1)

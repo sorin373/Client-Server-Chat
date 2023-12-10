@@ -7,9 +7,9 @@
 #include <unistd.h>
 #include <thread>
 
-void net::client::__MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor)
+template <typename T> void net::client::__MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor)
 {
-    char buffer[1024];
+    T buffer[1024];
 
     while (true)
     {
@@ -22,15 +22,15 @@ void net::client::__MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor)
         }
 
         buffer[bytesReceived] = '\0';
-        std::cout << buffer;
+        std::cout << bytesReceived << "\n" << buffer;
     }
 
     close(clientSocketFileDescriptor);
 }
 
-void net::client::__INIT_MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor)
+template <typename T> void net::client::__INIT_MESSAGE_LISTENER_THREAD__(int clientSocketFileDescriptor)
 {
-    std::thread workerThread(&net::client::__MESSAGE_LISTENER_THREAD__, this, clientSocketFileDescriptor);
+    std::thread workerThread(&net::client::__MESSAGE_LISTENER_THREAD__<T>, this, clientSocketFileDescriptor);
     workerThread.detach();
 }
 
@@ -63,7 +63,7 @@ template <typename T> ssize_t net::client::sendData(int socketFileDescriptor, co
 bool net::client::__INIT__(void)
 {
     net::SocketUtils *socket = new net::SocketUtils;
-    net::client *client = new net::client;
+    net::client      *client = new net::client;
 
     int socketFD = socket->createSocket();
     
@@ -90,7 +90,7 @@ bool net::client::__INIT__(void)
 
     char *clientName = client->getClientName();
 
-    client->__INIT_MESSAGE_LISTENER_THREAD__(socketFD);
+    client->__INIT_MESSAGE_LISTENER_THREAD__<char>(socketFD);
     
     while (true)
     {
@@ -103,7 +103,7 @@ bool net::client::__INIT__(void)
             if (strcasecmp(buffer, "exit\n") == 0)
                 break;
 
-            ssize_t amountSent = client->sendData<char>(socketFD, clientName, strlen(clientName) + 1);  
+            ssize_t amountSent = client->sendData<char>(socketFD, clientName, strlen(clientName) + 1);
         }
     }
 

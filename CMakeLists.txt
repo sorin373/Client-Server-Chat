@@ -17,7 +17,6 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     )
 endif()
 
-add_subdirectory(src/C)
 add_subdirectory(src/server)
 add_subdirectory(src/client)
 add_subdirectory(src/socket)
@@ -25,9 +24,6 @@ add_subdirectory(src/socket)
 set(SRC_FILES 
    "src/client/clientUtils.cpp"
    "src/server/serverUtils.cpp"
-   "src/PinnacleBinding.cpp"
 )
 
-add_library(pinnacle SHARED ${SRC_FILES})
-
-target_link_libraries(pinnacle PRIVATE Socket)
+configure_file(${CMAKE_SOURCE_DIR}/src/server/index.html ${CMAKE_BINARY_DIR}/src/server/index.html COPYONLY)

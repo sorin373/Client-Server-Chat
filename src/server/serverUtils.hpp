@@ -11,13 +11,15 @@ namespace net
     class server
     {
     public:
+        class database;
+
+    public:
         template <typename S> class acceptedSocket
         {
         private:
-            int acceptedSocketFileDescriptor, error;
-            bool acceptStatus;
-            struct sockaddr_in ipAddress;
-            std::string content;
+            int                 acceptedSocketFileDescriptor, error;
+            bool                acceptStatus;
+            struct sockaddr_in  ipAddress;
 
         public:
             acceptedSocket();
@@ -27,7 +29,6 @@ namespace net
             int getError(void) const noexcept;
             bool getAcceptStatus(void) const noexcept;
             struct sockaddr_in getIpAddress(void) const noexcept;
-            void addHTTPcontent(const S buffer) noexcept;
             std::string getContent(void) const noexcept;
 
             ~acceptedSocket() = default;
@@ -38,7 +39,7 @@ namespace net
         std::vector<struct acceptedSocket<char>> connectedSockets;
 
         void handleClientConnections(int serverSocketFileDescriptor);
-        template <typename T> void printReceivedDataThread(struct acceptedSocket<T> *psocket);
+        template <typename T> void printReceivedDataThread(class acceptedSocket<T> *psocket);
 
     public:
         server(const int clientSocketFileDescriptor);
@@ -50,9 +51,9 @@ namespace net
 
         template <typename T> void acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket<T> *__acceptedSocket);
         template <typename T> void sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor);
-        template <typename T> void printReceivedData(struct acceptedSocket<T> *socket);
-        template <typename T> void handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor);
-        template <typename T> std::vector<struct acceptedSocket<T>> getConnectedSockets(void) const noexcept;
+        template <typename T> void printReceivedData(class acceptedSocket<T> *socket);
+        template <typename T> int handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor);
+        template <typename T> std::vector<class acceptedSocket<T>> getConnectedSockets(void) const noexcept;
 
         ~server() = default;
     };

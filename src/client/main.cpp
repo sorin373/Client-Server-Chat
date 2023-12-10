@@ -10,6 +10,11 @@
 #include <unistd.h>
 #include <chrono>
 #include <thread>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
 
 int main()
 {
@@ -43,47 +48,24 @@ int main()
 
     char *clientName = client->getClientName();
 
-    client->__INIT_MESSAGE_LISTENER_THREAD__(socketFD);
+    client->__INIT_MESSAGE_LISTENER_THREAD__<char>(socketFD);
 
-    std::ifstream htmlFile("index.html");
+    const char *request = "GET /index.html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
 
-    if (!htmlFile.is_open())
+    ssize_t sent = client->sendData<char>(socketFD, request, strlen(request) + 1);
+    
+    while (1)
     {
-        std::cerr << "Failed to open file!\n";
-        return EXIT_FAILURE;
+        /* code */
     }
-
-    std::stringstream hBuffer;
-    hBuffer << htmlFile.rdbuf();
-    htmlFile.close();
-    std::string scontent = hBuffer.str();
     
 
-    const char *content = scontent.c_str(); 
-
-    const char* response =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: %zu\r\n"
-        "\r\n"
-        "%s";
-
-    size_t contentLength = strlen(content);
-    size_t responseLength = snprintf(nullptr, 0, response, contentLength, content);
-
-    char* httpResponse = new char[responseLength + 1];
-
-    snprintf(httpResponse, responseLength + 1, response, contentLength, content);
-
-    ssize_t sent = client->sendData<char>(socketFD, httpResponse, responseLength);
-
-    while (true)
+    /*while (true)
     {
         
         
-        // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         
-        /*ssize_t charCount = getline(&buffer, &bufferSize, stdin);
+        ssize_t charCount = getline(&buffer, &bufferSize, stdin);
 
         strcat(clientName, buffer);
 
@@ -94,17 +76,14 @@ int main()
 
             //ssize_t amountSent = client->sendData<char>(socketFD, clientName, strlen(clientName) + 1);
             
-        }*/
+        }
         
-    }
-
-    htmlFile.close();
+    }*/
 
     close(socketFD);
 
     free(address);
     delete socket;
-    delete[] httpResponse;
 
     return EXIT_SUCCESS;
 }
