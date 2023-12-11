@@ -4,8 +4,6 @@ project(NetPinnacle VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED true)
 
-set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
 if(NOT CMAKE_CXX_COMPILE_FEATURES)
     message(FATAL_ERROR "The compiler does not support C++17.")
 endif()
@@ -17,13 +15,9 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     )
 endif()
 
-add_subdirectory(src/server)
-add_subdirectory(src/client)
+add_subdirectory(server)
+add_subdirectory(client)
 
-set(SRC_FILES 
-   "src/client/clientUtils.cpp"
-   "src/server/serverUtils.cpp"
-   "src/socket/socketUtils.cpp"
-)
-
-#configure_file(${CMAKE_SOURCE_DIR}/src/server/index.html ${CMAKE_BINARY_DIR}/src/server/index.html COPYONLY)
+set(DIR "${CMAKE_CURRENT_SOURCE_DIR}/interface")
+set(DESTINATION_DIR "${CMAKE_BINARY_DIR}/server")
+file(COPY ${DIR} DESTINATION ${DESTINATION_DIR})

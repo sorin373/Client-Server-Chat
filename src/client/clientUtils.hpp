@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __CLIENT_UTILS_HPP__
 #define __CLIENT_UTILS_HPP__
 
