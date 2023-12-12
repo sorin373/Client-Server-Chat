@@ -1,19 +1,14 @@
 #include "serverUtils.hpp"
 
 #include <iostream>
-#include <cstring>
-#include <sstream>
 #include <fstream>
-#include <string>
+#include <string.h>
+#include <sstream>
 #include <vector>
 #include <thread>
-#include <stdlib.h>
 #include <netinet/in.h>
-#include <unistd.h>
 #include "interface/interface.hpp"
 #include "database/database.hpp"
-#include <mysql_connection.h>
-#include <mysql_driver.h>
 
 net::server::server(const int clientSocketFileDescriptor)
 {
@@ -215,10 +210,8 @@ std::vector<class net::server::acceptedSocket<S>> net::server::getConnectedSocke
     return connectedSockets;
 }
 
-bool net::server::__database_init__(void)
-{
-    if (db != nullptr)
-    {
+bool net::server::__database_init__(void) {
+    if (db != nullptr) {
         std::cerr << "Database is live!\n";
         return EXIT_SUCCESS;
     }
@@ -226,21 +219,23 @@ bool net::server::__database_init__(void)
     sql::Driver     *driver = nullptr;
     sql::Connection *con = nullptr;
 
-    driver = sql::mysql::get_mysql_driver_instance();
+    try {
+        driver = sql::mysql::get_mysql_driver_instance();
+        con = driver->connect("host", "username", "password");
 
-    con = driver->connect();
+        if (con == nullptr) {
+            std::cerr << "Failed to establish a connection to the database.\n";
+            return EXIT_FAILURE;
+        }
 
-    if (con == nullptr)
-    {
-        std::cerr << "";
+        con->setSchema("database_name");
+
+        db = new net::server::database(driver, con, true);
+        return EXIT_SUCCESS;
+    } catch (sql::SQLException &e) {
+        std::cerr << "SQL Exception: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
-    con->getSchema("");
-
-    db = new net::server::database(driver, con, true);
-
-    return EXIT_SUCCESS;
 }
 
 bool net::server::__INIT__(char *portArg)
