@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "interface/interface.hpp"
 
 net::server::server(const int clientSocketFileDescriptor)
 {
@@ -28,21 +29,18 @@ void net::server::acceptConnection(const int serverSocketFileDescriptor, class a
 }
 
 template <typename T>
-int net::server::handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor)
+int net::server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 {
-    const char *charBuffer = reinterpret_cast<const char *>(buffer);
-    size_t length = strlen(charBuffer);
-
-    std::unique_ptr<char[]> allocateBuffer(new char[length + 1]);
-    strncpy(allocateBuffer.get(), charBuffer, length);
-    allocateBuffer[length] = '\0';
+    char *allocatedBuffer = buffer;
+    char *copyBuffer = new char[strlen(buffer) + 1];
+    strcpy(copyBuffer, allocatedBuffer);
 
     char *path = nullptr;
 
-    for (int i = 0, n = strlen(allocateBuffer.get()); i < n; i++)
-        if (allocateBuffer[i] == '/')
+    for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
+        if (allocatedBuffer[i] == '/')
         {
-            path = &allocateBuffer[i];
+            path = &allocatedBuffer[i];
             break;
         }
 
@@ -50,10 +48,11 @@ int net::server::handleGETrequests(const T *buffer, int acceptedSocketFileDescri
         if (path[i] == ' ')
             path[i] = '\0';
 
-    std::cout << "PATH: " << path << "\n\n";
-
     if ((strlen(path) == 1 && path[0] == '/') || path == nullptr)
-        strcpy(path, "/index.html");
+        strcpy(path, "/login.html");
+    
+    if (allocatedBuffer[0] == 'P')
+        net::interface::routeHandler(copyBuffer);
 
     const char root[] = "interface";
     char fullPath[strlen(root) + strlen(path) + 1];

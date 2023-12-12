@@ -7,7 +7,7 @@
 #include "../socket/socketUtils.hpp"
 
 namespace net
-{
+{    
     class server
     {
     public:
@@ -29,7 +29,6 @@ namespace net
             int getError(void) const noexcept;
             bool getAcceptStatus(void) const noexcept;
             struct sockaddr_in getIpAddress(void) const noexcept;
-            std::string getContent(void) const noexcept;
 
             ~acceptedSocket() = default;
         };
@@ -52,7 +51,7 @@ namespace net
         template <typename T> void acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket<T> *__acceptedSocket);
         template <typename T> void sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor);
         template <typename T> void printReceivedData(class acceptedSocket<T> *socket);
-        template <typename T> int handleGETrequests(const T *buffer, int acceptedSocketFileDescriptor);
+        template <typename T> int handleGETrequests(T *buffer, int acceptedSocketFileDescriptor);
         template <typename T> std::vector<class acceptedSocket<T>> getConnectedSockets(void) const noexcept;
 
         ~server() = default;
