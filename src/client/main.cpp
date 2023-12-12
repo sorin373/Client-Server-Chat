@@ -29,7 +29,7 @@ int main()
         return EXIT_FAILURE;
     }
 
-    struct sockaddr_in *address = socket->IPv4Address(net::localHostAddress, net::PORT);
+    struct sockaddr_in *address = socket->IPv4Address(net::localHostAddress, net::DEFAULT_PORT);
 
     int res = socket->connectToServer(socketFD, address);
 

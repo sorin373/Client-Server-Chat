@@ -11,10 +11,14 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "interface/interface.hpp"
+#include "database/database.hpp"
+#include <mysql_connection.h>
+#include <mysql_driver.h>
 
 net::server::server(const int clientSocketFileDescriptor)
 {
     this->clientSocketFileDescriptor = clientSocketFileDescriptor;
+    this->db = nullptr;
 }
 
 template <typename T>
@@ -211,12 +215,40 @@ std::vector<class net::server::acceptedSocket<S>> net::server::getConnectedSocke
     return connectedSockets;
 }
 
+bool net::server::__database_init__(void)
+{
+    if (db != nullptr)
+    {
+        std::cerr << "Database is live!\n";
+        return EXIT_SUCCESS;
+    }
+
+    sql::Driver     *driver = nullptr;
+    sql::Connection *con = nullptr;
+
+    driver = sql::mysql::get_mysql_driver_instance();
+
+    con = driver->connect();
+
+    if (con == nullptr)
+    {
+        std::cerr << "";
+        return EXIT_FAILURE;
+    }
+
+    con->getSchema("");
+
+    db = new net::server::database(driver, con, true);
+
+    return EXIT_SUCCESS;
+}
+
 bool net::server::__INIT__(char *portArg)
 {
     int port = 0;
 
     if (portArg == nullptr)
-        port = net::PORT;
+        port = DEFAULT_PORT;
     else
         port = atoi(portArg);
 

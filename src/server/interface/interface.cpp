@@ -5,25 +5,22 @@
 
 using namespace net::interface;
 
-user::user()
-{
-    this->uc = nullptr;
-}
+user::userCredentials *user::uc = nullptr;
 
-user::userCredentials::userCredentials(const char *username, const char *password, const int id)
+user::userCredentials::userCredentials(char *username, char *password, const int id)
 {
     this->username = username;
     this->password = password;
     this->id = id;
 }
 
-void user::fetchCredentials(const char *username, const char *password, const int id)
+void user::fetchCredentials(char *username, char *password, const int id)
 {
     cleanup();
     uc = new userCredentials(username, password, id);
 }
 
-user::userCredentials *user::getUserCredentials(void) const noexcept
+user::userCredentials *user::getUserCredentials(void) noexcept
 {
     return uc;
 }
@@ -100,6 +97,8 @@ bool net::interface::routeHandler(char *request) // request = username=test&pass
         return EXIT_FAILURE;
 
     user::fetchCredentials(username, password, 0);
+
+    // std::cout << user::getUserCredentials()->username << " " << user::getUserCredentials()->password << std::endl;
 
     return EXIT_SUCCESS;
 }

@@ -7,7 +7,7 @@
 namespace net
 {
     constexpr char localHostAddress[] = "127.0.0.1";
-    constexpr int PORT = 8080;
+    constexpr int DEFAULT_PORT = 8080;
 
     class SocketUtils
     {
@@ -17,7 +17,7 @@ namespace net
         static char *getMachineIPv4Address(void);
         int createSocket(void);
         int connectToServer(int socketFileDescriptor, struct sockaddr_in *address);
-        struct sockaddr_in *IPv4Address(const char *ipAddress = localHostAddress, int port = PORT);
+        struct sockaddr_in *IPv4Address(const char *ipAddress = localHostAddress, int port = DEFAULT_PORT);
 
         ~SocketUtils() = default;
     };

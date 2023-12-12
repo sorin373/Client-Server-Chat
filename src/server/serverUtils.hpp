@@ -36,6 +36,7 @@ namespace net
     private:
         int clientSocketFileDescriptor;
         std::vector<struct acceptedSocket<char>> connectedSockets;
+        class database *db;
 
         void handleClientConnections(int serverSocketFileDescriptor);
         template <typename T> void printReceivedDataThread(class acceptedSocket<T> *psocket);
@@ -47,6 +48,7 @@ namespace net
         void __MASTER_THREAD__(int serverSocketFileDescriptor);
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
         int getClientSocketFileDescriptor(void) const noexcept;
+        bool __database_init__(void);
 
         template <typename T> void acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket<T> *__acceptedSocket);
         template <typename T> void sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor);

@@ -13,9 +13,9 @@ namespace net
             struct userCredentials
             {
                 int id;
-                char username[32], password[64];
+                char *username, *password;
 
-                userCredentials(const char *username, const char *password, const int id);
+                userCredentials(char *username, char *password, const int id);
                 ~userCredentials() = default;
             };
 
@@ -24,8 +24,8 @@ namespace net
         public:
             user();
 
-            static void fetchCredentials(const char *username, const char *password, const int id);
-            static userCredentials *getUserCredentials(void) const noexcept;
+            static void fetchCredentials(char *username, char *password, const int id);
+            static userCredentials *getUserCredentials(void) noexcept;
             static void cleanup(void);
 
             ~user() = default;
