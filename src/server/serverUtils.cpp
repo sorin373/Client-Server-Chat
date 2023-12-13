@@ -10,14 +10,16 @@
 #include "interface/interface.hpp"
 #include "database/database.hpp"
 
-net::server::server(const int clientSocketFileDescriptor)
+using namespace net;
+
+server::server(const int clientSocketFileDescriptor)
 {
     this->clientSocketFileDescriptor = clientSocketFileDescriptor;
     this->db = nullptr;
 }
 
 template <typename T>
-void net::server::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket)
+void server::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
@@ -28,7 +30,7 @@ void net::server::acceptConnection(const int serverSocketFileDescriptor, class a
 }
 
 template <typename T>
-int net::server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
+int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 {
     char *allocatedBuffer = buffer;
     char *copyBuffer = new char[strlen(buffer) + 1];
@@ -49,9 +51,13 @@ int net::server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 
     if ((strlen(path) == 1 && path[0] == '/') || path == nullptr)
         strcpy(path, "/login.html");
-    
+
     if (allocatedBuffer[0] == 'P')
-        net::interface::routeHandler(copyBuffer);
+    {
+        std::cout << "Handling POST:\n";
+        interface::user::routeHandler(copyBuffer, acceptedSocketFileDescriptor);
+        return EXIT_SUCCESS;
+    }
 
     const char root[] = "interface";
     char fullPath[strlen(root) + strlen(path) + 1];
@@ -88,7 +94,7 @@ int net::server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 }
 
 template <typename T>
-void net::server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
+void server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
 {
     for (auto &socket : connectedSockets)
     {
@@ -100,7 +106,7 @@ void net::server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescripto
 }
 
 template <typename T>
-void net::server::printReceivedData(class acceptedSocket<T> *socket)
+void server::printReceivedData(class acceptedSocket<T> *socket)
 {
     T buffer[1025];
 
@@ -130,13 +136,13 @@ void net::server::printReceivedData(class acceptedSocket<T> *socket)
 }
 
 template <typename T>
-void net::server::printReceivedDataThread(class acceptedSocket<T> *psocket)
+void server::printReceivedDataThread(class acceptedSocket<T> *psocket)
 {
     std::thread printThread(&server::printReceivedData<char>, this, psocket);
     printThread.detach();
 }
 
-void net::server::handleClientConnections(int serverSocketFileDescriptor)
+void server::handleClientConnections(int serverSocketFileDescriptor)
 {
     while (true)
     {
@@ -152,27 +158,27 @@ void net::server::handleClientConnections(int serverSocketFileDescriptor)
     close(serverSocketFileDescriptor);
 }
 
-void net::server::__MASTER_THREAD__(int serverSocketFileDescriptor)
+void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
 {
     std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
     workerThread.join();
 }
 
-int net::server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
+int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
 {
     return bind(serverSocketFileDescriptor, (struct sockaddr *)serverAddress, sizeof(struct sockaddr_in));
 }
 
-int net::server::getClientSocketFileDescriptor(void) const noexcept
+int server::getClientSocketFileDescriptor(void) const noexcept
 {
     return clientSocketFileDescriptor;
 }
 
 template <typename S>
-net::server::acceptedSocket<S>::acceptedSocket() {}
+server::acceptedSocket<S>::acceptedSocket() {}
 
 template <typename S>
-void net::server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const bool acceptStatus, const int error)
+void server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const bool acceptStatus, const int error)
 {
     this->ipAddress = ipAddress;
     this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
@@ -181,64 +187,71 @@ void net::server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in 
 }
 
 template <typename S>
-struct sockaddr_in net::server::acceptedSocket<S>::getIpAddress(void) const noexcept
+struct sockaddr_in server::acceptedSocket<S>::getIpAddress(void) const noexcept
 {
     return ipAddress;
 }
 
 template <typename S>
-int net::server::acceptedSocket<S>::getError(void) const noexcept
+int server::acceptedSocket<S>::getError(void) const noexcept
 {
     return error;
 }
 
 template <typename S>
-bool net::server::acceptedSocket<S>::getAcceptStatus(void) const noexcept
+bool server::acceptedSocket<S>::getAcceptStatus(void) const noexcept
 {
     return acceptStatus;
 }
 
 template <typename S>
-int net::server::acceptedSocket<S>::getAcceptedSocketFileDescriptor(void) const noexcept
+int server::acceptedSocket<S>::getAcceptedSocketFileDescriptor(void) const noexcept
 {
     return acceptedSocketFileDescriptor;
 }
 
 template <typename S>
-std::vector<class net::server::acceptedSocket<S>> net::server::getConnectedSockets(void) const noexcept
+std::vector<class server::acceptedSocket<S>> server::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
 }
 
-bool net::server::__database_init__(void) {
-    if (db != nullptr) {
+bool server::__database_init__(void)
+{
+    if (db != nullptr)
+    {
         std::cerr << "Database is live!\n";
         return EXIT_SUCCESS;
     }
 
-    sql::Driver     *driver = nullptr;
+    sql::Driver *driver = nullptr;
     sql::Connection *con = nullptr;
 
-    try {
+    try
+    {
         driver = sql::mysql::get_mysql_driver_instance();
         con = driver->connect("host", "username", "password");
 
-        if (con == nullptr) {
+        if (con == nullptr)
+        {
             std::cerr << "Failed to establish a connection to the database.\n";
             return EXIT_FAILURE;
         }
 
         con->setSchema("database_name");
 
-        db = new net::server::database(driver, con, true);
-        return EXIT_SUCCESS;
-    } catch (sql::SQLException &e) {
+        db = new server::database(driver, con, true);
+    }
+    catch (sql::SQLException &e)
+    {
         std::cerr << "SQL Exception: " << e.what() << std::endl;
         return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
 }
 
-bool net::server::__INIT__(char *portArg)
+bool server::__INIT__(char *portArg)
 {
     int port = 0;
 
@@ -247,7 +260,7 @@ bool net::server::__INIT__(char *portArg)
     else
         port = atoi(portArg);
 
-    net::SocketUtils *serverSocket = new net::SocketUtils;
+    SocketUtils *serverSocket = new SocketUtils;
 
     int serverSocketFD = serverSocket->createSocket();
 
@@ -259,7 +272,7 @@ bool net::server::__INIT__(char *portArg)
         return EXIT_FAILURE;
     }
 
-    net::server *__server = new net::server(serverSocketFD);
+    server *__server = new server(serverSocketFD);
 
     std::cout << serverSocket->getMachineIPv4Address() << ":" << port << "\n";
 

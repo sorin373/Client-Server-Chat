@@ -7,34 +7,34 @@ namespace net
 {
     namespace interface 
     {
+        void writeHTMLhead(void);
+        void readFiles(void);
+
         class user
         {
-        private:
             struct userCredentials
             {
+            private:
                 int id;
                 char *username, *password;
-
+            public:
                 userCredentials(char *username, char *password, const int id);
                 ~userCredentials() = default;
             };
 
-        static userCredentials *uc;
+        private:
+            userCredentials *uc;
             
         public:
             user();
 
-            static void fetchCredentials(char *username, char *password, const int id);
-            static userCredentials *getUserCredentials(void) noexcept;
-            static void cleanup(void);
+            void fetchCredentials(char *username, char *password, const int id);
+            userCredentials *getUserCredentials(void) noexcept;
+            static bool routeHandler(char *request, int acceptedSocketFileDescriptor);
+            void cleanup(void);
 
             ~user() = default;
         };
-
-        void writeHTMLhead(void);
-        void readFiles(void);
-
-        bool routeHandler(char *request);
     }
 }
 

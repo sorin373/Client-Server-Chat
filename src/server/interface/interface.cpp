@@ -5,7 +5,10 @@
 
 using namespace net::interface;
 
-user::userCredentials *user::uc = nullptr;
+user::user()
+{
+    this->uc = nullptr;
+}
 
 user::userCredentials::userCredentials(char *username, char *password, const int id)
 {
@@ -51,7 +54,7 @@ void writeHTMLhead(void)
     </head>)";
 }
 
-void net::interface::readFiles(void)
+void readFiles(void)
 {
     /*
 
@@ -65,9 +68,13 @@ static void findCredentials(char *__req)
 
 }
 
-bool net::interface::routeHandler(char *request) // request = username=test&password=test
+// add user parameter + create user object for every thread
+// than store the data into SQL table and clear the row (user credential) when logs out or 30 days passed.
+bool user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test 
 {
     char *username, *password, *ptr = NULL;
+
+    user *_user = new user;
 
     ptr = strstr(request, "username=");
     ptr = strtok(ptr, "&");
@@ -96,9 +103,21 @@ bool net::interface::routeHandler(char *request) // request = username=test&pass
     if (strlen(password) > 64 || password == nullptr)
         return EXIT_FAILURE;
 
-    user::fetchCredentials(username, password, 0);
+    _user->fetchCredentials(username, password, 0);
 
-    // std::cout << user::getUserCredentials()->username << " " << user::getUserCredentials()->password << std::endl;
+    //std::cout << user::getUserCredentials()->username << " " << user::getUserCredentials()->password << std::endl;
 
+
+    // TODO: add auth func to validat SQL table for correct username + password
+
+    char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
+    char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 15\r\nConnection: close\r\n\r\nInvalid credentials";
+
+    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
+    {
+        std::cerr << "Failed to send response.\n";
+        return EXIT_FAILURE;
+    }
+        
     return EXIT_SUCCESS;
 }
