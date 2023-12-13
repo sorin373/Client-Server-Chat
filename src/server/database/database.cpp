@@ -6,11 +6,11 @@
 
 using namespace net;
 
-server::database::database(sql::Driver *driver, sql::Connection *con, const bool status)
+server::database::database(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password)
 {
     this->driver = driver;
     this->con = con;
-    this->status = status;
+    this->__credentials = new credentials(hostname, username, password);
 }
 
 sql::Connection *server::database::getCon(void) const noexcept
@@ -23,16 +23,11 @@ sql::Driver *server::database::getDriver(void) const noexcept
     return driver;
 }
 
-bool server::database::getStatus(void) const noexcept
+server::database::credentials::credentials(const char *hostname, const char *username, const char *password)
 {
-    return status;
-}
-
-server::database::credentials::credentials(const char hostname[], const char username[], const char password[])
-{
-    strcpy(this->hostname, hostname);
-    strcpy(this->username, username);
-    strcpy(this->password, password);
+    this->hostname = strdup(hostname);
+    this->username = strdup(username);
+    this->password = strdup(password);
 }
 
 char *server::database::credentials::getHostname(void) const noexcept
@@ -50,29 +45,52 @@ char *server::database::credentials::getPassword(void) const noexcept
     return const_cast<char *>(password);
 }
 
-bool server::database::credentials::getCredentials(void)
+int server::database::credentials::getCredentials(char *hostname, char *username, char *password)
 {
-    char hostname[60], username[32], password[32];
-
     std::cout << "hostname: ";
-    std::cin.get(hostname, 60);
+    std::cin.get(hostname, LENGHT);
+
+    size_t len = strlen(hostname);
+
+    if (len > HOSTNAME_LENGHT || len == 0)
+        return EXIT_FAILURE;
 
     std::cin.get();
     std::cout << "username: ";
-    std::cin.get(username, 32);
+    std::cin.get(username, LENGHT);
+
+    len = strlen(username);
+
+    if (len > USERNAME_LENGHT || len == 0)
+        return EXIT_FAILURE;
 
     std::cin.get();
     std::cout << "password: ";
-    std::cin.get(password, 32);
+    std::cin.get(password, LENGHT);
 
-    credentials(hostname, username, password);
+    len = strlen(password);
+
+    if (len > PASSWORD_LENGHT || len == 0)
+        return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
 
 bool server::database::fetchTables(void)
 {
-    
-
     return EXIT_SUCCESS;
+}
+
+server::database::~database()
+{
+    delete __credentials;
+    con->close();
+    delete con;
+}
+
+server::database::credentials::~credentials()
+{
+    free(hostname);
+    free(username);
+    free(password);
 }

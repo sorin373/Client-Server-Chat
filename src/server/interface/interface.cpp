@@ -68,6 +68,11 @@ static void findCredentials(char *__req)
 
 }
 
+bool user::userCredentials::validateCredentials(char *username, char *password)
+{
+    return true;
+}
+
 // add user parameter + create user object for every thread
 // than store the data into SQL table and clear the row (user credential) when logs out or 30 days passed.
 bool user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test 

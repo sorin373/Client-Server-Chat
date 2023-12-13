@@ -54,7 +54,6 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 
     if (allocatedBuffer[0] == 'P')
     {
-        std::cout << "Handling POST:\n";
         interface::user::routeHandler(copyBuffer, acceptedSocketFileDescriptor);
         return EXIT_SUCCESS;
     }
@@ -161,7 +160,16 @@ void server::handleClientConnections(int serverSocketFileDescriptor)
 void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
 {
     std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
-    workerThread.join();
+    workerThread.detach();
+
+    char text[101];
+
+    while (true)
+    {
+        std::cin >> text;
+        if (strcasecmp(text, "exit") == 0 && strlen(text) <= 10)
+            return;
+    }
 }
 
 int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
@@ -224,29 +232,87 @@ bool server::__database_init__(void)
         return EXIT_SUCCESS;
     }
 
-    sql::Driver *driver = nullptr;
-    sql::Connection *con = nullptr;
+    char *hostname = (char *)malloc(LENGHT * sizeof(char) + 1);
+
+    if (hostname == NULL)
+    {
+        std::cerr << "Failed to allocate hostname memory!\n";
+
+        return EXIT_FAILURE;
+    }
+
+    char *username = (char *)malloc(LENGHT * sizeof(char) + 1);
+
+    if (username == NULL)
+    {
+        std::cerr << "Failed to allocate username memory!\n";
+        free(hostname);
+
+        return EXIT_FAILURE;
+    }
+
+    char *password = (char *)malloc(LENGHT * sizeof(char) + 1);
+
+    if (password == NULL)
+    {
+        std::cerr << "Failed to allocate password memory!\n";
+        free(hostname);
+        free(username);
+
+        return EXIT_FAILURE;
+    }
+
+    if (server::database::credentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
+    {
+        std::cerr << "Failed to get MySQL schema credentails!\n";
+
+        free(hostname);
+        free(username);
+        free(password);
+
+        return EXIT_FAILURE;
+    }
 
     try
     {
+        sql::Driver *driver = nullptr;
+        sql::Connection *con = nullptr;
+
         driver = sql::mysql::get_mysql_driver_instance();
-        con = driver->connect("host", "username", "password");
+        con = driver->connect("tcp://" + std::string(hostname), std::string(username), std::string(password));
 
         if (con == nullptr)
         {
             std::cerr << "Failed to establish a connection to the database.\n";
+
+            free(hostname);
+            free(username);
+            free(password);
+
             return EXIT_FAILURE;
         }
 
-        con->setSchema("database_name");
+        con->setSchema("Pinnacle");
 
-        db = new server::database(driver, con, true);
+        db = new server::database(driver, con, hostname, username, password);
     }
     catch (sql::SQLException &e)
     {
-        std::cerr << "SQL Exception: " << e.what() << std::endl;
+        std::cerr << "\n"
+                  << "Error code: "    << e.getErrorCode() << "\n"
+                  << "Error message: " << e.what()         << "\n"
+                  << "SQLState: "      << e.getSQLState()  << "\n";
+
+        free(hostname);
+        free(username);
+        free(password);
+
         return EXIT_FAILURE;
     }
+
+    free(hostname);
+    free(username);
+    free(password);
 
     return EXIT_SUCCESS;
 }
@@ -274,6 +340,15 @@ bool server::__INIT__(char *portArg)
 
     server *__server = new server(serverSocketFD);
 
+    if(__server->__database_init__() == EXIT_FAILURE)
+    {
+        shutdown(serverSocketFD, SHUT_RDWR);
+        delete __server;
+        delete serverSocket;
+
+        return EXIT_FAILURE;
+    }
+
     std::cout << serverSocket->getMachineIPv4Address() << ":" << port << "\n";
 
     struct sockaddr_in *serverAddress = serverSocket->IPv4Address(serverSocket->getMachineIPv4Address(), port);
@@ -285,6 +360,12 @@ bool server::__INIT__(char *portArg)
     {
         std::cerr << "Error binding the server!\n";
         perror("bind");
+
+        shutdown(serverSocketFD, SHUT_RDWR);
+        delete __server;
+        delete serverSocket;
+        free(serverAddress);
+
         return EXIT_FAILURE;
     }
 

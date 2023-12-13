@@ -15,10 +15,13 @@ namespace net
             struct userCredentials
             {
             private:
-                int id;
                 char *username, *password;
+                int id;
             public:
                 userCredentials(char *username, char *password, const int id);
+
+                bool validateCredentials(char *username, char *password);
+
                 ~userCredentials() = default;
             };
 

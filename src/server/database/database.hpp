@@ -6,6 +6,11 @@
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 
+#define LENGHT          256
+#define USERNAME_LENGHT 32
+#define PASSWORD_LENGHT 32
+#define HOSTNAME_LENGHT 61
+
 namespace net
 {
     class server::database
@@ -14,32 +19,31 @@ namespace net
         class credentials
         {
         private:
-            char hostname[60], username[32], password[32];
+            char *hostname, *username, *password;
         public:
-            credentials(const char hostname[], const char username[], const char password[]);
+            credentials(const char *hostname, const char *username, const char *password);
 
             char *getHostname(void) const noexcept;
             char *getUsername(void) const noexcept;
             char *getPassword(void) const noexcept;
-            static bool getCredentials(void);
+            static int getCredentials(char *hostname, char *username, char *password);
 
-            ~credentials() = default;
+            ~credentials();
         };
 
     private:
-        sql::Driver     *driver;
-        sql::Connection *con;
-        bool status;
+        sql::Driver       *driver;
+        sql::Connection   *con;
+        class credentials *__credentials;
        
     public:
-        explicit database(sql::Driver *driver, sql::Connection *con, bool status = false);
+        explicit database(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password );
 
         sql::Driver *getDriver(void)  const noexcept;
         sql::Connection *getCon(void) const noexcept;
-        bool getStatus(void) const noexcept;
         bool fetchTables(void);
 
-        ~database() = default;
+        ~database();
     };
 };
 
