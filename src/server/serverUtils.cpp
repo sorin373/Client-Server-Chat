@@ -9,8 +9,13 @@
 #include <netinet/in.h>
 #include "interface/interface.hpp"
 #include "database/database.hpp"
+#include <cppconn/resultset.h>
+#include <cppconn/prepared_statement.h>
+#include "declarations.hpp"
 
 using namespace net;
+
+volatile bool server::SERVER_RUNNING = false;
 
 server::server(const int clientSocketFileDescriptor)
 {
@@ -132,6 +137,7 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
     }
 
     close(socket->getAcceptedSocketFileDescriptor());
+    delete socket;
 }
 
 template <typename T>
@@ -143,7 +149,7 @@ void server::printReceivedDataThread(class acceptedSocket<T> *psocket)
 
 void server::handleClientConnections(int serverSocketFileDescriptor)
 {
-    while (true)
+    while (server::SERVER_RUNNING)
     {
         server::acceptedSocket<char> *newAcceptedSocket = new server::acceptedSocket<char>();
 
@@ -157,19 +163,28 @@ void server::handleClientConnections(int serverSocketFileDescriptor)
     close(serverSocketFileDescriptor);
 }
 
+void server::consoleListener(void)
+{
+    char input[101] = "";
+
+    while (SERVER_RUNNING)
+    {
+        std::cin >> input;
+
+        if (strcasecmp(input, "exit") == 0)
+            SERVER_RUNNING = false;
+    }
+}
+
 void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
 {
+    SERVER_RUNNING = true;
+
     std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
     workerThread.detach();
 
-    char text[101];
-
-    while (true)
-    {
-        std::cin >> text;
-        if (strcasecmp(text, "exit") == 0 && strlen(text) <= 10)
-            return;
-    }
+    std::thread consoleListenerThread(&consoleListener);
+    consoleListenerThread.join();
 }
 
 int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
@@ -218,13 +233,87 @@ int server::acceptedSocket<S>::getAcceptedSocketFileDescriptor(void) const noexc
     return acceptedSocketFileDescriptor;
 }
 
-template <typename S>
-std::vector<class server::acceptedSocket<S>> server::getConnectedSockets(void) const noexcept
+template <typename T>
+std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
 }
 
-bool server::__database_init__(void)
+bool server::getServerStatus(void) const noexcept
+{
+    return SERVER_RUNNING;
+}
+
+int server::getNoOfConnectedSockets(void) const noexcept
+{
+    return connectedSockets.size();
+}
+
+class server::database *server::getSQLdatabase(void) const noexcept
+{
+    return db;
+}
+
+int server::getTableRowsCount(const char tableName[])
+{
+    if (__server->getSQLdatabase() == nullptr)
+        return 0;
+
+    if (__server->getSQLdatabase()->getSqlTableVector().empty())
+        return 0;
+
+    std::vector<class server::database::SQLtable> _SQLtable = __server->getSQLdatabase()->getSqlTableVector();
+
+    if (_SQLtable.empty())
+        return 0;
+
+    for (unsigned int i = 0, n = _SQLtable.size(); i < n; i++)
+        if (strcmp(tableName, _SQLtable[i].getTableName()) == 0)
+            return _SQLtable[i].getRowsCount();
+    
+    return -1;
+}
+
+void server::fetchTables(void)
+{
+    sql::Statement *stmt = nullptr;
+    sql::ResultSet *res = nullptr;
+
+    stmt = db->getCon()->createStatement();
+    res = stmt->executeQuery("SELECT * FROM user");
+
+    db->addSqlTable(tableName, res->rowsCount());
+
+    __user->resizeUserCredentialsVector();
+
+    while (res->next())
+    {
+        int id = res->getInt("id");
+
+        sql::SQLString sqlstr;
+
+        sqlstr = res->getString("username");
+        char *username = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(username, sqlstr.asStdString().c_str());
+
+        sqlstr = res->getString("password");
+        char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(password, sqlstr.asStdString().c_str());
+
+        __user->addToUserCredentials(username, password, id);
+
+        free(username);
+        free(password);
+    }
+
+    res->close();
+    stmt->close();
+
+    delete res;
+    delete stmt;
+}
+
+int server::__database_init__(void)
 {
     if (db != nullptr)
     {
@@ -262,6 +351,7 @@ bool server::__database_init__(void)
         return EXIT_FAILURE;
     }
 
+    
     if (server::database::credentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
     {
         std::cerr << "Failed to get MySQL schema credentails!\n";
@@ -275,7 +365,7 @@ bool server::__database_init__(void)
 
     try
     {
-        sql::Driver *driver = nullptr;
+        sql::Driver     *driver = nullptr;
         sql::Connection *con = nullptr;
 
         driver = sql::mysql::get_mysql_driver_instance();
@@ -295,13 +385,14 @@ bool server::__database_init__(void)
         con->setSchema("Pinnacle");
 
         db = new server::database(driver, con, hostname, username, password);
+        __user = new interface::user;
     }
     catch (sql::SQLException &e)
     {
         std::cerr << "\n"
-                  << "Error code: "    << e.getErrorCode() << "\n"
-                  << "Error message: " << e.what()         << "\n"
-                  << "SQLState: "      << e.getSQLState()  << "\n";
+                  << "Error code: " << e.getErrorCode() << "\n"
+                  << "Error message: " << e.what() << "\n"
+                  << "SQLState: " << e.getSQLState() << "\n";
 
         free(hostname);
         free(username);
@@ -314,10 +405,18 @@ bool server::__database_init__(void)
     free(username);
     free(password);
 
+    fetchTables();
+
     return EXIT_SUCCESS;
 }
 
-bool server::__INIT__(char *portArg)
+server::~server()
+{
+    delete db;
+    delete __user;
+}
+
+int server::__INIT__(char *portArg)
 {
     int port = 0;
 
@@ -338,9 +437,9 @@ bool server::__INIT__(char *portArg)
         return EXIT_FAILURE;
     }
 
-    server *__server = new server(serverSocketFD);
+    __server = new server(serverSocketFD);
 
-    if(__server->__database_init__() == EXIT_FAILURE)
+    if (__server->__database_init__() == EXIT_FAILURE)
     {
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
@@ -349,12 +448,15 @@ bool server::__INIT__(char *portArg)
         return EXIT_FAILURE;
     }
 
-    std::cout << serverSocket->getMachineIPv4Address() << ":" << port << "\n";
+    userCredentialsCount = __server->getTableRowsCount(tableName);
 
-    struct sockaddr_in *serverAddress = serverSocket->IPv4Address(serverSocket->getMachineIPv4Address(), port);
+    char *machineIPv4Address = serverSocket->getMachineIPv4Address();
 
-    int res = __server->bindServer(serverSocketFD, serverAddress);
-    if (res == 0)
+    std::cout << machineIPv4Address  << ":" << port << "\n";
+
+    struct sockaddr_in *serverAddress = serverSocket->IPv4Address(machineIPv4Address, port);
+
+    if (__server->bindServer(serverSocketFD, serverAddress) == 0)
         std::cout << "Server socket bound successfully!\n";
     else
     {
@@ -365,12 +467,12 @@ bool server::__INIT__(char *portArg)
         delete __server;
         delete serverSocket;
         free(serverAddress);
+        delete[] machineIPv4Address;
 
         return EXIT_FAILURE;
     }
 
-    int listenResult = listen(serverSocketFD, 10);
-    if (listenResult == -1)
+    if (listen(serverSocketFD, 10) == -1)
     {
         shutdown(serverSocketFD, SHUT_RDWR);
         free(serverAddress);
@@ -386,6 +488,7 @@ bool server::__INIT__(char *portArg)
     free(serverAddress);
     delete serverSocket;
     delete __server;
+    delete[] machineIPv4Address;
 
     return EXIT_SUCCESS;
 }

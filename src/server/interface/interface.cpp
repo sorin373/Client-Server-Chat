@@ -1,40 +1,37 @@
 #include "interface.hpp"
 
+#include "../serverUtils.hpp"
 #include <cstring>
 #include <iostream>
+#include "../declarations.hpp"
 
+using namespace net;
 using namespace net::interface;
 
-user::user()
-{
-    this->uc = nullptr;
-}
-
-user::userCredentials::userCredentials(char *username, char *password, const int id)
-{
+void user::userCredentials::constructObject(char *username, char *password, const int id)
+{    
     this->username = username;
     this->password = password;
     this->id = id;
 }
 
-void user::fetchCredentials(char *username, char *password, const int id)
+void user::resizeUserCredentialsVector(void) noexcept
 {
-    cleanup();
-    uc = new userCredentials(username, password, id);
+    uc.resize(userCredentialsCount);
 }
 
-user::userCredentials *user::getUserCredentials(void) noexcept
+std::vector<class user::userCredentials> user::getUserCredentials(void) const noexcept
 {
     return uc;
 }
 
-void user::cleanup(void)
+void user::addToUserCredentials(char *username, char *password, const int id) noexcept
 {
-    if (uc)
-    {
-        delete uc;
-        uc = nullptr;
-    }
+    user::userCredentials temp_uc;
+
+    temp_uc.constructObject(username, password, id);
+
+    uc.push_back(temp_uc);
 }
 
 void writeHTMLhead(void)
@@ -70,6 +67,7 @@ static void findCredentials(char *__req)
 
 bool user::userCredentials::validateCredentials(char *username, char *password)
 {
+
     return true;
 }
 
@@ -78,8 +76,6 @@ bool user::userCredentials::validateCredentials(char *username, char *password)
 bool user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test 
 {
     char *username, *password, *ptr = NULL;
-
-    user *_user = new user;
 
     ptr = strstr(request, "username=");
     ptr = strtok(ptr, "&");
@@ -107,8 +103,6 @@ bool user::routeHandler(char *request, int acceptedSocketFileDescriptor) // requ
 
     if (strlen(password) > 64 || password == nullptr)
         return EXIT_FAILURE;
-
-    _user->fetchCredentials(username, password, 0);
 
     //std::cout << user::getUserCredentials()->username << " " << user::getUserCredentials()->password << std::endl;
 

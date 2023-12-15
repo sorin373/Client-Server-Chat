@@ -5,12 +5,14 @@
 #include <vector>
 #include <string>
 #include "../socket/socketUtils.hpp"
+#include "interface/interface.hpp"
 
 namespace net
 {    
     class server
     {
     public:
+        static volatile bool SERVER_RUNNING;
         class database;
 
     public:
@@ -36,27 +38,38 @@ namespace net
     private:
         int clientSocketFileDescriptor;
         std::vector<struct acceptedSocket<char>> connectedSockets;
+
         class database *db;
+        class interface::user *__user;
 
         void handleClientConnections(int serverSocketFileDescriptor);
         template <typename T> void printReceivedDataThread(class acceptedSocket<T> *psocket);
+        static void consoleListener(void);
 
     public:
+
         server(const int clientSocketFileDescriptor);
 
-        static bool __INIT__(char *portArg = nullptr);
+        static int __INIT__(char *portArg = nullptr);
         void __MASTER_THREAD__(int serverSocketFileDescriptor);
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
-        int getClientSocketFileDescriptor(void) const noexcept;
-        bool __database_init__(void);
+        int __database_init__(void);
+        void fetchTables(void);
 
-        template <typename T> void acceptConnection(const int serverSocketFileDescriptor, struct acceptedSocket<T> *__acceptedSocket);
+        template <typename T> void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket);
         template <typename T> void sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor);
         template <typename T> void printReceivedData(class acceptedSocket<T> *socket);
         template <typename T> int handleGETrequests(T *buffer, int acceptedSocketFileDescriptor);
-        template <typename T> std::vector<class acceptedSocket<T>> getConnectedSockets(void) const noexcept;
 
-        ~server() = default;
+        template <typename T> std::vector<class acceptedSocket<T>> getConnectedSockets(void) const noexcept;
+        int getClientSocketFileDescriptor(void) const noexcept;
+        int getNoOfConnectedSockets(void) const noexcept;
+        bool getServerStatus(void) const noexcept;
+        class database *getSQLdatabase(void) const noexcept;
+        
+        static int getTableRowsCount(const char tableName[]);
+
+        ~server();
     };
 };
 

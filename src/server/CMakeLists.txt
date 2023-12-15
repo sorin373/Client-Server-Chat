@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME}
     "database/database.cpp" 
     "interface/interface.cpp"
     "../socket/socketUtils.cpp"
+    "declarations.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} mysqlcppconn)

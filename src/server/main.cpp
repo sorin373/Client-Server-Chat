@@ -1,6 +1,4 @@
 #include "serverUtils.hpp"
-#include <mysql_connection.h>
-#include <mysql_driver.h>
 
 #include <iostream>
 

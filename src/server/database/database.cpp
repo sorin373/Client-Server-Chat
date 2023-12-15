@@ -3,13 +3,18 @@
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 #include <cstring>
+#include <vector>
 
 using namespace net;
 
-server::database::database(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password)
-{
+/*Database*/
+
+server::database::database(sql::Driver *driver, sql::Connection *con, 
+                           const char *hostname, const char *username, const char *password)
+{   
     this->driver = driver;
     this->con = con;
+
     this->__credentials = new credentials(hostname, username, password);
 }
 
@@ -22,6 +27,26 @@ sql::Driver *server::database::getDriver(void) const noexcept
 {
     return driver;
 }
+
+std::vector<class server::database::SQLtable> server::database::getSqlTableVector(void) const noexcept
+{
+    return sqlTable;
+}
+
+void server::database::addSqlTable(char *tableName, size_t rowsCount)
+{
+    SQLtable st(tableName, rowsCount);
+    sqlTable.push_back(st);
+}
+
+server::database::~database()
+{
+    delete __credentials;
+    con->close();
+    delete con;
+}
+
+/*Credentials*/
 
 server::database::credentials::credentials(const char *hostname, const char *username, const char *password)
 {
@@ -76,21 +101,27 @@ int server::database::credentials::getCredentials(char *hostname, char *username
     return EXIT_SUCCESS;
 }
 
-bool server::database::fetchTables(void)
-{
-    return EXIT_SUCCESS;
-}
-
-server::database::~database()
-{
-    delete __credentials;
-    con->close();
-    delete con;
-}
-
 server::database::credentials::~credentials()
 {
     free(hostname);
     free(username);
     free(password);
+}
+
+/*SQLtable*/
+
+server::database::SQLtable::SQLtable(char *tableName, const size_t rowsCount)
+{
+    this->tableName = tableName;
+    this->rowsCount = rowsCount;
+}
+
+char *server::database::SQLtable::getTableName(void) const noexcept
+{
+    return tableName;
+}
+
+size_t server::database::SQLtable::getRowsCount(void) const noexcept
+{
+    return rowsCount;
 }

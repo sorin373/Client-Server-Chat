@@ -70,6 +70,10 @@ int SocketUtils::connectToServer(int socketFileDescriptor, struct sockaddr_in *a
 char *SocketUtils::getMachineIPv4Address(void)
 {
     char *ifconfigOutput = exec("ifconfig");
+
+    if (ifconfigOutput == nullptr)
+        return nullptr;
+
     char *pos = strstr(ifconfigOutput, "inet ");
 
     if (pos != nullptr)
@@ -83,8 +87,14 @@ char *SocketUtils::getMachineIPv4Address(void)
 
             if (end != nullptr)
             {
-                *end = '\0';
-                return pos;
+                size_t len = end - pos;
+                char *address = new char[len + 1];
+                strncpy(address, pos, len);
+                address[len] = '\0';
+                
+                delete[] ifconfigOutput;
+
+                return address;
             }
         }
     }
