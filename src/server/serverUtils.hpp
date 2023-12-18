@@ -66,6 +66,7 @@ namespace net
         int getNoOfConnectedSockets(void) const noexcept;
         bool getServerStatus(void) const noexcept;
         class database *getSQLdatabase(void) const noexcept;
+        class interface::user *getUser(void) const noexcept;
         
         static int getTableRowsCount(const char tableName[]);
 

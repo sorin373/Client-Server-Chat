@@ -16,19 +16,19 @@ namespace net
     class server::database
     {
     public:
-        class credentials
+        class dbCredentials
         {
         private:
             char *hostname, *username, *password;
         public:
-            credentials(const char *hostname, const char *username, const char *password);
+            dbCredentials(const char *hostname, const char *username, const char *password);
 
             char *getHostname(void) const noexcept;
             char *getUsername(void) const noexcept;
             char *getPassword(void) const noexcept;
             static int getCredentials(char *hostname, char *username, char *password);
 
-            ~credentials();
+            ~dbCredentials();
         };
 
         class SQLtable
@@ -47,9 +47,9 @@ namespace net
         };
 
     private:
-        sql::Driver       *driver;
-        sql::Connection   *con;
-        class credentials *__credentials;
+        sql::Driver                 *driver;
+        sql::Connection             *con;
+        class dbCredentials           *__credentials;
         std::vector<class SQLtable> sqlTable;
        
     public:

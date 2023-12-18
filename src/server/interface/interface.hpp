@@ -22,24 +22,26 @@ namespace net
                 char *username, *password;
                 int id;
             public:
-                userCredentials() = default;
+                userCredentials(const char *__username = nullptr, const char *__password = nullptr, const int id = 0);
 
-                bool validateCredentials(char *username, char *password);
-                void constructObject(char *username, char *password, const int id);
+                char *getUsername(void) const noexcept;
+                char *getPassword(void) const noexcept;
+                int getId(void) const noexcept;
 
-                ~userCredentials() = default;
+                ~userCredentials();
             };
 
         private:
-            std::vector<user::userCredentials> uc;
+            std::vector<user::userCredentials> uc;  // log in user credentials
             
         public:
             user() = default;
 
-            std::vector<class user::userCredentials> getUserCredentials(void) const noexcept;
-            static bool routeHandler(char *request, int acceptedSocketFileDescriptor);
-            void addToUserCredentials(char *username, char *password, const int id) noexcept;
+            std::vector<class userCredentials> getUserCredentials(void) const noexcept;
+            bool routeHandler(char *request, int acceptedSocketFileDescriptor);
+            void addToUserCredentials(const userCredentials &__uc) noexcept;
             void resizeUserCredentialsVector(void) noexcept;
+            bool validateCredentials(char *username, char *password) const;
 
             ~user() = default;
         };

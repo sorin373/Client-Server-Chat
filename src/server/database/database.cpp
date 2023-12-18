@@ -15,7 +15,7 @@ server::database::database(sql::Driver *driver, sql::Connection *con,
     this->driver = driver;
     this->con = con;
 
-    this->__credentials = new credentials(hostname, username, password);
+    this->__credentials = new dbCredentials(hostname, username, password);
 }
 
 sql::Connection *server::database::getCon(void) const noexcept
@@ -48,29 +48,29 @@ server::database::~database()
 
 /*Credentials*/
 
-server::database::credentials::credentials(const char *hostname, const char *username, const char *password)
+server::database::dbCredentials::dbCredentials(const char *hostname, const char *username, const char *password)
 {
     this->hostname = strdup(hostname);
     this->username = strdup(username);
     this->password = strdup(password);
 }
 
-char *server::database::credentials::getHostname(void) const noexcept
+char *server::database::dbCredentials::getHostname(void) const noexcept
 {
     return const_cast<char *>(hostname);
 }
 
-char *server::database::credentials::getUsername(void) const noexcept
+char *server::database::dbCredentials::getUsername(void) const noexcept
 {
     return const_cast<char *>(username);
 }
 
-char *server::database::credentials::getPassword(void) const noexcept
+char *server::database::dbCredentials::getPassword(void) const noexcept
 {
     return const_cast<char *>(password);
 }
 
-int server::database::credentials::getCredentials(char *hostname, char *username, char *password)
+int server::database::dbCredentials::getCredentials(char *hostname, char *username, char *password)
 {
     std::cout << "hostname: ";
     std::cin.get(hostname, LENGHT);
@@ -101,7 +101,7 @@ int server::database::credentials::getCredentials(char *hostname, char *username
     return EXIT_SUCCESS;
 }
 
-server::database::credentials::~credentials()
+server::database::dbCredentials::~dbCredentials()
 {
     free(hostname);
     free(username);

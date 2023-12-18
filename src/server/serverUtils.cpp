@@ -14,6 +14,7 @@
 #include "declarations.hpp"
 
 using namespace net;
+using namespace net::interface;
 
 volatile bool server::SERVER_RUNNING = false;
 
@@ -21,6 +22,7 @@ server::server(const int clientSocketFileDescriptor)
 {
     this->clientSocketFileDescriptor = clientSocketFileDescriptor;
     this->db = nullptr;
+    this->__user = nullptr;
 }
 
 template <typename T>
@@ -59,7 +61,7 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 
     if (allocatedBuffer[0] == 'P')
     {
-        interface::user::routeHandler(copyBuffer, acceptedSocketFileDescriptor);
+        __user->routeHandler(copyBuffer, acceptedSocketFileDescriptor);
         return EXIT_SUCCESS;
     }
 
@@ -254,12 +256,14 @@ class server::database *server::getSQLdatabase(void) const noexcept
     return db;
 }
 
+class interface::user *server::getUser(void) const noexcept
+{
+    return __user;
+}
+
 int server::getTableRowsCount(const char tableName[])
 {
-    if (__server->getSQLdatabase() == nullptr)
-        return 0;
-
-    if (__server->getSQLdatabase()->getSqlTableVector().empty())
+    if (__server->getSQLdatabase() == nullptr || __server->getSQLdatabase()->getSqlTableVector().empty())
         return 0;
 
     std::vector<class server::database::SQLtable> _SQLtable = __server->getSQLdatabase()->getSqlTableVector();
@@ -300,7 +304,11 @@ void server::fetchTables(void)
         char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(password, sqlstr.asStdString().c_str());
 
-        __user->addToUserCredentials(username, password, id);
+        user::userCredentials *t_uc = new user::userCredentials(username, password, id);
+
+        __user->addToUserCredentials(*t_uc);
+
+        delete t_uc;
 
         free(username);
         free(password);
@@ -350,9 +358,8 @@ int server::__database_init__(void)
 
         return EXIT_FAILURE;
     }
-
     
-    if (server::database::credentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
+    if (server::database::dbCredentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
     {
         std::cerr << "Failed to get MySQL schema credentails!\n";
 
@@ -363,6 +370,7 @@ int server::__database_init__(void)
         return EXIT_FAILURE;
     }
 
+    
     try
     {
         sql::Driver     *driver = nullptr;
@@ -438,6 +446,8 @@ int server::__INIT__(char *portArg)
     }
 
     __server = new server(serverSocketFD);
+    
+    userCredentialsCount = __server->getTableRowsCount(tableName);
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {
@@ -447,8 +457,6 @@ int server::__INIT__(char *portArg)
 
         return EXIT_FAILURE;
     }
-
-    userCredentialsCount = __server->getTableRowsCount(tableName);
 
     char *machineIPv4Address = serverSocket->getMachineIPv4Address();
 
