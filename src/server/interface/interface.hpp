@@ -1,6 +1,9 @@
 #ifndef __INTERFACE_HPP__
 #define __INTERFACE_HPP__
 
+#define STORAGE_FILE_NAMES "interface/storage/fileNames.txt"
+#define INDEX_HTML         "interface/index.html"
+
 #include <vector>
 
 extern volatile int userCredentialsCount;
@@ -10,8 +13,7 @@ namespace net
 {
     namespace interface 
     {
-        void writeHTMLhead(void);
-        void readFiles(void);
+        void buildIndexHTML(void);
 
         class user
         {
@@ -42,6 +44,7 @@ namespace net
             void addToUserCredentials(const userCredentials &__uc) noexcept;
             void resizeUserCredentialsVector(void) noexcept;
             bool validateCredentials(char *username, char *password) const;
+            int displayUserFiles(void);
 
             ~user() = default;
         };

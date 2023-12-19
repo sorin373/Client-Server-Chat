@@ -20,4 +20,7 @@ add_subdirectory(client)
 
 set(DIR "${CMAKE_CURRENT_SOURCE_DIR}/interface")
 set(DESTINATION_DIR "${CMAKE_BINARY_DIR}/server")
+
+file(REMOVE_RECURSE ${DESTINATION_DIR})
+
 file(COPY ${DIR} DESTINATION ${DESTINATION_DIR})
