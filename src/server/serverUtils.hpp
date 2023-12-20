@@ -19,9 +19,9 @@ namespace net
         template <typename S> class acceptedSocket
         {
         private:
-            int                 acceptedSocketFileDescriptor, error;
-            bool                acceptStatus;
-            struct sockaddr_in  ipAddress;
+            int                acceptedSocketFileDescriptor, error;
+            bool               acceptStatus;
+            struct sockaddr_in ipAddress;
 
         public:
             acceptedSocket();
@@ -39,7 +39,7 @@ namespace net
         int clientSocketFileDescriptor;
         std::vector<struct acceptedSocket<char>> connectedSockets;
 
-        class database *db;
+        class database        *db;
         class interface::user *__user;
 
         void handleClientConnections(int serverSocketFileDescriptor);
@@ -54,7 +54,8 @@ namespace net
         void __MASTER_THREAD__(int serverSocketFileDescriptor);
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
         int __database_init__(void);
-        void fetchTables(void);
+        void SQLfetchUserTable(void);
+        void SQLfetchFileTable(void);
 
         template <typename T> void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket);
         template <typename T> void sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor);

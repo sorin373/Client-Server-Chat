@@ -34,17 +34,18 @@ namespace net
             };
 
         private:
+            long long unsigned int SESSION_ID;
             std::vector<user::userCredentials> uc;  // log in user credentials
             
         public:
             user() = default;
 
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;
-            bool routeHandler(char *request, int acceptedSocketFileDescriptor);
+            long long unsigned int getSessionID(void) const noexcept;
+            int routeHandler(char *request, int acceptedSocketFileDescriptor);
             void addToUserCredentials(const userCredentials &__uc) noexcept;
             void resizeUserCredentialsVector(void) noexcept;
             bool validateCredentials(char *username, char *password) const;
-            int displayUserFiles(void);
 
             ~user() = default;
         };

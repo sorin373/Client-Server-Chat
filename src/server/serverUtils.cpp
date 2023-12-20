@@ -261,7 +261,7 @@ class interface::user *server::getUser(void) const noexcept
     return __user;
 }
 
-int server::getTableRowsCount(const char tableName[])
+int server::getTableRowsCount(const char tableName[]) // returns the no. of rows which I use to resize the vector correctly
 {
     if (__server->getSQLdatabase() == nullptr || __server->getSQLdatabase()->getSqlTableVector().empty())
         return 0;
@@ -278,7 +278,7 @@ int server::getTableRowsCount(const char tableName[])
     return -1;
 }
 
-void server::fetchTables(void)
+void server::SQLfetchUserTable(void)
 {
     sql::Statement *stmt = nullptr;
     sql::ResultSet *res = nullptr;
@@ -304,15 +304,30 @@ void server::fetchTables(void)
         char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(password, sqlstr.asStdString().c_str());
 
-        user::userCredentials *t_uc = new user::userCredentials(username, password, id);
+        user::userCredentials *t_uc = new user::userCredentials(username, password, id); // create an obj which we are pushing into the vector
 
         __user->addToUserCredentials(*t_uc);
 
-        delete t_uc;
+        delete t_uc;    // free the created obj
 
         free(username);
         free(password);
     }
+
+    res->close();
+    stmt->close();
+
+    delete res;
+    delete stmt;
+}
+
+void server::SQLfetchFileTable(void)
+{
+    sql::Statement *stmt = nullptr;
+    sql::ResultSet *res = nullptr;
+    
+    stmt = db->getCon()->createStatement();
+    res = stmt->executeQuery(""); // select only for the correct SESSION ID
 
     res->close();
     stmt->close();
@@ -370,7 +385,6 @@ int server::__database_init__(void)
         return EXIT_FAILURE;
     }
 
-    
     try
     {
         sql::Driver     *driver = nullptr;
@@ -413,7 +427,7 @@ int server::__database_init__(void)
     free(username);
     free(password);
 
-    fetchTables();
+    SQLfetchUserTable(); // get all users
 
     return EXIT_SUCCESS;
 }

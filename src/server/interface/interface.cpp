@@ -1,11 +1,11 @@
 #include "interface.hpp"
 
 #include "../serverUtils.hpp"
-#include <cstring>
-#include <string.h>
+#include "../declarations.hpp"
+
 #include <iostream>
 #include <fstream>
-#include "../declarations.hpp"
+#include <cstring>
 
 using namespace net;
 using namespace net::interface;
@@ -32,13 +32,7 @@ int user::userCredentials::getId(void) const noexcept
     return id;
 }
 
-user::userCredentials::~userCredentials()
-{
-    // std::cout << "-------destroying...\n";
-
-    // free(username);
-    // free(password);
-}
+user::userCredentials::~userCredentials() {}
 
 void user::resizeUserCredentialsVector(void) noexcept
 {
@@ -50,93 +44,119 @@ std::vector<class user::userCredentials> user::getUserCredentials(void) const no
     return uc;
 }
 
+long long unsigned int user::getSessionID(void) const noexcept
+{
+    return SESSION_ID;
+}
+
 void user::addToUserCredentials(const user::userCredentials &__uc) noexcept
 {
     uc.push_back(__uc);
 }
 
-void writeHTMLhead(void)
+void interface::buildIndexHTML(void)
 {
-    char HTMLhead[] = R"(<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <link href="static/stylesheet/index.css" rel="stylesheet" />
+    std::ifstream file(STORAGE_FILE_NAMES);
+    std::ofstream index_html(INDEX_HTML);
 
-    <!-- http://getbootstrap.com/docs/5.1/ -->
-    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet" />
-    <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
-    <link rel="icon" href="#" />
-    </head>)";
-}
+    char firstHTML[] = R"(<!DOCTYPE html>
+                          <html lang="en">
 
-static void remainingHTML(std::ofstream &file)
-{
-    char S1[] = "<button id=\"deleteBtn\"", S2[] = "onclick=\"deleteRequest()\"";
+                          <head>
+                              <meta charset="UTF-8" />
+                              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                              <title>Document</title>
+                              <link href="static/stylesheet/index.css" rel="stylesheet" />
 
-    strcat(S1, S2);
+                              <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+                                  integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet" />
+                              <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+                                  integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
+                              <link rel="icon" href="#" />
 
-    char S3[] = R"(>Click me</button>
-        </tbody>
-        </table>
-        </div>
-        </div>
-        </body>
-        </html>
-     )";
+                              <style>
+                                th {
+                                    text-align: center;
+                                }
 
-    strcat(S1, S3);
+                                a {
+                                    text-decoration: none;
+                                    font-size: 15pt;
+                                }
 
-    file << S1;
-}
+                                thead {
+                                    background-color: rgb(230, 230, 230);
+                                    border-radius: 0;
+                                    color: rgb(66, 66, 66);
+                                }
+                                
+                                table {
+                                    width: 100%;
+                                    max-width: 1400px;
+                                }
+                                
+                                thead {
+                                    border: none !important;
+                                }
 
-static void topHTML(std::ofstream &file)
-{
-    char _topHTML[] = R"(<!DOCTYPE html>
-                    <html lang="en">
+                                thead th {
+                                    font-size: 15pt;
+                                    text-transform: uppercase;
+                                    font-weight: 500;
+                                    color: rgb(66, 66, 66);
+                                    border: none !important;
+                                }
 
-                    <head>
-                        <meta charset="UTF-8" />
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                        <title>Document</title>
-                        <link href="static/stylesheet/index.css" rel="stylesheet" />
+                                #td-btn {
+                                    display: flex;
+                                    flex-direction: row;
+                                }
 
-                        <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-                            integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet" />
-                        <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-                            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
-                        <link rel="icon" href="#" />
-                    </head>
+                                button {
+                                    border-style: none;
+                                    background-color: transparent;
+                                }
 
-                    <body>
-                        <div class="container">
-                            <div>
-                                <table class="table table-striped table-hover" style="
-                                margin: auto;
-                                width: 100%;
-                                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-                                border-top-right-radius: 1rem;
-                                border-top-left-radius: 1rem;">
-                                    <thead>
-                                        <tr>
-                                            <th>File Name</th>
-                                            <th>File Size</th>
-                                            <th>Date changed</th>
-                                        </tr>
-                                    </thead>
+                                button:hover {
+                                    background-color: rgb(235, 236, 236);
+                                    border-radius: 5px;
+                                }
 
-                                    <tbody>)";
-    
-    file << _topHTML;
-}
+                                tbody tr {
+                                    color: rgb(66, 66, 66);
+                                }
 
-static void readFiles(std::ifstream &file, std::ofstream &index_html)
-{
+                                .left-column {
+                                    border-right: solid 2px; 
+                                }
+
+                                .right-column {
+                                    border-left: solid 2px; 
+                                    width: fit-content;
+                                }
+                            </style>
+                          </head>
+
+                          <body>
+                              <div class="container">
+                                  <div>
+                                      <table class="table" style="margin: auto; width: 100%; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);">
+                                          <thead>
+                                              <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">File Name</th>
+                                                <th scope="col">File Size</th>
+                                                <th scope="col">Downloads</th>
+                                                <th scope="col" style="width: 110px;"></th>
+                                             </tr>
+                                          </thead>
+
+                                          <tbody>)";
+
+    index_html << firstHTML;
+
     char fileName[256] = "";
     char pdfExtension[] = ".pdf";
-   
 
     while (file >> fileName)
     {
@@ -153,18 +173,23 @@ static void readFiles(std::ifstream &file, std::ofstream &index_html)
 
         index_html << link;
     }
-}
 
-void interface::buildIndexHTML(void)
-{
-    std::ifstream file(STORAGE_FILE_NAMES);
-    std::ofstream index_html(INDEX_HTML);
+    char S1[] = "<button id=\"deleteBtn\"", S2[] = "onclick=\"deleteRequest()\"";
 
-    topHTML(index_html);
+    strcat(S1, S2);
 
-    readFiles(file, index_html);
+    char S3[] = R"(>Click me</button>
+        </tbody>
+        </table>
+        </div>
+        </div>
+        </body>
+        </html>
+     )";
 
-    remainingHTML(index_html);
+    strcat(S1, S3);
+
+    index_html << S1;
 
     file.close();
     index_html.close();
@@ -174,12 +199,15 @@ bool user::validateCredentials(char *username, char *password) const
 {
     for (unsigned int i = 0; i < uc.size(); i++)
         if (strcmp(username, uc[i].getUsername()) == 0 && strcmp(password, uc[i].getPassword()) == 0)
+        {
+            this->SESSION_ID = uc[i].getId();
             return true;
+        }
 
     return false;
 }
 
-bool user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test
+int user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 18\r\nConnection: close\r\n\r\nInvalid credentials";
@@ -230,6 +258,7 @@ bool user::routeHandler(char *request, int acceptedSocketFileDescriptor) // requ
         return EXIT_FAILURE;
     }
 
+    __server->SQLfetchFileTable();
     buildIndexHTML(); 
 
     return EXIT_SUCCESS;

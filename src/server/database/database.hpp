@@ -49,7 +49,7 @@ namespace net
     private:
         sql::Driver                 *driver;
         sql::Connection             *con;
-        class dbCredentials           *__credentials;
+        class dbCredentials         *__credentials;
         std::vector<class SQLtable> sqlTable;
        
     public:
