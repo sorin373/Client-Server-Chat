@@ -13,8 +13,6 @@ namespace net
 {
     namespace interface 
     {
-        void buildIndexHTML(void);
-
         class user
         {
         public:
@@ -24,28 +22,57 @@ namespace net
                 char *username, *password;
                 int id;
             public:
-                userCredentials(const char *__username = nullptr, const char *__password = nullptr, const int id = 0);
+                userCredentials(const char *username = nullptr, const char *password = nullptr, const int id = 0);
 
                 char *getUsername(void) const noexcept;
                 char *getPassword(void) const noexcept;
                 int getId(void) const noexcept;
 
-                ~userCredentials();
+                ~userCredentials() = default;
+            };
+
+        public:
+            class userFiles
+            {
+            private:
+                char *fileName;
+                int id, fileSize, noDownloads;
+
+            public:
+                userFiles(const char *fileName, const int id, const int fileSize, const int noDownloads);
+
+                char *getFileName(void) const noexcept;
+                long long unsigned int getId(void) const noexcept;
+                int getFileSize(void) const noexcept;
+                int getNoDownloads(void) const noexcept;
+
+                ~userFiles() = default;
             };
 
         private:
-            long long unsigned int SESSION_ID;
+            int SESSION_ID;
             std::vector<user::userCredentials> uc;  // log in user credentials
+            std::vector<user::userFiles>       uf;  // user files by SESSION ID
             
         public:
-            user() = default;
+            user();
 
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;
-            long long unsigned int getSessionID(void) const noexcept;
+            std::vector<class userFiles> getUserFiles(void) const noexcept;
+            int getSessionID(void) const noexcept;
+
+            void clearUserCredentials(void) noexcept;
+            void clearUserFiles(void) noexcept;
+
             int routeHandler(char *request, int acceptedSocketFileDescriptor);
-            void addToUserCredentials(const userCredentials &__uc) noexcept;
+
+            void addToUserCredentials(const userCredentials __uc) noexcept;
+            void addToUserFiles(const userFiles __uf) noexcept;
+
             void resizeUserCredentialsVector(void) noexcept;
-            bool validateCredentials(char *username, char *password) const;
+            bool validateCredentials(char *username, char *password);
+
+            void buildIndexHTML(void);
 
             ~user() = default;
         };

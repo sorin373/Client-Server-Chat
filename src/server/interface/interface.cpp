@@ -32,11 +32,14 @@ int user::userCredentials::getId(void) const noexcept
     return id;
 }
 
-user::userCredentials::~userCredentials() {}
-
 void user::resizeUserCredentialsVector(void) noexcept
 {
     uc.resize(userCredentialsCount);
+}
+
+user::user()
+{
+    this->SESSION_ID = 0;
 }
 
 std::vector<class user::userCredentials> user::getUserCredentials(void) const noexcept
@@ -44,19 +47,71 @@ std::vector<class user::userCredentials> user::getUserCredentials(void) const no
     return uc;
 }
 
-long long unsigned int user::getSessionID(void) const noexcept
+std::vector<class user::userFiles> user::getUserFiles(void) const noexcept
+{
+    return uf;
+}
+
+int user::getSessionID(void) const noexcept
 {
     return SESSION_ID;
 }
 
-void user::addToUserCredentials(const user::userCredentials &__uc) noexcept
+void user::clearUserCredentials(void) noexcept
+{
+    uc.clear();
+}
+
+void user::clearUserFiles(void) noexcept
+{
+    uf.clear();
+}
+
+void user::addToUserCredentials(const user::userCredentials __uc) noexcept
 {
     uc.push_back(__uc);
 }
 
-void interface::buildIndexHTML(void)
+void user::addToUserFiles(const user::userFiles __uf) noexcept
 {
-    std::ifstream file(STORAGE_FILE_NAMES);
+    uf.push_back(__uf);
+}
+
+/* UserFiles table */
+
+user::userFiles::userFiles(const char *fileName, const int id, const int fileSize, const int noDownloads)
+{
+    this->fileName = strdup(fileName);
+    this->id = id;
+    this->fileSize = fileSize;
+    this->noDownloads = noDownloads;
+}
+
+char *user::userFiles::getFileName(void) const noexcept
+{
+    return fileName;
+}
+
+long long unsigned int user::userFiles::getId(void) const noexcept
+{
+    return id;
+}
+
+int user::userFiles::getFileSize(void) const noexcept
+{
+    return fileSize;
+}
+
+int user::userFiles::getNoDownloads(void) const noexcept
+{
+    return noDownloads;
+}
+
+// ---------------------------------------------
+
+void interface::user::buildIndexHTML(void)
+{
+   // std::ifstream file(STORAGE_FILE_NAMES);
     std::ofstream index_html(INDEX_HTML);
 
     char firstHTML[] = R"(<!DOCTYPE html>
@@ -82,6 +137,13 @@ void interface::buildIndexHTML(void)
                                 a {
                                     text-decoration: none;
                                     font-size: 15pt;
+                                    color: black;
+                                    padding: 1px 6px;
+                                }
+
+                                a:hover {
+                                    background-color: rgb(235, 236, 236);
+                                    border-radius: 5px;
                                 }
 
                                 thead {
@@ -158,8 +220,46 @@ void interface::buildIndexHTML(void)
     char fileName[256] = "";
     char pdfExtension[] = ".pdf";
 
-    while (file >> fileName)
+    for (unsigned int i = 0, n = uf.size(); i < n; i++)
     {
+        strcpy(fileName, uf[i].getFileName());
+
+        // char element[1001] = "<tr><th scope=\"row\" class=\"left-column\">";
+
+        std::string th1 = "<tr><th scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getId()) + "</th>";
+        std::string th2 = "<th scope=\"row\">" + std::string(uf[i].getFileName()) + "</th>";
+        std::string th3 = "<th scope=\"row\">" + std::to_string(uf[i].getFileSize()) + "</th>";
+        std::string th4 = "<th scope=\"row\">" + std::to_string(uf[i].getNoDownloads()) + "</th>";
+
+        std::string td = R"(<td class="td-btn right-column">
+                            <button type="button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                    <path
+                                        d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
+                                    <path
+                                        d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z" />
+                                </svg>
+                            </button>)";
+
+        td = td + "<a href=\"storage/" + uf[i].getFileName() + "\" download=\"" + uf[i].getFileName() + "\">";
+
+        td = td + R"(<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                                </svg>
+                            </a>)";
+
+        td = td + R"(<button type="button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">
+                                    <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/>
+                                </svg>
+                            </button>
+                            </td>
+                            </tr>)";
+
+        std::string HTMLcontent = th1 + th2 + th3 + th4 + td;
+
+        /*
         char path[512] = "storage/";
         char link[256] = "<tr> <th scope=\"row\"> <a href=\"";
 
@@ -170,15 +270,12 @@ void interface::buildIndexHTML(void)
         strcat(link, "\">");
         strcat(link, fileName);
         strcat(link, "</a> </th> </tr>");
+        */
 
-        index_html << link;
+        index_html << HTMLcontent;
     }
 
-    char S1[] = "<button id=\"deleteBtn\"", S2[] = "onclick=\"deleteRequest()\"";
-
-    strcat(S1, S2);
-
-    char S3[] = R"(>Click me</button>
+    char HTMLclose[] = R"(
         </tbody>
         </table>
         </div>
@@ -187,17 +284,15 @@ void interface::buildIndexHTML(void)
         </html>
      )";
 
-    strcat(S1, S3);
+    index_html << HTMLclose;
 
-    index_html << S1;
-
-    file.close();
+   // file.close();
     index_html.close();
 }
 
-bool user::validateCredentials(char *username, char *password) const
+bool user::validateCredentials(char *username, char *password)
 {
-    for (unsigned int i = 0; i < uc.size(); i++)
+    for (unsigned int i = 0, n = uc.size(); i < n; i++)
         if (strcmp(username, uc[i].getUsername()) == 0 && strcmp(password, uc[i].getPassword()) == 0)
         {
             this->SESSION_ID = uc[i].getId();
@@ -210,7 +305,7 @@ bool user::validateCredentials(char *username, char *password) const
 int user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
-    char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 18\r\nConnection: close\r\n\r\nInvalid credentials";
+    char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 19\r\nConnection: close\r\n\r\nInvalid credentials";
 
     char *temp_username, *temp_password, *ptr = NULL;
 
@@ -259,7 +354,8 @@ int user::routeHandler(char *request, int acceptedSocketFileDescriptor) // reque
     }
 
     __server->SQLfetchFileTable();
-    buildIndexHTML(); 
+
+    buildIndexHTML();
 
     return EXIT_SUCCESS;
 }

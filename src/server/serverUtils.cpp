@@ -64,10 +64,13 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
         __user->routeHandler(copyBuffer, acceptedSocketFileDescriptor);
         return EXIT_SUCCESS;
     }
-
+    
     const char root[] = "interface";
-    char fullPath[strlen(root) + strlen(path) + 1];
-    strcpy(fullPath, root);
+    char fullPath[strlen(root) + strlen(path) + 1] = "";
+
+    if (strstr(path, "interface") == NULL)
+        strcpy(fullPath, root);
+
     strcat(fullPath, path);
 
     std::cout << "FULL PATH: " << fullPath << "\n\n";
@@ -280,6 +283,8 @@ int server::getTableRowsCount(const char tableName[]) // returns the no. of rows
 
 void server::SQLfetchUserTable(void)
 {
+    __user->clearUserCredentials();
+
     sql::Statement *stmt = nullptr;
     sql::ResultSet *res = nullptr;
 
@@ -292,7 +297,7 @@ void server::SQLfetchUserTable(void)
 
     while (res->next())
     {
-        int id = res->getInt("id");
+        long long unsigned int id = res->getInt("id");
 
         sql::SQLString sqlstr;
 
@@ -323,11 +328,37 @@ void server::SQLfetchUserTable(void)
 
 void server::SQLfetchFileTable(void)
 {
+    __user->clearUserFiles();
+
     sql::Statement *stmt = nullptr;
     sql::ResultSet *res = nullptr;
-    
+
+    std::string SQLquery = "SELECT * FROM file WHERE id=" + std::to_string(__user->getSessionID());
+
     stmt = db->getCon()->createStatement();
-    res = stmt->executeQuery(""); // select only for the correct SESSION ID
+    res = stmt->executeQuery(SQLquery);
+
+    db->addSqlTable(tableName, res->rowsCount());
+
+    while (res->next())
+    {
+        int id = res->getInt("id");
+        int fileSize = res->getInt("size");
+        int downloads = res->getInt("no_of_downloads");
+
+        sql::SQLString sqlstr;
+        sqlstr = res->getString("name");
+        char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(fileName, sqlstr.asStdString().c_str());
+
+        user::userFiles *t_uf = new user::userFiles(fileName, id, fileSize, downloads);
+
+        __user->addToUserFiles(*t_uf);
+
+        delete t_uf;
+
+        free(fileName);
+    }
 
     res->close();
     stmt->close();
