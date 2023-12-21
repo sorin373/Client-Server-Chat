@@ -11,6 +11,10 @@ html {
 
 .container {
     width: 100%;
-    height: auto;
-    margin-top: 15rem;
+    height: 100%;
+    max-height: 500px;
+    overflow-y: scroll;
+    margin-top: 10rem;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+    padding: 0 !important;
 }

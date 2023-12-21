@@ -36,14 +36,30 @@ void server::acceptConnection(const int serverSocketFileDescriptor, class accept
     __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
 }
 
+bool findString(const char haystack[], const char needle[]) // created this bec. strstr modifies the string
+{
+    char *__copyHaystack = new char[strlen(haystack) + 1];
+    strcpy(__copyHaystack, haystack);
+
+    if (strstr(__copyHaystack, needle) != NULL)
+    {
+        delete[] __copyHaystack;
+        return true;
+    }
+    
+    delete[] __copyHaystack;
+    return false;
+}
+
 template <typename T>
 int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 {
+    const char root[] = "interface";
+    char *path = nullptr;
     char *allocatedBuffer = buffer;
     char *copyBuffer = new char[strlen(buffer) + 1];
+        
     strcpy(copyBuffer, allocatedBuffer);
-
-    char *path = nullptr;
 
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
         if (allocatedBuffer[i] == '/')
@@ -57,18 +73,21 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
             path[i] = '\0';
 
     if ((strlen(path) == 1 && path[0] == '/') || path == nullptr)
-        strcpy(path, "/login.html");
+        strcpy(path, "interface/login.html");
 
-    if (allocatedBuffer[0] == 'P')
+    if (findString(allocatedBuffer, "/userlogin") == true)
     {
-        __user->routeHandler(copyBuffer, acceptedSocketFileDescriptor);
+        __user->loginRoute(copyBuffer, acceptedSocketFileDescriptor);
+        delete[] copyBuffer;
+        
         return EXIT_SUCCESS;
     }
+
+    delete[] copyBuffer;
     
-    const char root[] = "interface";
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-    if (strstr(path, "interface") == NULL)
+    if (findString(path, "interface") == false)
         strcpy(fullPath, root);
 
     strcat(fullPath, path);
@@ -79,7 +98,7 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 
     if (!file.is_open())
     {
-        std::cerr << "Failed to open " << fullPath << "!\n";
+        std::cerr << "Failed to open " << path << "!\n";
         return EXIT_FAILURE;
     }
 
@@ -131,7 +150,7 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
             break;
         }
 
-        std::cout << "------------------------------------------------------------------------------------------\n\n";
+        std::cout << "===============================================================================================================================\n\n";
 
         buffer[bytesReceived] = '\0';
         std::cout << buffer;
@@ -274,9 +293,9 @@ int server::getTableRowsCount(const char tableName[]) // returns the no. of rows
     if (_SQLtable.empty())
         return 0;
 
-    for (unsigned int i = 0, n = _SQLtable.size(); i < n; i++)
-        if (strcmp(tableName, _SQLtable[i].getTableName()) == 0)
-            return _SQLtable[i].getRowsCount();
+    for (auto &sqltable : _SQLtable)
+        if (strcmp(tableName, sqltable.getTableName()) == 0)
+            return sqltable.getRowsCount();
     
     return -1;
 }
@@ -297,7 +316,7 @@ void server::SQLfetchUserTable(void)
 
     while (res->next())
     {
-        long long unsigned int id = res->getInt("id");
+        int id = res->getInt("id");
 
         sql::SQLString sqlstr;
 
@@ -313,7 +332,7 @@ void server::SQLfetchUserTable(void)
 
         __user->addToUserCredentials(*t_uc);
 
-        delete t_uc;    // free the created obj
+        delete t_uc; // free the created obj
 
         free(username);
         free(password);
@@ -509,9 +528,7 @@ int server::__INIT__(char *portArg)
 
     struct sockaddr_in *serverAddress = serverSocket->IPv4Address(machineIPv4Address, port);
 
-    if (__server->bindServer(serverSocketFD, serverAddress) == 0)
-        std::cout << "Server socket bound successfully!\n";
-    else
+    if (__server->bindServer(serverSocketFD, serverAddress) != 0)
     {
         std::cerr << "Error binding the server!\n";
         perror("bind");
@@ -524,6 +541,8 @@ int server::__INIT__(char *portArg)
 
         return EXIT_FAILURE;
     }
+
+    std::cout << "Server socket bound successfully!\n";
 
     if (listen(serverSocketFD, 10) == -1)
     {

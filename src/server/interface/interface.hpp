@@ -1,8 +1,7 @@
 #ifndef __INTERFACE_HPP__
 #define __INTERFACE_HPP__
 
-#define STORAGE_FILE_NAMES "interface/storage/fileNames.txt"
-#define INDEX_HTML         "interface/index.html"
+#define INDEX_HTML "interface/index.html"
 
 #include <vector>
 
@@ -64,7 +63,7 @@ namespace net
             void clearUserCredentials(void) noexcept;
             void clearUserFiles(void) noexcept;
 
-            int routeHandler(char *request, int acceptedSocketFileDescriptor);
+            int loginRoute(char *request, int acceptedSocketFileDescriptor);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;
             void addToUserFiles(const userFiles __uf) noexcept;

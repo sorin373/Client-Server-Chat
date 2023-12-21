@@ -107,11 +107,8 @@ int user::userFiles::getNoDownloads(void) const noexcept
     return noDownloads;
 }
 
-// ---------------------------------------------
-
 void interface::user::buildIndexHTML(void)
 {
-   // std::ifstream file(STORAGE_FILE_NAMES);
     std::ofstream index_html(INDEX_HTML);
 
     char firstHTML[] = R"(<!DOCTYPE html>
@@ -224,8 +221,6 @@ void interface::user::buildIndexHTML(void)
     {
         strcpy(fileName, uf[i].getFileName());
 
-        // char element[1001] = "<tr><th scope=\"row\" class=\"left-column\">";
-
         std::string th1 = "<tr><th scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getId()) + "</th>";
         std::string th2 = "<th scope=\"row\">" + std::string(uf[i].getFileName()) + "</th>";
         std::string th3 = "<th scope=\"row\">" + std::to_string(uf[i].getFileSize()) + "</th>";
@@ -259,19 +254,6 @@ void interface::user::buildIndexHTML(void)
 
         std::string HTMLcontent = th1 + th2 + th3 + th4 + td;
 
-        /*
-        char path[512] = "storage/";
-        char link[256] = "<tr> <th scope=\"row\"> <a href=\"";
-
-        strcat(path, fileName);
-        strcat(path, pdfExtension);
-
-        strcat(link, path);
-        strcat(link, "\">");
-        strcat(link, fileName);
-        strcat(link, "</a> </th> </tr>");
-        */
-
         index_html << HTMLcontent;
     }
 
@@ -286,23 +268,22 @@ void interface::user::buildIndexHTML(void)
 
     index_html << HTMLclose;
 
-   // file.close();
     index_html.close();
 }
 
 bool user::validateCredentials(char *username, char *password)
 {
-    for (unsigned int i = 0, n = uc.size(); i < n; i++)
-        if (strcmp(username, uc[i].getUsername()) == 0 && strcmp(password, uc[i].getPassword()) == 0)
+    for (auto &__uc : uc)
+        if (strcmp(username, __uc.getUsername()) == 0 && strcmp(password, __uc.getPassword()) == 0)
         {
-            this->SESSION_ID = uc[i].getId();
+            this->SESSION_ID = __uc.getId();
             return true;
         }
 
     return false;
 }
 
-int user::routeHandler(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test
+int user::loginRoute(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 19\r\nConnection: close\r\n\r\nInvalid credentials";
