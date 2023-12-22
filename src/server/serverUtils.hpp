@@ -58,9 +58,10 @@ namespace net
         void SQLfetchFileTable(void);
 
         template <typename T> void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket);
-        template <typename T> void sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor);
         template <typename T> void printReceivedData(class acceptedSocket<T> *socket);
-        template <typename T> int handleGETrequests(T *buffer, int acceptedSocketFileDescriptor);
+        template <typename T> int GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor);
+        template <typename T> int HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
+        template <typename T> int POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor);
 
         template <typename T> std::vector<class acceptedSocket<T>> getConnectedSockets(void) const noexcept;
         int getClientSocketFileDescriptor(void) const noexcept;
@@ -68,8 +69,6 @@ namespace net
         bool getServerStatus(void) const noexcept;
         class database *getSQLdatabase(void) const noexcept;
         class interface::user *getUser(void) const noexcept;
-        
-        static int getTableRowsCount(const char tableName[]);
 
         ~server();
     };

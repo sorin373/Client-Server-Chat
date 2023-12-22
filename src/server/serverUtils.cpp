@@ -52,7 +52,48 @@ bool findString(const char haystack[], const char needle[]) // created this bec.
 }
 
 template <typename T>
-int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
+int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
+{
+    char *route = nullptr;
+    char *ptr = new char[strlen(buffer) + 1];
+    strcpy(ptr, buffer);
+
+    for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+        if (ptr[i] == '/')
+        {
+            route = &ptr[i];
+            break;
+        }
+
+    for (unsigned int i = 0, n = strlen(route); i < n; i++)
+        if (route[i] == ' ')
+            route[i] = '\0';
+
+    if (findString(route, "/userlogin") == true)
+    {
+        __user->loginRoute(buffer, acceptedSocketFileDescriptor);
+
+        delete[] ptr;
+        
+        return EXIT_SUCCESS;
+    }
+
+    if (findString(route, "/addFile") == true) /** @todo */  
+    {
+        __user->addFilesRoute(buffer, acceptedSocketFileDescriptor);
+
+        delete[] ptr;
+
+        return EXIT_SUCCESS;
+    }
+
+    delete[] ptr;
+
+    return EXIT_SUCCESS;
+}
+
+template <typename T>
+int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
     const char root[] = "interface";
     char *path = nullptr;
@@ -75,14 +116,6 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
     if ((strlen(path) == 1 && path[0] == '/') || path == nullptr)
         strcpy(path, "interface/login.html");
 
-    if (findString(allocatedBuffer, "/userlogin") == true)
-    {
-        __user->loginRoute(copyBuffer, acceptedSocketFileDescriptor);
-        delete[] copyBuffer;
-        
-        return EXIT_SUCCESS;
-    }
-
     delete[] copyBuffer;
     
     char fullPath[strlen(root) + strlen(path) + 1] = "";
@@ -92,7 +125,7 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 
     strcat(fullPath, path);
 
-    std::cout << "FULL PATH: " << fullPath << "\n\n";
+    std::cout << "\nFULL PATH: " << fullPath << "\n\n";
 
     std::ifstream file(fullPath, std::ios::binary);
 
@@ -122,15 +155,32 @@ int server::handleGETrequests(T *buffer, int acceptedSocketFileDescriptor)
 }
 
 template <typename T>
-void server::sendReceivedMessage(T *buffer, int acceptedSocketFileDescriptor)
+int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
-    for (auto &socket : connectedSockets)
-    {
-        int socketFD = socket.getAcceptedSocketFileDescriptor();
+    char *copyBuffer = new char[strlen(buffer) + 1]; 
 
-        if (socketFD != acceptedSocketFileDescriptor)
-            send(socketFD, buffer, strlen(buffer), 0);
-    }
+    strcpy(copyBuffer, buffer);
+
+    char *ptr = strtok(copyBuffer, " "); // get the type of the http request
+
+    if (strcmp(ptr, "GET") == 0)
+        if (GETrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        {
+            delete[] copyBuffer;
+            return EXIT_FAILURE;
+        }  
+
+    if (strcmp(ptr, "POST") == 0)
+        if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        {
+             delete[] copyBuffer;
+             return EXIT_FAILURE;
+        }
+            
+
+    delete[] copyBuffer;
+
+    return EXIT_SUCCESS;
 }
 
 template <typename T>
@@ -150,14 +200,10 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
             break;
         }
 
-        std::cout << "===============================================================================================================================\n\n";
-
         buffer[bytesReceived] = '\0';
         std::cout << buffer;
 
-        handleGETrequests(buffer, acceptedSocketFD);
-
-        // net::server::sendReceivedMessage(buffer, acceptedSocketFD);
+        HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
     }
 
     close(socket->getAcceptedSocketFileDescriptor());
@@ -283,23 +329,6 @@ class interface::user *server::getUser(void) const noexcept
     return __user;
 }
 
-int server::getTableRowsCount(const char tableName[]) // returns the no. of rows which I use to resize the vector correctly
-{
-    if (__server->getSQLdatabase() == nullptr || __server->getSQLdatabase()->getSqlTableVector().empty())
-        return 0;
-
-    std::vector<class server::database::SQLtable> _SQLtable = __server->getSQLdatabase()->getSqlTableVector();
-
-    if (_SQLtable.empty())
-        return 0;
-
-    for (auto &sqltable : _SQLtable)
-        if (strcmp(tableName, sqltable.getTableName()) == 0)
-            return sqltable.getRowsCount();
-    
-    return -1;
-}
-
 void server::SQLfetchUserTable(void)
 {
     __user->clearUserCredentials();
@@ -309,10 +338,6 @@ void server::SQLfetchUserTable(void)
 
     stmt = db->getCon()->createStatement();
     res = stmt->executeQuery("SELECT * FROM user");
-
-    db->addSqlTable(tableName, res->rowsCount());
-
-    __user->resizeUserCredentialsVector();
 
     while (res->next())
     {
@@ -356,8 +381,6 @@ void server::SQLfetchFileTable(void)
 
     stmt = db->getCon()->createStatement();
     res = stmt->executeQuery(SQLquery);
-
-    db->addSqlTable(tableName, res->rowsCount());
 
     while (res->next())
     {
@@ -510,8 +533,6 @@ int server::__INIT__(char *portArg)
     }
 
     __server = new server(serverSocketFD);
-    
-    userCredentialsCount = __server->getTableRowsCount(tableName);
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {

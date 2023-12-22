@@ -31,35 +31,16 @@ namespace net
             ~dbCredentials();
         };
 
-        class SQLtable
-        {
-            private:
-                char *tableName;
-                size_t rowsCount;
-
-            public:
-                SQLtable(char *tableName, const size_t rowsCount);
-
-                char *getTableName(void) const noexcept;
-                size_t getRowsCount(void) const noexcept;
-
-                ~SQLtable() = default;
-        };
-
     private:
         sql::Driver                 *driver;
         sql::Connection             *con;
         class dbCredentials         *__credentials;
-        std::vector<class SQLtable> sqlTable;
        
     public:
         explicit database(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password);
 
-        void addSqlTable(char *tableName, size_t rowsCount);
-
         sql::Driver *getDriver(void)  const noexcept;
         sql::Connection *getCon(void) const noexcept;
-        std::vector<class SQLtable> getSqlTableVector(void) const noexcept;
 
         ~database();
     };

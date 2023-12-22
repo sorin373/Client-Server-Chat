@@ -32,11 +32,6 @@ int user::userCredentials::getId(void) const noexcept
     return id;
 }
 
-void user::resizeUserCredentialsVector(void) noexcept
-{
-    uc.resize(userCredentialsCount);
-}
-
 user::user()
 {
     this->SESSION_ID = 0;
@@ -112,21 +107,24 @@ void interface::user::buildIndexHTML(void)
     std::ofstream index_html(INDEX_HTML);
 
     char firstHTML[] = R"(<!DOCTYPE html>
-                          <html lang="en">
+                        <html lang="en">
 
-                          <head>
-                              <meta charset="UTF-8" />
-                              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                              <title>Document</title>
-                              <link href="static/stylesheet/index.css" rel="stylesheet" />
+                        <head>
+                            <meta charset="UTF-8" />
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                            <title>Document</title>
+                            <link href="static/stylesheet/index.css" rel="stylesheet" />
 
-                              <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-                                  integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet" />
-                              <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-                                  integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
-                              <link rel="icon" href="#" />
+                            <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+                                integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet" />
+                            <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+                                integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
+                            <!-- Add icon library -->
+                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
-                              <style>
+                            <link rel="icon" href="#" />
+
+                            <style>
                                 th {
                                     text-align: center;
                                 }
@@ -134,13 +132,7 @@ void interface::user::buildIndexHTML(void)
                                 a {
                                     text-decoration: none;
                                     font-size: 15pt;
-                                    color: black;
                                     padding: 1px 6px;
-                                }
-
-                                a:hover {
-                                    background-color: rgb(235, 236, 236);
-                                    border-radius: 5px;
                                 }
 
                                 thead {
@@ -148,14 +140,17 @@ void interface::user::buildIndexHTML(void)
                                     border-radius: 0;
                                     color: rgb(66, 66, 66);
                                 }
-                                
+
                                 table {
                                     width: 100%;
                                     max-width: 1400px;
                                 }
-                                
+
                                 thead {
                                     border: none !important;
+                                    z-index: 1;
+                                    position: sticky;
+                                    top: 0;
                                 }
 
                                 thead th {
@@ -186,31 +181,50 @@ void interface::user::buildIndexHTML(void)
                                 }
 
                                 .left-column {
-                                    border-right: solid 2px; 
+                                    border-right: solid 2px;
                                 }
 
                                 .right-column {
-                                    border-left: solid 2px; 
+                                    border-left: solid 2px;
                                     width: fit-content;
                                 }
-                            </style>
-                          </head>
 
-                          <body>
-                              <div class="container">
-                                  <div>
-                                      <table class="table" style="margin: auto; width: 100%; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);">
-                                          <thead>
-                                              <tr>
+                                .main-container {
+                                    display: flex;
+                                    flex-direction: column;
+                                }
+
+                                #add-button {
+                                    width: fit-content;
+                                    padding: 0.5rem;
+                                    font-weight: 600;
+                                    border: solid 0.1px rgb(153, 153, 153);
+                                    border-radius: 5px;
+                                    color: rgb(65, 64, 64);
+                                }
+
+                                #addFileForm {
+                                    margin: auto;
+                                    margin-top: 1rem;
+                                }
+                            </style>
+                        </head>
+
+                        <body>
+                            <div class="main-container">
+                                <div class="container">
+                                    <table class="table" style="margin: auto; width: 100%;">
+                                        <thead>
+                                            <tr>
                                                 <th scope="col">#</th>
                                                 <th scope="col">File Name</th>
                                                 <th scope="col">File Size</th>
                                                 <th scope="col">Downloads</th>
                                                 <th scope="col" style="width: 110px;"></th>
-                                             </tr>
-                                          </thead>
+                                            </tr>
+                                        </thead>
 
-                                          <tbody>)";
+                                        <tbody>)";
 
     index_html << firstHTML;
 
@@ -261,6 +275,10 @@ void interface::user::buildIndexHTML(void)
         </tbody>
         </table>
         </div>
+        <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data"">
+            <input type="file" name="filename">
+            <input type="submit">
+        </form>
         </div>
         </body>
         </html>
@@ -283,7 +301,7 @@ bool user::validateCredentials(char *username, char *password)
     return false;
 }
 
-int user::loginRoute(char *request, int acceptedSocketFileDescriptor) // request = username=test&password=test
+int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 19\r\nConnection: close\r\n\r\nInvalid credentials";
@@ -317,7 +335,7 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor) // request
     if (strlen(temp_password) > 64 || temp_password == nullptr)
         return EXIT_FAILURE;
 
-    if (!user::validateCredentials(temp_username, temp_password))
+    if (!validateCredentials(temp_username, temp_password))
     {
         if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
         {
@@ -338,5 +356,10 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor) // request
 
     buildIndexHTML();
 
+    return EXIT_SUCCESS;
+}
+
+int user::addFilesRoute(char *request, int acceptedSocketFileDescriptor)
+{   
     return EXIT_SUCCESS;
 }

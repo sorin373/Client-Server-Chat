@@ -28,17 +28,6 @@ sql::Driver *server::database::getDriver(void) const noexcept
     return driver;
 }
 
-std::vector<class server::database::SQLtable> server::database::getSqlTableVector(void) const noexcept
-{
-    return sqlTable;
-}
-
-void server::database::addSqlTable(char *tableName, size_t rowsCount)
-{
-    SQLtable st(tableName, rowsCount);
-    sqlTable.push_back(st);
-}
-
 server::database::~database()
 {
     delete __credentials;
@@ -106,22 +95,4 @@ server::database::dbCredentials::~dbCredentials()
     free(hostname);
     free(username);
     free(password);
-}
-
-/*SQLtable*/
-
-server::database::SQLtable::SQLtable(char *tableName, const size_t rowsCount)
-{
-    this->tableName = tableName;
-    this->rowsCount = rowsCount;
-}
-
-char *server::database::SQLtable::getTableName(void) const noexcept
-{
-    return tableName;
-}
-
-size_t server::database::SQLtable::getRowsCount(void) const noexcept
-{
-    return rowsCount;
 }

@@ -5,9 +5,6 @@
 
 #include <vector>
 
-extern volatile int userCredentialsCount;
-extern char tableName[];
-
 namespace net
 {
     namespace interface 
@@ -64,11 +61,11 @@ namespace net
             void clearUserFiles(void) noexcept;
 
             int loginRoute(char *request, int acceptedSocketFileDescriptor);
+            int addFilesRoute(char *request, int acceptedSocketFileDescriptor);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;
             void addToUserFiles(const userFiles __uf) noexcept;
 
-            void resizeUserCredentialsVector(void) noexcept;
             bool validateCredentials(char *username, char *password);
 
             void buildIndexHTML(void);
