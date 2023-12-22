@@ -155,28 +155,40 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 }
 
 template <typename T>
-int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
     char *copyBuffer = new char[strlen(buffer) + 1]; 
 
     strcpy(copyBuffer, buffer);
 
-    char *ptr = strtok(copyBuffer, " "); // get the type of the http request
+    char *ptr = strstr(copyBuffer, "GET");
 
-    if (strcmp(ptr, "GET") == 0)
-        if (GETrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
-        {
-            delete[] copyBuffer;
-            return EXIT_FAILURE;
-        }  
+    if (ptr == NULL)
+    {
+        strcpy(copyBuffer, buffer);
+        ptr = strstr(copyBuffer, "POST");
+    }
 
-    if (strcmp(ptr, "POST") == 0)
-        if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
-        {
-             delete[] copyBuffer;
-             return EXIT_FAILURE;
-        }
-            
+    if (ptr != NULL)
+    {
+        for (unsigned int i = 0; i < strlen(ptr); i++)
+            if (ptr[i] == ' ')
+                ptr[i] = '\0';
+    
+        if (strcmp(ptr, "GET") == 0)
+            if (GETrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+            {
+                delete[] copyBuffer;
+                return EXIT_FAILURE;
+            }  
+
+        if (strcmp(ptr, "POST") == 0)
+            if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+            {
+                delete[] copyBuffer;
+                return EXIT_FAILURE;
+            }
+    }
 
     delete[] copyBuffer;
 
@@ -200,10 +212,12 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
             break;
         }
 
+        std::cout << "\n____________________________________________________________\n\n";
+
         buffer[bytesReceived] = '\0';
         std::cout << buffer;
 
-        HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
+        HTTPrequestsHandler<T>(buffer, acceptedSocketFD);
     }
 
     close(socket->getAcceptedSocketFileDescriptor());
