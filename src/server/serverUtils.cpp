@@ -46,48 +46,56 @@ bool findString(const char haystack[], const char needle[]) // created this bec.
         delete[] __copyHaystack;
         return true;
     }
-    
+
     delete[] __copyHaystack;
     return false;
 }
 
+char *route = nullptr;
+bool changeRoute = false;
+
 template <typename T>
 int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
-{
-    char *route = nullptr;
-    char *ptr = new char[strlen(buffer) + 1];
-    strcpy(ptr, buffer);
+{   
+    if (changeRoute) // determines the route from the first buffer
+    {
+        if (route != nullptr)
+            delete[] route;
 
-    for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
-        if (ptr[i] == '/')
-        {
-            route = &ptr[i];
-            break;
-        }
+        char *ptr = new char[strlen(buffer) + 1];
+        strcpy(ptr, buffer);
 
-    for (unsigned int i = 0, n = strlen(route); i < n; i++)
-        if (route[i] == ' ')
-            route[i] = '\0';
+        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+            if (ptr[i] == '/')
+            {
+                route = new char[strlen(ptr + i) + 1];
+                strcpy(route, ptr + i);
+
+                break;
+            }
+
+        for (unsigned int i = 0, n = strlen(route); i < n; i++)
+            if (route[i] == ' ')
+                route[i] = '\0';
+
+        delete[] ptr;
+
+        changeRoute = false;
+    }
 
     if (findString(route, "/userlogin") == true)
     {
         __user->loginRoute(buffer, acceptedSocketFileDescriptor);
 
-        delete[] ptr;
-        
         return EXIT_SUCCESS;
     }
 
-    if (findString(route, "/addFile") == true) /** @todo */  
+    if (findString(route, "/addFile") == true) /** @todo */
     {
         __user->addFilesRoute(buffer, acceptedSocketFileDescriptor);
 
-        delete[] ptr;
-
         return EXIT_SUCCESS;
     }
-
-    delete[] ptr;
 
     return EXIT_SUCCESS;
 }
@@ -99,7 +107,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     char *path = nullptr;
     char *allocatedBuffer = buffer;
     char *copyBuffer = new char[strlen(buffer) + 1];
-        
+
     strcpy(copyBuffer, allocatedBuffer);
 
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
@@ -117,7 +125,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
         strcpy(path, "interface/login.html");
 
     delete[] copyBuffer;
-    
+
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
     if (findString(path, "interface") == false)
@@ -154,10 +162,12 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     return EXIT_SUCCESS;
 }
 
+char *requestType = nullptr;
+
 template <typename T>
 int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
-    char *copyBuffer = new char[strlen(buffer) + 1]; 
+    char *copyBuffer = new char[strlen(buffer) + 1];
 
     strcpy(copyBuffer, buffer);
 
@@ -171,24 +181,33 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 
     if (ptr != NULL)
     {
-        for (unsigned int i = 0; i < strlen(ptr); i++)
+        if (requestType != nullptr)
+             delete[] requestType;
+
+        changeRoute = true;
+
+        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
             if (ptr[i] == ' ')
                 ptr[i] = '\0';
-    
-        if (strcmp(ptr, "GET") == 0)
-            if (GETrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
-            {
-                delete[] copyBuffer;
-                return EXIT_FAILURE;
-            }  
 
-        if (strcmp(ptr, "POST") == 0)
-            if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
-            {
-                delete[] copyBuffer;
-                return EXIT_FAILURE;
-            }
+        requestType = new char[strlen(ptr) + 1];
+
+        strcpy(requestType, ptr);
     }
+
+    if (strcmp(requestType, "GET") == 0)
+        if (GETrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        {
+            delete[] copyBuffer;
+            return EXIT_FAILURE;
+        }
+
+    if (strcmp(requestType, "POST") == 0)
+        if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        {
+            delete[] copyBuffer;
+            return EXIT_FAILURE;
+        }
 
     delete[] copyBuffer;
 
@@ -200,9 +219,10 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 {
     T buffer[1025];
 
+    int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
+
     while (true)
     {
-        int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
         ssize_t bytesReceived = recv(acceptedSocketFD, buffer, sizeof(buffer), 0);
 
         if (bytesReceived <= 0)
@@ -219,9 +239,6 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 
         HTTPrequestsHandler<T>(buffer, acceptedSocketFD);
     }
-
-    close(socket->getAcceptedSocketFileDescriptor());
-    delete socket;
 }
 
 template <typename T>
@@ -242,9 +259,9 @@ void server::handleClientConnections(int serverSocketFileDescriptor)
         connectedSockets.push_back(*newAcceptedSocket);
 
         printReceivedDataThread(newAcceptedSocket);
-    }
 
-    close(serverSocketFileDescriptor);
+        delete newAcceptedSocket;
+    }
 }
 
 void server::consoleListener(void)
@@ -323,7 +340,8 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
     return connectedSockets;
 }
 
-bool server::getServerStatus(void) const noexcept
+bool
+server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
@@ -460,7 +478,7 @@ int server::__database_init__(void)
 
         return EXIT_FAILURE;
     }
-    
+
     if (server::database::dbCredentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
     {
         std::cerr << "Failed to get MySQL schema credentails!\n";
@@ -474,7 +492,7 @@ int server::__database_init__(void)
 
     try
     {
-        sql::Driver     *driver = nullptr;
+        sql::Driver *driver = nullptr;
         sql::Connection *con = nullptr;
 
         driver = sql::mysql::get_mysql_driver_instance();
@@ -521,8 +539,17 @@ int server::__database_init__(void)
 
 server::~server()
 {
-    delete db;
-    delete __user;
+    if (db != nullptr)
+    {
+        delete db;
+        db = nullptr;
+    }
+
+    if (__user != nullptr)
+    {
+        delete __user;
+        __user = nullptr;
+    }
 }
 
 int server::__INIT__(char *portArg)
@@ -550,6 +577,7 @@ int server::__INIT__(char *portArg)
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {
+        close(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
         delete serverSocket;
@@ -559,7 +587,7 @@ int server::__INIT__(char *portArg)
 
     char *machineIPv4Address = serverSocket->getMachineIPv4Address();
 
-    std::cout << machineIPv4Address  << ":" << port << "\n";
+    std::cout << machineIPv4Address << ":" << port << "\n";
 
     struct sockaddr_in *serverAddress = serverSocket->IPv4Address(machineIPv4Address, port);
 
@@ -568,6 +596,7 @@ int server::__INIT__(char *portArg)
         std::cerr << "Error binding the server!\n";
         perror("bind");
 
+        close(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
         delete serverSocket;
@@ -581,6 +610,7 @@ int server::__INIT__(char *portArg)
 
     if (listen(serverSocketFD, 10) == -1)
     {
+        close(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         free(serverAddress);
         delete serverSocket;
@@ -591,6 +621,7 @@ int server::__INIT__(char *portArg)
 
     __server->__MASTER_THREAD__(serverSocketFD);
 
+    close(serverSocketFD);
     shutdown(serverSocketFD, SHUT_RDWR);
     free(serverAddress);
     delete serverSocket;

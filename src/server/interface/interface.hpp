@@ -4,6 +4,7 @@
 #define INDEX_HTML "interface/index.html"
 
 #include <vector>
+#include <stdlib.h>
 
 namespace net
 {

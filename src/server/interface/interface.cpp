@@ -361,5 +361,7 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 
 int user::addFilesRoute(char *request, int acceptedSocketFileDescriptor)
 {   
+    std::cout << request << "\n";
+
     return EXIT_SUCCESS;
 }
