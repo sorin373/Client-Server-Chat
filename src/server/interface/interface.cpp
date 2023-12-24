@@ -44,6 +44,11 @@ std::vector<class user::userCredentials> user::getUserCredentials(void) const no
     return uc;
 }
 
+int user::getUserCredentialsSize(void) const noexcept
+{
+    return uc.size();
+}
+
 std::vector<class user::userFiles> user::getUserFiles(void) const noexcept
 {
     return uf;
@@ -362,12 +367,16 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 }
 
 std::string fileName;
+std::string path;
 
 int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
-    if (findString(buffer, "filename=") == true)
+    if (findString(buffer, "filename="))
     {
         fileName.clear();
+        path.clear();
+
+        path = "interface/storage/";
 
         const std::string t_buffer = std::string(buffer);
 
@@ -376,9 +385,11 @@ int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ss
 
         if (std::regex_search(t_buffer, match, fileNameRegex))
             fileName = match.str(1);
+        
+        path = path + fileName;
     }
 
-    std::ofstream file(fileName, std::ios::out | std::ios::app | std::ios::binary);
+    std::ofstream file(path, std::ios::out | std::ios::app | std::ios::binary);
 
     if (file.is_open())
     {

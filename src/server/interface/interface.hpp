@@ -58,6 +58,8 @@ namespace net
             std::vector<class userFiles> getUserFiles(void) const noexcept;
             int getSessionID(void) const noexcept;
 
+            int getUserCredentialsSize(void) const noexcept;
+
             void clearUserCredentials(void) noexcept;
             void clearUserFiles(void) noexcept;
 

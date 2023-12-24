@@ -47,7 +47,6 @@ namespace net
         static void consoleListener(void);
 
     public:
-
         server(const int clientSocketFileDescriptor);
 
         static int __INIT__(char *portArg = nullptr);
@@ -56,6 +55,7 @@ namespace net
         int __database_init__(void);
         void SQLfetchUserTable(void);
         void SQLfetchFileTable(void);
+        int addToFileTable(const char *fileName, const int fileSize);
 
         template <typename T> void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket);
         template <typename T> void printReceivedData(class acceptedSocket<T> *socket);

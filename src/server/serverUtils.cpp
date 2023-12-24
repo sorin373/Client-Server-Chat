@@ -213,13 +213,16 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
         {
             std::cerr << "Receive failed! "
                       << socket->getError() << "\n";
+
+            /** @todo create a update database function that uploads the data received to the file table */
+
             break;
         }
 
         std::cout << "\n____________________________________________________________\n\n";
 
         buffer[bytesReceived] = '\0';
-       //std::cout << buffer;
+        std::cout << buffer;
 
         HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
     }
@@ -421,6 +424,39 @@ void server::SQLfetchFileTable(void)
 
     delete res;
     delete stmt;
+}
+
+int server::addToFileTable(const char *fileName, const int fileSize)
+{
+    try
+    {
+        std::string tableName = "file";
+        std::string query = "INSERT INTO " + tableName + " (id, name, size, no_of_downloads) VALUES (?, ?, ?, ?)";
+        
+        sql::PreparedStatement *prepStmt = db->getCon()->prepareStatement(query);
+
+        prepStmt->setInt(1, __user->getUserCredentialsSize() + 1);
+        prepStmt->setString(2, std::string(fileName));
+        prepStmt->setInt(3, fileSize);
+        prepStmt->setInt(4, 0);
+
+        prepStmt->executeUpdate();
+
+        delete prepStmt;
+    }
+    catch (sql::SQLException &e)
+    {
+        std::cerr << "\n"
+                  << "Error code: " << e.getErrorCode() << "\n"
+                  << "Error message: " << e.what() << "\n"
+                  << "SQLState: " << e.getSQLState() << "\n";
+
+        return EXIT_FAILURE;
+    }
+
+    SQLfetchFileTable();
+    
+    return EXIT_SUCCESS;
 }
 
 int server::__database_init__(void)
