@@ -36,26 +36,11 @@ void server::acceptConnection(const int serverSocketFileDescriptor, class accept
     __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
 }
 
-bool findString(const char haystack[], const char needle[]) // created this bec. strstr modifies the string
-{
-    char *__copyHaystack = new char[strlen(haystack) + 1];
-    strcpy(__copyHaystack, haystack);
-
-    if (strstr(__copyHaystack, needle) != NULL)
-    {
-        delete[] __copyHaystack;
-        return true;
-    }
-    
-    delete[] __copyHaystack;
-    return false;
-}
-
 char *route = nullptr;
 bool changeRoute = false;
 
 template <typename T>
-int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
+int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {   
     if (changeRoute) // determines the route from the first buffer
     {
@@ -92,7 +77,7 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 
     if (findString(route, "/addFile") == true) /** @todo */
     {
-        __user->addFilesRoute(buffer, acceptedSocketFileDescriptor);
+        __user->addFilesRoute(buffer, acceptedSocketFileDescriptor, __bytesReceived);
 
         return EXIT_SUCCESS;
     }
@@ -133,7 +118,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 
     strcat(fullPath, path);
 
-    std::cout << "\nFULL PATH: " << fullPath << "\n\n";
+    //std::cout << "\nFULL PATH: " << fullPath << "\n\n";
 
     std::ifstream file(fullPath, std::ios::binary);
 
@@ -165,7 +150,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 char *requestType = nullptr;
 
 template <typename T>
-int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
+int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
     char *copyBuffer = new char[strlen(buffer) + 1];
 
@@ -203,7 +188,7 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
         }
 
     if (strcmp(requestType, "POST") == 0)
-        if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
@@ -234,9 +219,9 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
         std::cout << "\n____________________________________________________________\n\n";
 
         buffer[bytesReceived] = '\0';
-        std::cout << buffer;
+       //std::cout << buffer;
 
-        HTTPrequestsHandler<T>(buffer, acceptedSocketFD);
+        HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
     }
 
     close(socket->getAcceptedSocketFileDescriptor());
@@ -424,11 +409,9 @@ void server::SQLfetchFileTable(void)
         char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(fileName, sqlstr.asStdString().c_str());
 
-        user::userFiles *t_uf = new user::userFiles(fileName, id, fileSize, downloads);
+        user::userFiles t_uf(fileName, id, fileSize, downloads);
 
-        __user->addToUserFiles(*t_uf);
-
-        delete t_uf;
+        __user->addToUserFiles(t_uf);
 
         free(fileName);
     }
@@ -538,8 +521,17 @@ int server::__database_init__(void)
 
 server::~server()
 {
-    delete db;
-    delete __user;
+    if (this->db != nullptr)
+    {
+        delete this->db;
+        this->db = nullptr;
+    }
+
+    if (this->__user != nullptr)
+    {
+        delete this->__user;
+        this->__user = nullptr;
+    }
 }
 
 int server::__INIT__(char *portArg)

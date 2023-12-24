@@ -6,7 +6,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-#include <malloc.h>
+#include <string>
+#include <regex>
 
 using namespace net;
 using namespace net::interface;
@@ -360,9 +361,39 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
     return EXIT_SUCCESS;
 }
 
-int user::addFilesRoute(char *request, int acceptedSocketFileDescriptor)
-{   
-    std::cout << request << "\n";
+std::string fileName;
+
+int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+{
+    if (findString(buffer, "filename=") == true)
+    {
+        fileName.clear();
+
+        const std::string t_buffer = std::string(buffer);
+
+        std::regex fileNameRegex(R"(filename=\"([^\"]+)\")");
+        std::smatch match;
+
+        if (std::regex_search(t_buffer, match, fileNameRegex))
+            fileName = match.str(1);
+    }
+
+    std::ofstream file(fileName, std::ios::out | std::ios::app | std::ios::binary);
+
+    if (file.is_open())
+    {
+        file.write(buffer, __bytesReceived);
+        file.close();
+    }
+
+    if (__bytesReceived < 1025)
+    {
+        if (send(acceptedSocketFileDescriptor, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
+        {
+            std::cerr << "Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+    }
 
     return EXIT_SUCCESS;
 }

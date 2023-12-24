@@ -62,7 +62,7 @@ namespace net
             void clearUserFiles(void) noexcept;
 
             int loginRoute(char *request, int acceptedSocketFileDescriptor);
-            int addFilesRoute(char *request, int acceptedSocketFileDescriptor);
+            int addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;
             void addToUserFiles(const userFiles __uf) noexcept;
