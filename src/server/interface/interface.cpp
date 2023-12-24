@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <malloc.h>
 
 using namespace net;
 using namespace net::interface;

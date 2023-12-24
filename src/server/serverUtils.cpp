@@ -46,7 +46,7 @@ bool findString(const char haystack[], const char needle[]) // created this bec.
         delete[] __copyHaystack;
         return true;
     }
-
+    
     delete[] __copyHaystack;
     return false;
 }
@@ -107,7 +107,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     char *path = nullptr;
     char *allocatedBuffer = buffer;
     char *copyBuffer = new char[strlen(buffer) + 1];
-
+        
     strcpy(copyBuffer, allocatedBuffer);
 
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
@@ -125,7 +125,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
         strcpy(path, "interface/login.html");
 
     delete[] copyBuffer;
-
+    
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
     if (findString(path, "interface") == false)
@@ -219,10 +219,9 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 {
     T buffer[1025];
 
-    int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
-
     while (true)
     {
+        int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
         ssize_t bytesReceived = recv(acceptedSocketFD, buffer, sizeof(buffer), 0);
 
         if (bytesReceived <= 0)
@@ -239,6 +238,9 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 
         HTTPrequestsHandler<T>(buffer, acceptedSocketFD);
     }
+
+    close(socket->getAcceptedSocketFileDescriptor());
+    delete socket;
 }
 
 template <typename T>
@@ -259,9 +261,9 @@ void server::handleClientConnections(int serverSocketFileDescriptor)
         connectedSockets.push_back(*newAcceptedSocket);
 
         printReceivedDataThread(newAcceptedSocket);
-
-        delete newAcceptedSocket;
     }
+
+    close(serverSocketFileDescriptor);
 }
 
 void server::consoleListener(void)
@@ -340,8 +342,7 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
     return connectedSockets;
 }
 
-bool
-server::getServerStatus(void) const noexcept
+bool server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
@@ -385,11 +386,9 @@ void server::SQLfetchUserTable(void)
         char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(password, sqlstr.asStdString().c_str());
 
-        user::userCredentials *t_uc = new user::userCredentials(username, password, id); // create an obj which we are pushing into the vector
+        user::userCredentials t_uc(username, password, id); // create an obj which we are pushing into the vector
 
-        __user->addToUserCredentials(*t_uc);
-
-        delete t_uc; // free the created obj
+        __user->addToUserCredentials(t_uc);
 
         free(username);
         free(password);
@@ -478,7 +477,7 @@ int server::__database_init__(void)
 
         return EXIT_FAILURE;
     }
-
+    
     if (server::database::dbCredentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
     {
         std::cerr << "Failed to get MySQL schema credentails!\n";
@@ -492,7 +491,7 @@ int server::__database_init__(void)
 
     try
     {
-        sql::Driver *driver = nullptr;
+        sql::Driver     *driver = nullptr;
         sql::Connection *con = nullptr;
 
         driver = sql::mysql::get_mysql_driver_instance();
@@ -539,17 +538,8 @@ int server::__database_init__(void)
 
 server::~server()
 {
-    if (db != nullptr)
-    {
-        delete db;
-        db = nullptr;
-    }
-
-    if (__user != nullptr)
-    {
-        delete __user;
-        __user = nullptr;
-    }
+    delete db;
+    delete __user;
 }
 
 int server::__INIT__(char *portArg)
@@ -577,7 +567,6 @@ int server::__INIT__(char *portArg)
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {
-        close(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
         delete serverSocket;
@@ -587,7 +576,7 @@ int server::__INIT__(char *portArg)
 
     char *machineIPv4Address = serverSocket->getMachineIPv4Address();
 
-    std::cout << machineIPv4Address << ":" << port << "\n";
+    std::cout << machineIPv4Address  << ":" << port << "\n";
 
     struct sockaddr_in *serverAddress = serverSocket->IPv4Address(machineIPv4Address, port);
 
@@ -596,7 +585,6 @@ int server::__INIT__(char *portArg)
         std::cerr << "Error binding the server!\n";
         perror("bind");
 
-        close(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
         delete serverSocket;
@@ -610,7 +598,6 @@ int server::__INIT__(char *portArg)
 
     if (listen(serverSocketFD, 10) == -1)
     {
-        close(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         free(serverAddress);
         delete serverSocket;
@@ -621,7 +608,6 @@ int server::__INIT__(char *portArg)
 
     __server->__MASTER_THREAD__(serverSocketFD);
 
-    close(serverSocketFD);
     shutdown(serverSocketFD, SHUT_RDWR);
     free(serverAddress);
     delete serverSocket;

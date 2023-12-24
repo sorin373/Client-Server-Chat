@@ -19,7 +19,7 @@ namespace net
                 char *username, *password;
                 int id;
             public:
-                userCredentials(const char *username = nullptr, const char *password = nullptr, const int id = 0);
+                userCredentials(const char *username, const char *password, const int id);
 
                 char *getUsername(void) const noexcept;
                 char *getPassword(void) const noexcept;
