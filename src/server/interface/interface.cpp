@@ -54,9 +54,9 @@ std::vector<class user::userFiles> user::getUserFiles(void) const noexcept
     return uf;
 }
 
-std::vector<std::string> user::getFileQueue(void) const noexcept
+std::string user::getFileInQueue(void) const noexcept
 {
-    return fileQueue;
+    return fileInQueue;
 }
 
 int user::getSessionID(void) const noexcept
@@ -74,9 +74,9 @@ void user::clearUserFiles(void) noexcept
     uf.clear();
 }
 
-void user::clearFileQueue(void) noexcept
+void user::clearFileInQueue(void) noexcept
 {
-    fileQueue.clear();
+    fileInQueue.clear();
 }
 
 void user::addToUserCredentials(const user::userCredentials __uc) noexcept
@@ -89,9 +89,9 @@ void user::addToUserFiles(const user::userFiles __uf) noexcept
     uf.push_back(__uf);
 }
 
-void user::addToFileQueue(const std::string fileName) noexcept
+void user::addFileInQueue(const std::string fileName) noexcept
 {
-    fileQueue.push_back(fileName);
+    this->fileInQueue = fileName;
 }
 
 /* UserFiles table */
@@ -426,18 +426,7 @@ int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ss
         
         path = path + fileName;
 
-        bool found = false;
-
-        if (!fileQueue.empty())
-            for (std::string fq : fileQueue)
-                if (fq == fileName)
-                {
-                    found = true;
-                    break;
-                }
-
-        if (!found)    
-            addToFileQueue(fileName);
+        addFileInQueue(fileName);
     }
 
     std::ofstream file(path, std::ios::out | std::ios::app | std::ios::binary);

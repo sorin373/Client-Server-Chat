@@ -3,7 +3,6 @@
 #include <cstring>
 
 net::server *__server = nullptr;
-std::ofstream file;
 
 bool findString(const char haystack[], const char needle[]) // created this bec. strstr modifies the string
 {

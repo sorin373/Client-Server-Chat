@@ -66,8 +66,6 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
         delete[] ptr;
 
         changeRoute = false;
-
-        __user->clearFileQueue(); // prepare for POST request
     }
 
     if (findString(route, "/userlogin") == true)
@@ -228,19 +226,18 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
             std::cerr << "Receive failed! "
                       << socket->getError() << "\n";
 
-            std::vector<std::string> fq = __user->getFileQueue();
+            std::string file = __user->getFileInQueue();
 
-            if (!fq.empty())
+            if (!file.empty())
             {
-                for (std::string __fq : fq)
-                    addToFileTable(__fq.c_str(), 0);
+                 addToFileTable(file.c_str(), 0);
 
-                __user->clearFileQueue();
+                __user->clearFileInQueue();
 
                 if (send(acceptedSocketFD, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
                     std::cerr << "Failed to send response.\n";
             }
-            
+
             break;
         }
 
