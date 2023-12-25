@@ -41,7 +41,7 @@ bool changeRoute = false;
 
 template <typename T>
 int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
-{   
+{
     if (changeRoute) // determines the route from the first buffer
     {
         if (route != nullptr)
@@ -66,6 +66,8 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
         delete[] ptr;
 
         changeRoute = false;
+
+        __user->clearFileQueue(); // prepare for POST request
     }
 
     if (findString(route, "/userlogin") == true)
@@ -91,34 +93,45 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     const char root[] = "interface";
     char *path = nullptr;
     char *allocatedBuffer = buffer;
-    char *copyBuffer = new char[strlen(buffer) + 1];
-        
-    strcpy(copyBuffer, allocatedBuffer);
 
-    for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
-        if (allocatedBuffer[i] == '/')
+    if (std::is_same<T, char>::value)
+    {
+        char *copyBuffer = new char[strlen(buffer) + 1];
+        strcpy(copyBuffer, allocatedBuffer);
+
+        for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
+            if (allocatedBuffer[i] == '/')
+            {
+                path = &allocatedBuffer[i];
+                break;
+            }
+
+        if (path != nullptr)
         {
-            path = &allocatedBuffer[i];
-            break;
+            for (int i = 0, n = strlen(path); i < n; i++)
+                if (path[i] == ' ')
+                    path[i] = '\0';
         }
 
-    for (int i = 0, n = strlen(path); i < n; i++)
-        if (path[i] == ' ')
-            path[i] = '\0';
+        if (path == nullptr || strlen(path) == 1 && path[0] == '/')
+        {
+            path = new char[strlen("interface/login.html") + 1];
+            strcpy(path, "interface/login.html");
+        }
 
-    if ((strlen(path) == 1 && path[0] == '/') || path == nullptr)
-        strcpy(path, "interface/login.html");
+        delete[] copyBuffer;
+    }
 
-    delete[] copyBuffer;
-    
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-    if (findString(path, "interface") == false)
+    if (path != nullptr && findString(path, "interface") == false)
+    {
         strcpy(fullPath, root);
+    }
 
     strcat(fullPath, path);
 
-    //std::cout << "\nFULL PATH: " << fullPath << "\n\n";
+    // std::cout << "\nFULL PATH: " << fullPath << "\n\n";
 
     std::ifstream file(fullPath, std::ios::binary);
 
@@ -167,7 +180,7 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
     if (ptr != NULL)
     {
         if (requestType != nullptr)
-             delete[] requestType;
+            delete[] requestType;
 
         changeRoute = true;
 
@@ -204,9 +217,10 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 {
     T buffer[1025];
 
+    int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
+
     while (true)
     {
-        int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
         ssize_t bytesReceived = recv(acceptedSocketFD, buffer, sizeof(buffer), 0);
 
         if (bytesReceived <= 0)
@@ -214,8 +228,19 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
             std::cerr << "Receive failed! "
                       << socket->getError() << "\n";
 
-            /** @todo create a update database function that uploads the data received to the file table */
+            std::vector<std::string> fq = __user->getFileQueue();
 
+            if (!fq.empty())
+            {
+                for (std::string __fq : fq)
+                    addToFileTable(__fq.c_str(), 0);
+
+                __user->clearFileQueue();
+
+                if (send(acceptedSocketFD, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
+                    std::cerr << "Failed to send response.\n";
+            }
+            
             break;
         }
 
@@ -330,7 +355,8 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
     return connectedSockets;
 }
 
-bool server::getServerStatus(void) const noexcept
+bool
+server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
@@ -428,14 +454,27 @@ void server::SQLfetchFileTable(void)
 
 int server::addToFileTable(const char *fileName, const int fileSize)
 {
+    bool found = false;
+    std::vector<class user::userFiles> __userFiles = __user->getUserFiles();
+
+    for (const auto &__uf : __userFiles)
+        if (strcmp(__uf.getFileName(), fileName) == 0)
+        {
+            found = true;
+            break;
+        }
+
+    if (found)
+        return EXIT_SUCCESS;
+
     try
     {
         std::string tableName = "file";
         std::string query = "INSERT INTO " + tableName + " (id, name, size, no_of_downloads) VALUES (?, ?, ?, ?)";
-        
+
         sql::PreparedStatement *prepStmt = db->getCon()->prepareStatement(query);
 
-        prepStmt->setInt(1, __user->getUserCredentialsSize() + 1);
+        prepStmt->setInt(1, __user->getSessionID());
         prepStmt->setString(2, std::string(fileName));
         prepStmt->setInt(3, fileSize);
         prepStmt->setInt(4, 0);
@@ -456,6 +495,8 @@ int server::addToFileTable(const char *fileName, const int fileSize)
 
     SQLfetchFileTable();
     
+    __user->buildIndexHTML();
+
     return EXIT_SUCCESS;
 }
 
@@ -496,7 +537,7 @@ int server::__database_init__(void)
 
         return EXIT_FAILURE;
     }
-    
+
     if (server::database::dbCredentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
     {
         std::cerr << "Failed to get MySQL schema credentails!\n";
@@ -510,7 +551,7 @@ int server::__database_init__(void)
 
     try
     {
-        sql::Driver     *driver = nullptr;
+        sql::Driver *driver = nullptr;
         sql::Connection *con = nullptr;
 
         driver = sql::mysql::get_mysql_driver_instance();
@@ -604,7 +645,7 @@ int server::__INIT__(char *portArg)
 
     char *machineIPv4Address = serverSocket->getMachineIPv4Address();
 
-    std::cout << machineIPv4Address  << ":" << port << "\n";
+    std::cout << machineIPv4Address << ":" << port << "\n";
 
     struct sockaddr_in *serverAddress = serverSocket->IPv4Address(machineIPv4Address, port);
 

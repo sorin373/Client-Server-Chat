@@ -4,6 +4,7 @@
 #define INDEX_HTML "interface/index.html"
 
 #include <vector>
+#include <string>
 #include <stdlib.h>
 
 namespace net
@@ -39,7 +40,7 @@ namespace net
                 userFiles(const char *fileName, const int id, const int fileSize, const int noDownloads);
 
                 char *getFileName(void) const noexcept;
-                long long unsigned int getId(void) const noexcept;
+                int getId(void) const noexcept;
                 int getFileSize(void) const noexcept;
                 int getNoDownloads(void) const noexcept;
 
@@ -48,26 +49,30 @@ namespace net
 
         private:
             int SESSION_ID;
-            std::vector<user::userCredentials> uc;  // log in user credentials
-            std::vector<user::userFiles>       uf;  // user files by SESSION ID
+            std::vector<class userCredentials> uc;        // log in user credentials
+            std::vector<class userFiles>       uf;        // user files by SESSION ID
+            std::vector<std::string>           fileQueue; // remaining file names to be pushed into the database
             
         public:
             user();
 
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;
             std::vector<class userFiles> getUserFiles(void) const noexcept;
+            std::vector<std::string> getFileQueue(void) const noexcept;
             int getSessionID(void) const noexcept;
 
             int getUserCredentialsSize(void) const noexcept;
 
             void clearUserCredentials(void) noexcept;
             void clearUserFiles(void) noexcept;
+            void clearFileQueue(void) noexcept;
 
             int loginRoute(char *request, int acceptedSocketFileDescriptor);
             int addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;
             void addToUserFiles(const userFiles __uf) noexcept;
+            void addToFileQueue(const std::string fileName) noexcept;
 
             bool validateCredentials(char *username, char *password);
 

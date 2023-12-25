@@ -54,6 +54,11 @@ std::vector<class user::userFiles> user::getUserFiles(void) const noexcept
     return uf;
 }
 
+std::vector<std::string> user::getFileQueue(void) const noexcept
+{
+    return fileQueue;
+}
+
 int user::getSessionID(void) const noexcept
 {
     return SESSION_ID;
@@ -69,6 +74,11 @@ void user::clearUserFiles(void) noexcept
     uf.clear();
 }
 
+void user::clearFileQueue(void) noexcept
+{
+    fileQueue.clear();
+}
+
 void user::addToUserCredentials(const user::userCredentials __uc) noexcept
 {
     uc.push_back(__uc);
@@ -77,6 +87,11 @@ void user::addToUserCredentials(const user::userCredentials __uc) noexcept
 void user::addToUserFiles(const user::userFiles __uf) noexcept
 {
     uf.push_back(__uf);
+}
+
+void user::addToFileQueue(const std::string fileName) noexcept
+{
+    fileQueue.push_back(fileName);
 }
 
 /* UserFiles table */
@@ -94,7 +109,7 @@ char *user::userFiles::getFileName(void) const noexcept
     return fileName;
 }
 
-long long unsigned int user::userFiles::getId(void) const noexcept
+int user::userFiles::getId(void) const noexcept
 {
     return id;
 }
@@ -119,7 +134,8 @@ void interface::user::buildIndexHTML(void)
                         <head>
                             <meta charset="UTF-8" />
                             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                            <title>Document</title>
+
+                            <title>Pinnacle</title>
                             <link href="static/stylesheet/index.css" rel="stylesheet" />
 
                             <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
@@ -284,8 +300,30 @@ void interface::user::buildIndexHTML(void)
         </div>
         <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data"">
             <input type="file" name="filename">
-            <input type="submit">
+            <input type="submit" id="refresh-btn">
         </form>
+
+        <script>
+            document.getElementById('addFileForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                fetch('/addFile', {
+                    method: 'POST',
+                    body: new FormData(document.getElementById('addFileForm'))
+                })
+                .then(response => {
+                    console.log('Form submitted successfully!');
+                })
+                .catch(error => {
+                    console.error('Form submission failed:', error);
+                });
+
+                setTimeout(function() {
+                    location.reload();
+                }, 2000);
+            });
+        </script>
+
         </div>
         </body>
         </html>
@@ -311,7 +349,7 @@ bool user::validateCredentials(char *username, char *password)
 int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
-    char unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 19\r\nConnection: close\r\n\r\nInvalid credentials";
+    char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
 
     char *temp_username, *temp_password, *ptr = NULL;
 
@@ -387,6 +425,19 @@ int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ss
             fileName = match.str(1);
         
         path = path + fileName;
+
+        bool found = false;
+
+        if (!fileQueue.empty())
+            for (std::string fq : fileQueue)
+                if (fq == fileName)
+                {
+                    found = true;
+                    break;
+                }
+
+        if (!found)    
+            addToFileQueue(fileName);
     }
 
     std::ofstream file(path, std::ios::out | std::ios::app | std::ios::binary);
@@ -395,16 +446,7 @@ int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ss
     {
         file.write(buffer, __bytesReceived);
         file.close();
-    }
-
-    if (__bytesReceived < 1025)
-    {
-        if (send(acceptedSocketFileDescriptor, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
-        {
-            std::cerr << "Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
-    }
+    }   
 
     return EXIT_SUCCESS;
 }

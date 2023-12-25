@@ -32,9 +32,9 @@ namespace net
         };
 
     private:
-        sql::Driver                 *driver;
-        sql::Connection             *con;
-        class dbCredentials         *__credentials;
+        sql::Driver         *driver;
+        sql::Connection     *con;
+        class dbCredentials *__credentials;
        
     public:
         explicit database(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password);
