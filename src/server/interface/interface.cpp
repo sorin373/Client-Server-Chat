@@ -124,7 +124,7 @@ int user::userFiles::getNoDownloads(void) const noexcept
     return noDownloads;
 }
 
-void interface::user::buildIndexHTML(void)
+void user::buildIndexHTML(void)
 {
     std::ofstream index_html(INDEX_HTML);
 
@@ -406,16 +406,12 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 }
 
 std::string fileName;
-std::string path;
 
-int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
     if (findString(buffer, "filename="))
     {
         fileName.clear();
-        path.clear();
-
-        path = "interface/storage/";
 
         const std::string t_buffer = std::string(buffer);
 
@@ -424,18 +420,21 @@ int user::addFilesRoute(const char *buffer, int acceptedSocketFileDescriptor, ss
 
         if (std::regex_search(t_buffer, match, fileNameRegex))
             fileName = match.str(1);
-        
-        path = path + fileName;
 
         addFileInQueue(fileName);
     }
 
-    std::ofstream file(path, std::ios::out | std::ios::app | std::ios::binary);
+    FILE *file = fopen("interface/storage/temp.bin", "ab");
 
-    if (file.is_open())
+    if (file != NULL)
     {
-        file.write(buffer, __bytesReceived);
-        file.close();
+        fwrite(byteBuffer, sizeof(uint8_t), __bytesReceived, file);
+        fclose(file);
+    }
+    else
+    {
+        std::cerr << "Failed to open file!\n";
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;

@@ -42,6 +42,8 @@ bool changeRoute = false;
 template <typename T>
 int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
+    uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
+
     if (changeRoute) // determines the route from the first buffer
     {
         if (route != nullptr)
@@ -77,7 +79,7 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 
     if (findString(route, "/addFile") == true) /** @todo */
     {
-        __user->addFilesRoute(buffer, acceptedSocketFileDescriptor, __bytesReceived);
+        __user->addFilesRoute(buffer, byteBuffer, acceptedSocketFileDescriptor, __bytesReceived);
 
         return EXIT_SUCCESS;
     }
@@ -210,6 +212,59 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
     return EXIT_SUCCESS;
 }
 
+int server::formatFile(const std::string fileName)
+{
+    std::ifstream file("interface/storage/temp.bin", std::ios::binary);
+
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open binary file!\n";
+        return EXIT_FAILURE;
+    }
+
+    std::string boundary = "------WebKitFormBoundary";
+
+    std::string line;
+    while (std::getline(file, line))
+        if (line.find(boundary) != std::string::npos)
+        {
+            std::ofstream outFile("interface/storage/" + fileName, std::ios::binary);
+            while (std::getline(file, line))
+            {
+                if (line.find(boundary) != std::string::npos)
+                    break;
+
+                outFile << line << "\n";
+            }
+
+            outFile.close();
+            break;
+        }
+
+    file.close();
+
+    remove("interface/storage/temp.bin");
+
+    return EXIT_SUCCESS;
+}
+
+void server::postRecv(const int acceptedSocketFileDescriptor)
+{
+    std::string file = __user->getFileInQueue();
+
+    if (!file.empty())
+    {
+        formatFile(file);
+
+        addToFileTable(file.c_str(), 0);
+
+        __user->clearFileInQueue();
+
+        if (send(acceptedSocketFileDescriptor, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
+            std::cerr << "Failed to send response.\n";
+    }
+}
+
 template <typename T>
 void server::printReceivedData(class acceptedSocket<T> *socket)
 {
@@ -226,17 +281,7 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
             std::cerr << "Receive failed! "
                       << socket->getError() << "\n";
 
-            std::string file = __user->getFileInQueue();
-
-            if (!file.empty())
-            {
-                 addToFileTable(file.c_str(), 0);
-
-                __user->clearFileInQueue();
-
-                if (send(acceptedSocketFD, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
-                    std::cerr << "Failed to send response.\n";
-            }
+            postRecv(acceptedSocketFD);
 
             break;
         }
@@ -491,7 +536,7 @@ int server::addToFileTable(const char *fileName, const int fileSize)
     }
 
     SQLfetchFileTable();
-    
+
     __user->buildIndexHTML();
 
     return EXIT_SUCCESS;
@@ -548,7 +593,7 @@ int server::__database_init__(void)
 
     try
     {
-        sql::Driver     *driver = nullptr;
+        sql::Driver *driver = nullptr;
         sql::Connection *con = nullptr;
 
         driver = sql::mysql::get_mysql_driver_instance();

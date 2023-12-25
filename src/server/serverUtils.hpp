@@ -46,6 +46,8 @@ namespace net
         void handleClientConnections(int serverSocketFileDescriptor);
         template <typename T> void printReceivedDataThread(class acceptedSocket<T> *psocket);
         static void consoleListener(void);
+        void postRecv(const int acceptedSocketFileDescriptor);
+        int formatFile(const std::string fileName);
 
     public:
         server(const int clientSocketFileDescriptor);
