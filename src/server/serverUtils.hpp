@@ -2,10 +2,11 @@
 #ifndef __SERVER_UTILS_HPP__
 #define __SERVER_UTILS_HPP__
 
+#include "interface/interface.hpp"
+#include "../socket/socketUtils.hpp"
+
 #include <vector>
 #include <string>
-#include "../socket/socketUtils.hpp"
-#include "interface/interface.hpp"
 
 namespace net
 {    
@@ -19,9 +20,9 @@ namespace net
         template <typename S> class acceptedSocket
         {
         private:
+            struct sockaddr_in ipAddress;
             int                acceptedSocketFileDescriptor, error;
             bool               acceptStatus;
-            struct sockaddr_in ipAddress;
 
         public:
             acceptedSocket();

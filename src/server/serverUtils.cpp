@@ -548,7 +548,7 @@ int server::__database_init__(void)
 
     try
     {
-        sql::Driver *driver = nullptr;
+        sql::Driver     *driver = nullptr;
         sql::Connection *con = nullptr;
 
         driver = sql::mysql::get_mysql_driver_instance();
