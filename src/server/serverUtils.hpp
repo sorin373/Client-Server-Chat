@@ -10,6 +10,9 @@
 
 namespace net
 {    
+    constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
+    constexpr char LOCAL_STORAGE_PATH[] = "interface/storage/";
+
     class server
     {
     public:

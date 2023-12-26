@@ -125,19 +125,15 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
     if (path != nullptr && findString(path, "interface") == false)
-    {
         strcpy(fullPath, root);
-    }
 
     strcat(fullPath, path);
-
-    // std::cout << "\nFULL PATH: " << fullPath << "\n\n";
 
     std::ifstream file(fullPath, std::ios::binary);
 
     if (!file.is_open())
     {
-        std::cerr << "Failed to open " << path << "!\n";
+        std::cerr << "Failed to open: " << path << '\n';
         return EXIT_FAILURE;
     }
 
@@ -214,36 +210,56 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 
 int server::formatFile(const std::string fileName)
 {
-    std::ifstream file("interface/storage/temp.bin", std::ios::binary);
-
+    std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
+    
     if (!file.is_open())
     {
-        std::cerr << "Failed to open binary file!\n";
+        std::cerr << "Failed to open: " << BINARY_FILE_TEMP_PATH << '\n';
         return EXIT_FAILURE;
     }
 
-    std::string boundary = "------WebKitFormBoundary";
+    std::ofstream outFile(std::string(LOCAL_STORAGE_PATH) + fileName, std::ios::binary);
+
+    if (!outFile.is_open())
+    {
+        std::cerr << "Failed to open: " << std::string(LOCAL_STORAGE_PATH) + fileName << '\n';
+        file.close();
+
+        return EXIT_FAILURE;
+    }
 
     std::string line;
+    bool foundBoundary = false;
+
     while (std::getline(file, line))
-        if (line.find(boundary) != std::string::npos)
+    {
+        if (!foundBoundary && line.find("------WebKitFormBoundary") != std::string::npos)
         {
-            std::ofstream outFile("interface/storage/" + fileName, std::ios::binary);
-            while (std::getline(file, line))
-            {
-                if (line.find(boundary) != std::string::npos)
-                    break;
-
-                outFile << line << "\n";
-            }
-
-            outFile.close();
-            break;
+            foundBoundary = true;
+            continue;
         }
 
-    file.close();
+        if (foundBoundary && line.find("Content-Type:") != std::string::npos)
+        {
+            std::getline(file, line);
 
-    remove("interface/storage/temp.bin");
+            while (std::getline(file, line))
+            {
+                if (line.find("------WebKitFormBoundary") != std::string::npos)
+                    break;
+
+                outFile << line << std::endl;
+            }
+
+            break;
+        }
+    }
+
+    file.close();
+    outFile.close();
+
+    if (remove("interface/storage/temp.bin") != 0)
+        std::cerr << "Failed to removed temp.bin!\n";
 
     return EXIT_SUCCESS;
 }
