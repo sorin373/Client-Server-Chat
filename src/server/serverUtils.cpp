@@ -43,6 +43,7 @@ template <typename T>
 int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
     uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
+    char *charBuffer = reinterpret_cast<char *>(buffer);
 
     if (changeRoute) // determines the route from the first buffer
     {
@@ -72,7 +73,7 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 
     if (findString(route, "/userlogin") == true)
     {
-        __user->loginRoute(buffer, acceptedSocketFileDescriptor);
+        __user->loginRoute(charBuffer, acceptedSocketFileDescriptor);
 
         return EXIT_SUCCESS;
     }
@@ -94,7 +95,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     char *ptr = nullptr, *path = nullptr;
     char defaultPath[] = "interface/login.html";
     const char root[] = "interface";
-    
+
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
         if (allocatedBuffer[i] == '/')
         {
@@ -106,8 +107,6 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
         for (int i = 0, n = strlen(ptr); i < n; i++)
             if (ptr[i] == ' ')
                 ptr[i] = '\0';
-
-    std::cout << ptr;
 
     // set login.html as default route
     if (ptr == nullptr || strlen(ptr) == 1 && ptr[0] == '/')
