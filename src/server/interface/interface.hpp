@@ -48,6 +48,7 @@ namespace net
             };
 
         private:
+            bool AUTH_STATUS;
             int SESSION_ID;
             std::vector<class userCredentials> uc; // log in user credentials
             std::vector<class userFiles>       uf; // user files by SESSION ID
@@ -60,6 +61,7 @@ namespace net
             std::vector<class userFiles> getUserFiles(void) const noexcept;
             std::string getFileInQueue(void) const noexcept;
             int getSessionID(void) const noexcept;
+            bool getAuthStatus(void) const noexcept;
 
             int getUserCredentialsSize(void) const noexcept;
 
@@ -67,7 +69,7 @@ namespace net
             void clearUserFiles(void) noexcept;
             void clearFileInQueue(void) noexcept;
 
-            int loginRoute(char *request, int acceptedSocketFileDescriptor);
+            int loginRoute(char *buffer, int acceptedSocketFileDescriptor);
             int addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;

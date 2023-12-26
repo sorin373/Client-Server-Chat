@@ -90,41 +90,42 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 template <typename T>
 int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
+    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
+    char *ptr = nullptr, *path = nullptr;
+    char defaultPath[] = "interface/login.html";
     const char root[] = "interface";
-    char *path = nullptr;
-    char *allocatedBuffer = buffer;
+    
+    for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
+        if (allocatedBuffer[i] == '/')
+        {
+            ptr = &allocatedBuffer[i];
+            break;
+        }
 
-    if (std::is_same<T, char>::value)
+    if (ptr != nullptr)
+        for (int i = 0, n = strlen(ptr); i < n; i++)
+            if (ptr[i] == ' ')
+                ptr[i] = '\0';
+
+    std::cout << ptr;
+
+    // set login.html as default route
+    if (ptr == nullptr || strlen(ptr) == 1 && ptr[0] == '/')
     {
-        char *copyBuffer = new char[strlen(buffer) + 1];
-        strcpy(copyBuffer, allocatedBuffer);
-
-        for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
-            if (allocatedBuffer[i] == '/')
-            {
-                path = &allocatedBuffer[i];
-                break;
-            }
-
-        if (path != nullptr)
-        {
-            for (int i = 0, n = strlen(path); i < n; i++)
-                if (path[i] == ' ')
-                    path[i] = '\0';
-        }
-
-        if (path == nullptr || strlen(path) == 1 && path[0] == '/')
-        {
-            path = new char[strlen("interface/login.html") + 1];
-            strcpy(path, "interface/login.html");
-        }
-
-        delete[] copyBuffer;
+        path = new char[strlen(defaultPath) + 1];
+        strcpy(path, defaultPath);
     }
+
+    path = new char[strlen(ptr) + 1];
+    strcpy(path, ptr);
+
+    // if trying to navigate to diffrente routes and the user did not go through the login process he will be redirected to the login.html page
+    if (strcmp(path, "/login.html") != 0 && __user->getAuthStatus() == false)
+        strcpy(path, "interface/login.html");
 
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-    if (path != nullptr && findString(path, "interface") == false)
+    if (findString(path, "interface") == false)
         strcpy(fullPath, root);
 
     strcat(fullPath, path);
@@ -150,7 +151,20 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
     {
         std::cerr << "Failed to send response.\n";
+
+        if (path != nullptr)
+        {
+            delete[] path;
+            path = nullptr;
+        }
+
         return EXIT_FAILURE;
+    }
+
+    if (path != nullptr)
+    {
+        delete[] path;
+        path = nullptr;
     }
 
     return EXIT_SUCCESS;
@@ -211,7 +225,7 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 int server::formatFile(const std::string fileName)
 {
     std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
-    
+
     if (!file.is_open())
     {
         std::cerr << "Failed to open: " << BINARY_FILE_TEMP_PATH << '\n';
@@ -284,9 +298,9 @@ void server::postRecv(const int acceptedSocketFileDescriptor)
 template <typename T>
 void server::printReceivedData(class acceptedSocket<T> *socket)
 {
-    T buffer[1025];
-
     int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
+
+    T buffer[1025];
 
     while (true)
     {
@@ -671,6 +685,10 @@ server::~server()
 
 int server::__INIT__(char *portArg)
 {
+    std::ofstream index;
+    index.open("interface/index.html", std::ofstream::out | std::ofstream::trunc);
+    index.close();
+
     int port = 0;
 
     if (portArg == nullptr)

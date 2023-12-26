@@ -36,6 +36,7 @@ int user::userCredentials::getId(void) const noexcept
 
 user::user()
 {
+    this->AUTH_STATUS = false;
     this->SESSION_ID = 0;
 }
 
@@ -62,6 +63,11 @@ std::string user::getFileInQueue(void) const noexcept
 int user::getSessionID(void) const noexcept
 {
     return SESSION_ID;
+}
+
+bool user::getAuthStatus(void) const noexcept
+{
+    return AUTH_STATUS;
 }
 
 void user::clearUserCredentials(void) noexcept
@@ -391,6 +397,8 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 
         return EXIT_SUCCESS;
     }
+    
+    this->AUTH_STATUS = true;
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
