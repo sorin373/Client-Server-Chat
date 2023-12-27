@@ -7,6 +7,9 @@
 #include <string>
 #include <stdlib.h>
 
+#define NET_USERNAME_LENGHT 32
+#define NET_PASSWORD_LENGHT 64
+
 namespace net
 {
     namespace interface 
@@ -64,6 +67,9 @@ namespace net
             int getSessionID(void) const noexcept;
             bool getAuthStatus(void) const noexcept;
 
+            void resetAuthStatus(void) noexcept;
+            void resetSessionID(void) noexcept;
+
             int getUserCredentialsSize(void) const noexcept;
 
             void clearUserCredentials(void) noexcept;
@@ -72,6 +78,7 @@ namespace net
 
             int loginRoute(char *buffer, int acceptedSocketFileDescriptor);
             int addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
+            int changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;
             void addToUserFiles(const userFiles __uf) noexcept;

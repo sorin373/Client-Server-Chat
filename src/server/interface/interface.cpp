@@ -2,12 +2,15 @@
 
 #include "../serverUtils.hpp"
 #include "../declarations.hpp"
+#include "../database/database.hpp"
 
 #include <iostream>
 #include <fstream>
 #include <cstring>
 #include <string>
 #include <regex>
+#include <cppconn/resultset.h>
+#include <cppconn/prepared_statement.h>
 
 using namespace net;
 using namespace net::interface;
@@ -37,7 +40,7 @@ int user::userCredentials::getId(void) const noexcept
 user::user()
 {
     this->AUTH_STATUS = false;
-    this->SESSION_ID = 0;
+    this->SESSION_ID = -1;
 }
 
 std::vector<class user::userCredentials> user::getUserCredentials(void) const noexcept
@@ -68,6 +71,16 @@ int user::getSessionID(void) const noexcept
 bool user::getAuthStatus(void) const noexcept
 {
     return AUTH_STATUS;
+}
+
+void user::resetAuthStatus(void) noexcept
+{
+    this->AUTH_STATUS = false;
+}
+
+void user::resetSessionID(void) noexcept
+{
+    this->SESSION_ID = -1;
 }
 
 void user::clearUserCredentials(void) noexcept
@@ -146,117 +159,47 @@ void user::buildIndexHTML(void)
                         <head>
                             <meta charset="UTF-8"/>
                             <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                            <meta http-equiv="refresh" content="60">
+                            <meta http-equiv="refresh" content="120">
 
-                            <title>Pinnacle</title>
-                            <link href="static/stylesheet/index.css" rel="stylesheet"/>
-
+                            <title>http-server</title>
+                            
                             <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
                                 integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet"/>
                             <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
                                 integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
-                            <!-- Add icon library -->
-                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
-                            <link rel="icon" href="#"/>
+                            <link rel="icon" href="static/assets/logo.png"/>
+                            <link href="static/stylesheet/index.css" rel="stylesheet"/>
 
                             <style>
-                                th {
-                                    text-align: center;
-                                }
-
                                 a {
                                     text-decoration: none;
                                     font-size: 15pt;
                                     padding: 1px 6px;
+                                    color: rgb(66, 66, 66) !important;
                                 }
 
-                                thead {
-                                    background-color: rgb(230, 230, 230);
-                                    border-radius: 0;
-                                    color: rgb(66, 66, 66);
-                                }
-
-                                table {
-                                    width: 100%;
-                                    max-width: 1400px;
-                                }
-
-                                thead {
-                                    border: none !important;
-                                    z-index: 1;
-                                    position: sticky;
-                                    top: 0;
-                                }
-
-                                thead th {
-                                    font-size: 15pt;
-                                    text-transform: uppercase;
-                                    font-weight: 500;
-                                    color: rgb(66, 66, 66);
-                                    border: none !important;
-                                }
-
-                                #td-btn {
-                                    display: flex;
-                                    flex-direction: row;
-                                }
-
-                                button {
-                                    border-style: none;
-                                    background-color: transparent;
-                                }
-
-                                button:hover {
-                                    background-color: rgb(235, 236, 236);
-                                    border-radius: 5px;
-                                }
-
-                                tbody tr {
-                                    color: rgb(66, 66, 66);
-                                }
-
-                                .left-column {
-                                    border-right: solid 2px;
-                                }
-
-                                .right-column {
-                                    border-left: solid 2px;
-                                    width: fit-content;
-                                }
-
-                                .main-container {
-                                    display: flex;
-                                    flex-direction: column;
-                                }
-
-                                #add-button {
-                                    width: fit-content;
-                                    padding: 0.5rem;
-                                    font-weight: 600;
-                                    border: solid 0.1px rgb(153, 153, 153);
-                                    border-radius: 5px;
-                                    color: rgb(65, 64, 64);
-                                }
-
-                                #addFileForm {
-                                    margin: auto;
-                                    margin-top: 1rem;
+                                a:hover {
+                                    color: #005ed8 !important;
                                 }
                             </style>
                         </head>
 
                         <body>
                             <div class="main-container">
+                                <div class="title-container">
+                                    <p>http-server</p>
+                                    <a class="btn btn-primary ext-ref" href="login.html">Logout</a>
+                                </div>
                                 <div class="container">
-                                    <table class="table" style="margin: auto; width: 100%;">
+                                    <table class="table" style="margin: auto;">
                                         <thead>
                                             <tr>
                                                 <th scope="col">#</th>
                                                 <th scope="col">File Name</th>
                                                 <th scope="col">File Size</th>
                                                 <th scope="col">Downloads</th>
-                                                <th scope="col" style="width: 110px;"></th>
+                                                <th scope="col" style="width: 85px;"></th>
                                             </tr>
                                         </thead>
 
@@ -294,14 +237,6 @@ void user::buildIndexHTML(void)
                                 </svg>
                             </a>)";
 
-        td = td + R"(<button type="button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share" viewBox="0 0 16 16">
-                                    <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5m-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"/>
-                                </svg>
-                            </button>
-                            </td>
-                            </tr>)";
-
         std::string HTMLcontent = th1 + th2 + th3 + th4 + td;
 
         index_html << HTMLcontent;
@@ -313,7 +248,7 @@ void user::buildIndexHTML(void)
         </div>
         <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data"">
             <input type="file" name="filename">
-            <input type="submit" id="refresh-btn">
+            <input type="submit" class="btn btn-primary">
         </form>
 
         <script>
@@ -359,14 +294,14 @@ bool user::validateCredentials(char *username, char *password)
     return false;
 }
 
-int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
+int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
 
     char *temp_username, *temp_password, *ptr = NULL;
 
-    ptr = strstr(request, "username=");
+    ptr = strstr(buffer, "username=");
     ptr = strtok(ptr, "&");
 
     if (ptr != NULL)
@@ -377,7 +312,7 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (strlen(temp_username) > 32 || temp_username == nullptr)
+    if (strlen(temp_username) > NET_USERNAME_LENGHT || temp_username == nullptr)
         return EXIT_FAILURE;
 
     ptr = strtok(NULL, " ");
@@ -390,7 +325,7 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (strlen(temp_password) > 64 || temp_password == nullptr)
+    if (strlen(temp_password) > NET_PASSWORD_LENGHT || temp_password == nullptr)
         return EXIT_FAILURE;
 
     if (!validateCredentials(temp_username, temp_password))
@@ -403,7 +338,7 @@ int user::loginRoute(char *request, int acceptedSocketFileDescriptor)
 
         return EXIT_SUCCESS;
     }
-    
+
     this->AUTH_STATUS = true;
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
@@ -449,6 +384,90 @@ int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
     {
         std::cerr << "Failed to open file!\n";
         return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
+{
+    char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
+    char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /changePassword.html\r\nConnection: close\r\n\r\n";
+
+    char *username = nullptr, *oldPassword = nullptr, *newPassword = nullptr, *confirmation = nullptr, *ptr = nullptr;
+    unsigned int count = 0;
+
+    ptr = strstr(buffer, "username=");
+
+    if (ptr != nullptr)
+    {
+        char *str = strtok(ptr, "&");
+
+        while (str != NULL)
+        {
+            for (unsigned int i = 0, n = strlen(str); i < n; i++)
+                if (str[i] == '=')
+                    switch (count)
+                    {
+                    case 0:
+                        username = &str[++i];
+                        break;
+                    case 1:
+                        oldPassword = &str[++i];
+                        break;
+                    case 2:
+                        newPassword = &str[++i];
+                        break;
+                    case 3:
+                        confirmation = &str[++i];
+                        break;
+
+                    default:
+                        break;
+                    }
+
+            str = strtok(NULL, "& ");
+            count++;
+        }
+
+        if (strlen(username) > NET_USERNAME_LENGHT || username == nullptr)
+            return EXIT_FAILURE;
+
+        if (strlen(oldPassword) > NET_PASSWORD_LENGHT || oldPassword == nullptr)
+            return EXIT_FAILURE;
+
+        if (strlen(newPassword) > NET_PASSWORD_LENGHT || newPassword == nullptr)
+            return EXIT_FAILURE;
+
+        if (strlen(confirmation) > strlen(newPassword) || confirmation == nullptr)
+            return EXIT_FAILURE;
+
+        if (!validateCredentials(username, oldPassword) || strcmp(newPassword, confirmation) != 0)
+        {
+            if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+            {
+                std::cerr << "Failed to send response.\n";
+                return EXIT_FAILURE;
+            }
+        }
+
+        std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
+        sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+        prepStmt->setString(1, std::string(newPassword));
+        prepStmt->setString(2, std::string(username));
+
+        prepStmt->executeUpdate();
+
+        delete prepStmt;
+
+        __server->SQLfetchUserTable();
+
+        if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
+        {
+            std::cerr << "Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
     }
 
     return EXIT_SUCCESS;

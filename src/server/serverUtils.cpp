@@ -71,19 +71,17 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
         changeRoute = false;
     }
 
-    if (findString(route, "/userlogin") == true)
-    {
-        __user->loginRoute(charBuffer, acceptedSocketFileDescriptor);
+    if (findString(route, "/userlogin"))
+        if(__user->loginRoute(charBuffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+            return EXIT_FAILURE;
 
-        return EXIT_SUCCESS;
-    }
+    if (findString(route, "/addFile"))
+        if(__user->addFilesRoute(buffer, byteBuffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
+            return EXIT_FAILURE;
 
-    if (findString(route, "/addFile") == true) /** @todo */
-    {
-        __user->addFilesRoute(buffer, byteBuffer, acceptedSocketFileDescriptor, __bytesReceived);
-
-        return EXIT_SUCCESS;
-    }
+    if (findString(route, "/change_password"))
+        if (__user->changePasswordRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+            return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
@@ -113,11 +111,18 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     if (path == nullptr || (strlen(path) == 1 && path[0] == '/'))
         USE_DEFAULT_ROUTE = true;
 
-    if (strcmp(path, "/login.html") != 0 && __user->getAuthStatus() == false)
-        USE_DEFAULT_ROUTE = true;
+    if (strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 && strcmp(path, "/createAccount.html") != 0  && 
+        !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
+            USE_DEFAULT_ROUTE = true;
+
+    if (strcmp(path, "/login.html") == 0)
+    {
+        __user->resetAuthStatus();
+        __user->resetSessionID();
+    }
     
     char fullPath[strlen(root) + strlen(path) + 1] = "";
-
+    
     if (path != nullptr && !findString(path, "interface"))
         strcpy(fullPath, root);
 
@@ -294,7 +299,7 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
 
         if (bytesReceived <= 0)
         {
-            std::cerr << "Receive failed! "
+            std::cerr << "\nReceive failed: "
                       << socket->getError() << "\n";
 
             postRecv(acceptedSocketFD);
