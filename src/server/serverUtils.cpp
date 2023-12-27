@@ -1,4 +1,5 @@
 #include "serverUtils.hpp"
+#include "declarations.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -11,7 +12,6 @@
 #include "database/database.hpp"
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
-#include "declarations.hpp"
 
 using namespace net;
 using namespace net::interface;
@@ -91,52 +91,44 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 template <typename T>
 int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
+    bool USE_DEFAULT_ROUTE = false;
+
+    const char defaultRoute[] = "interface/login.html";
     const char root[] = "interface";
     char *path = nullptr;
-    char *allocatedBuffer = buffer;
+    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
 
-    if (std::is_same<T, char>::value)
-    {
-        char *copyBuffer = new char[strlen(buffer) + 1];
-        strcpy(copyBuffer, allocatedBuffer);
-
-        for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
-            if (allocatedBuffer[i] == '/')
-            {
-                path = &allocatedBuffer[i];
-                break;
-            }
-
-        if (path != nullptr)
+    for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
+        if (allocatedBuffer[i] == '/')
         {
-            for (int i = 0, n = strlen(path); i < n; i++)
-                if (path[i] == ' ')
-                    path[i] = '\0';
+            path = &allocatedBuffer[i];
+            break;
         }
 
-        if (path == nullptr || strlen(path) == 1 && path[0] == '/')
-        {
-            path = new char[strlen("interface/login.html") + 1];
-            strcpy(path, "interface/login.html");
-        }
+    if (path != nullptr)
+        for (int i = 0, n = strlen(path); i < n; i++)
+            if (path[i] == ' ')
+                path[i] = '\0';
 
-        if (strcmp(path, "/login.html") != 0 && __user->getAuthStatus() == false)
-        {
-            path = new char[strlen("interface/login.html") + 1];
-            strcpy(path, "interface/login.html");
-        }
+    if (path == nullptr || (strlen(path) == 1 && path[0] == '/'))
+        USE_DEFAULT_ROUTE = true;
 
-        delete[] copyBuffer;
-    }
-
+    if (strcmp(path, "/login.html") != 0 && __user->getAuthStatus() == false)
+        USE_DEFAULT_ROUTE = true;
+    
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-    if (path != nullptr && findString(path, "interface") == false)
+    if (path != nullptr && !findString(path, "interface"))
         strcpy(fullPath, root);
 
     strcat(fullPath, path);
 
-    std::ifstream file(fullPath, std::ios::binary);
+    std::ifstream file;
+
+    if (USE_DEFAULT_ROUTE)
+        file.open(defaultRoute, std::ios::binary);
+    else
+        file.open(fullPath, std::ios::binary);
 
     if (!file.is_open())
     {
@@ -168,15 +160,16 @@ char *requestType = nullptr;
 template <typename T>
 int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
-    char *copyBuffer = new char[strlen(buffer) + 1];
+    char *charBuffer = reinterpret_cast<char *>(buffer);
+    char *copyBuffer = new char[strlen(charBuffer) + 1];
 
-    strcpy(copyBuffer, buffer);
+    strcpy(copyBuffer, charBuffer);
 
     char *ptr = strstr(copyBuffer, "GET");
 
     if (ptr == NULL)
     {
-        strcpy(copyBuffer, buffer);
+        strcpy(copyBuffer, charBuffer);
         ptr = strstr(copyBuffer, "POST");
     }
 
@@ -289,7 +282,7 @@ void server::postRecv(const int acceptedSocketFileDescriptor)
 }
 
 template <typename T>
-void server::printReceivedData(class acceptedSocket<T> *socket)
+void server::receivedDataHandler(class acceptedSocket<T> *socket)
 {
     int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
 
@@ -322,23 +315,24 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 }
 
 template <typename T>
-void server::printReceivedDataThread(class acceptedSocket<T> *psocket)
+void server::receivedDataHandlerThread(class acceptedSocket<T> *psocket)
 {
-    std::thread printThread(&server::printReceivedData<T>, this, psocket);
+    std::thread printThread(&server::receivedDataHandler<T>, this, psocket);
     printThread.detach();
 }
 
+template <typename T>
 void server::handleClientConnections(int serverSocketFileDescriptor)
 {
     while (server::SERVER_RUNNING)
     {
-        server::acceptedSocket<char> *newAcceptedSocket = new server::acceptedSocket<char>();
+        server::acceptedSocket<T> *newAcceptedSocket = new server::acceptedSocket<T>();
 
         acceptConnection(serverSocketFileDescriptor, newAcceptedSocket);
 
         connectedSockets.push_back(*newAcceptedSocket);
 
-        printReceivedDataThread<char>(newAcceptedSocket);
+        receivedDataHandlerThread<T>(newAcceptedSocket);
     }
 
     close(serverSocketFileDescriptor);
@@ -361,7 +355,7 @@ void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
 {
     SERVER_RUNNING = true;
 
-    std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
+    std::thread workerThread(&server::handleClientConnections<char>, this, serverSocketFileDescriptor);
     workerThread.detach();
 
     std::thread consoleListenerThread(&consoleListener);
@@ -377,9 +371,6 @@ int server::getClientSocketFileDescriptor(void) const noexcept
 {
     return clientSocketFileDescriptor;
 }
-
-template <typename S>
-server::acceptedSocket<S>::acceptedSocket() {}
 
 template <typename S>
 void server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const bool acceptStatus, const int error)
@@ -420,7 +411,8 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
     return connectedSockets;
 }
 
-bool server::getServerStatus(void) const noexcept
+bool
+server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
@@ -675,83 +667,4 @@ server::~server()
         delete this->__user;
         this->__user = nullptr;
     }
-}
-
-int server::__INIT__(char *portArg)
-{
-    std::ofstream index;
-    index.open("interface/index.html", std::ofstream::out | std::ofstream::trunc);
-    index.close();
-
-    int port = 0;
-
-    if (portArg == nullptr)
-        port = DEFAULT_PORT;
-    else
-        port = atoi(portArg);
-
-    SocketUtils *serverSocket = new SocketUtils;
-
-    int serverSocketFD = serverSocket->createSocket();
-
-    if (serverSocketFD == -1)
-    {
-        std::cerr << "Failed to create socket!\n";
-        delete serverSocket;
-
-        return EXIT_FAILURE;
-    }
-
-    __server = new server(serverSocketFD);
-
-    if (__server->__database_init__() == EXIT_FAILURE)
-    {
-        shutdown(serverSocketFD, SHUT_RDWR);
-        delete __server;
-        delete serverSocket;
-
-        return EXIT_FAILURE;
-    }
-
-    char *machineIPv4Address = serverSocket->getMachineIPv4Address();
-
-    std::cout << machineIPv4Address << ":" << port << "\n";
-
-    struct sockaddr_in *serverAddress = serverSocket->IPv4Address(machineIPv4Address, port);
-
-    if (__server->bindServer(serverSocketFD, serverAddress) != 0)
-    {
-        std::cerr << "Error binding the server!\n";
-        perror("bind");
-
-        shutdown(serverSocketFD, SHUT_RDWR);
-        delete __server;
-        delete serverSocket;
-        free(serverAddress);
-        delete[] machineIPv4Address;
-
-        return EXIT_FAILURE;
-    }
-
-    std::cout << "Server socket bound successfully!\n";
-
-    if (listen(serverSocketFD, 10) == -1)
-    {
-        shutdown(serverSocketFD, SHUT_RDWR);
-        free(serverAddress);
-        delete serverSocket;
-        delete __server;
-
-        return EXIT_FAILURE;
-    }
-
-    __server->__MASTER_THREAD__(serverSocketFD);
-
-    shutdown(serverSocketFD, SHUT_RDWR);
-    free(serverAddress);
-    delete serverSocket;
-    delete __server;
-    delete[] machineIPv4Address;
-
-    return EXIT_SUCCESS;
 }
