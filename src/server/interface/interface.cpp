@@ -159,7 +159,6 @@ void user::buildIndexHTML(void)
                         <head>
                             <meta charset="UTF-8"/>
                             <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                            <meta http-equiv="refresh" content="120">
 
                             <title>http-server</title>
                             
@@ -170,6 +169,8 @@ void user::buildIndexHTML(void)
 
                             <link rel="icon" href="static/assets/logo.png"/>
                             <link href="static/stylesheet/index.css" rel="stylesheet"/>
+                            <script src="static/javascript/deleteFileRequest.js"></script>
+                            <script src="static/javascript/addFileRequest.js"></script>
 
                             <style>
                                 a {
@@ -220,7 +221,7 @@ void user::buildIndexHTML(void)
         std::string th4 = "<th scope=\"row\">" + std::to_string(uf[i].getNoDownloads()) + "</th>";
 
         std::string td = R"(<td class="td-btn right-column">
-                            <button type="button">
+                            <button type="button" class="delete-btn">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
                                     <path
                                         d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z" />
@@ -235,7 +236,7 @@ void user::buildIndexHTML(void)
                                     <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
                                     <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
                                 </svg>
-                            </a>)";
+                            </a></td></tr>)";
 
         std::string HTMLcontent = th1 + th2 + th3 + th4 + td;
 
@@ -246,33 +247,19 @@ void user::buildIndexHTML(void)
         </tbody>
         </table>
         </div>
+
         <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data"">
             <input type="file" name="filename">
             <input type="submit" class="btn btn-primary">
         </form>
 
-        <script>
-            document.getElementById('addFileForm').addEventListener('submit', function(event) {
-                event.preventDefault();
-
-                fetch('/addFile', {
-                    method: 'POST',
-                    body: new FormData(document.getElementById('addFileForm'))
-                })
-                .then(response => {
-                    console.log('Form submitted successfully!');
-                })
-                .catch(error => {
-                    console.error('Form submission failed:', error);
-                });
-
-                setTimeout(function() {
-                    location.reload();
-                }, 2000);
-            });
-        </script>
-
         </div>
+
+        <div class="footer">
+            <p>Copyright (c) 2023 Sorin Tudose | </p>
+            <a href="https://github.com/sorin373/HTTP-Server">GitHub</a>
+        </div>
+
         </body>
         </html>
      )";
@@ -479,11 +466,15 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
             return EXIT_FAILURE;
 
         if (!validateCredentials(username, oldPassword) || strcmp(newPassword, confirmation) != 0)
+        {
             if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
             {
                 std::cerr << "Failed to send response.\n";
                 return EXIT_FAILURE;
             }
+
+            return EXIT_SUCCESS;
+        }
 
         std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
         sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
@@ -590,6 +581,45 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     }
 
     if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+    {
+        std::cerr << "Failed to send response.\n";
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
+{
+    char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
+
+    char *ptr = strstr(buffer, "fileID="), *cfileID = nullptr;
+    int fileID = -1;
+
+    if (ptr != nullptr)
+        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+            if (ptr[i] == '=')
+            {
+                cfileID = &ptr[++i];
+                break;
+            }
+
+    if (cfileID != nullptr)
+        fileID = atoi(cfileID);
+
+    std::string query = "DELETE FROM file WHERE file_id=(?)";
+    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+    prepStmt->setInt(1, fileID);
+
+    prepStmt->executeUpdate();
+
+    delete prepStmt;
+
+    __server->SQLfetchFileTable();
+    __server->getUser()->buildIndexHTML();
+
+    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
         std::cerr << "Failed to send response.\n";
         return EXIT_FAILURE;

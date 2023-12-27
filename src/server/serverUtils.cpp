@@ -87,6 +87,10 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
         if (__user->createAccountRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
+    if (findString(route, "/delete_file"))
+        if (__user->deleteFileRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+
     return EXIT_SUCCESS;
 }
 
@@ -267,7 +271,7 @@ int server::formatFile(const std::string fileName)
     file.close();
     outFile.close();
 
-    if (remove("interface/storage/temp.bin") != 0)
+    if (remove(BINARY_FILE_TEMP_PATH) != 0)
         std::cerr << "Failed to removed temp.bin!\n";
 
     return EXIT_SUCCESS;
@@ -275,6 +279,7 @@ int server::formatFile(const std::string fileName)
 
 void server::postRecv(const int acceptedSocketFileDescriptor)
 {
+    char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     std::string file = __user->getFileInQueue();
 
     if (!file.empty())
@@ -285,7 +290,7 @@ void server::postRecv(const int acceptedSocketFileDescriptor)
 
         __user->clearFileInQueue();
 
-        if (send(acceptedSocketFileDescriptor, "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n", 65, 0) == -1)
+        if (send(acceptedSocketFileDescriptor, response, strlen(response), 0) == -1)
             std::cerr << "Failed to send response.\n";
     }
 }
