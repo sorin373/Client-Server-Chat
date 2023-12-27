@@ -1,4 +1,4 @@
-project(PinnacleServer)
+project(httpServer)
 
 set(FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR "/usr")
 include_directories(${FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR}/include)
