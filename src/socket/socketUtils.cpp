@@ -1,9 +1,8 @@
 #include "socketUtils.hpp"
 
+#include <iostream>
 #include <stdlib.h>
 #include <cstring>
-#include <cstdio>
-#include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

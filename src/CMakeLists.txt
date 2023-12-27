@@ -16,7 +16,6 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
 endif()
 
 add_subdirectory(server)
-add_subdirectory(client)
 
 set(DIR "${CMAKE_CURRENT_SOURCE_DIR}/interface")
 set(DESTINATION_DIR "${CMAKE_BINARY_DIR}/server")

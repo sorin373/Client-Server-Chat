@@ -38,5 +38,3 @@ CMakeCache.txt
 Makefile
 *.cmake
 *.vcxproj
-
-src/copy.html

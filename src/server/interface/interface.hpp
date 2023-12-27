@@ -34,13 +34,14 @@ namespace net
             {
             private:
                 char *fileName;
-                int id, fileSize, noDownloads;
+                int userID, fileID, fileSize, noDownloads;
 
             public:
-                userFiles(const char *fileName, const int id, const int fileSize, const int noDownloads);
+                userFiles(const char *fileName, const int uesrID, const int fileID, const int fileSize, const int noDownloads);
 
                 char *getFileName(void) const noexcept;
-                int getId(void) const noexcept;
+                int getUserID(void) const noexcept;
+                int getFileID(void) const noexcept;
                 int getFileSize(void) const noexcept;
                 int getNoDownloads(void) const noexcept;
 

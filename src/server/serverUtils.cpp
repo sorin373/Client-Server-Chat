@@ -91,40 +91,47 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 template <typename T>
 int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
-    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
-    char *ptr = nullptr, *path = nullptr;
-    char defaultPath[] = "interface/login.html";
     const char root[] = "interface";
+    char *path = nullptr;
+    char *allocatedBuffer = buffer;
 
-    for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
-        if (allocatedBuffer[i] == '/')
+    if (std::is_same<T, char>::value)
+    {
+        char *copyBuffer = new char[strlen(buffer) + 1];
+        strcpy(copyBuffer, allocatedBuffer);
+
+        for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
+            if (allocatedBuffer[i] == '/')
+            {
+                path = &allocatedBuffer[i];
+                break;
+            }
+
+        if (path != nullptr)
         {
-            ptr = &allocatedBuffer[i];
-            break;
+            for (int i = 0, n = strlen(path); i < n; i++)
+                if (path[i] == ' ')
+                    path[i] = '\0';
         }
 
-    if (ptr != nullptr)
-        for (int i = 0, n = strlen(ptr); i < n; i++)
-            if (ptr[i] == ' ')
-                ptr[i] = '\0';
+        if (path == nullptr || strlen(path) == 1 && path[0] == '/')
+        {
+            path = new char[strlen("interface/login.html") + 1];
+            strcpy(path, "interface/login.html");
+        }
 
-    // set login.html as default route
-    if (ptr == nullptr || strlen(ptr) == 1 && ptr[0] == '/')
-    {
-        path = new char[strlen(defaultPath) + 1];
-        strcpy(path, defaultPath);
+        if (strcmp(path, "/login.html") != 0 && __user->getAuthStatus() == false)
+        {
+            path = new char[strlen("interface/login.html") + 1];
+            strcpy(path, "interface/login.html");
+        }
+
+        delete[] copyBuffer;
     }
-
-    path = new char[strlen(ptr) + 1];
-    strcpy(path, ptr);
-
-    // if trying to navigate to diffrente routes and the user did not go through the login process he will be redirected to the login.html page
-    if (strcmp(path, "/login.html") != 0 && __user->getAuthStatus() == false)
-        strcpy(path, "interface/login.html");
 
     char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-    if (findString(path, "interface") == false)
+    if (path != nullptr && findString(path, "interface") == false)
         strcpy(fullPath, root);
 
     strcat(fullPath, path);
@@ -150,20 +157,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
     {
         std::cerr << "Failed to send response.\n";
-
-        if (path != nullptr)
-        {
-            delete[] path;
-            path = nullptr;
-        }
-
         return EXIT_FAILURE;
-    }
-
-    if (path != nullptr)
-    {
-        delete[] path;
-        path = nullptr;
     }
 
     return EXIT_SUCCESS;
@@ -330,7 +324,7 @@ void server::printReceivedData(class acceptedSocket<T> *socket)
 template <typename T>
 void server::printReceivedDataThread(class acceptedSocket<T> *psocket)
 {
-    std::thread printThread(&server::printReceivedData<char>, this, psocket);
+    std::thread printThread(&server::printReceivedData<T>, this, psocket);
     printThread.detach();
 }
 
@@ -344,7 +338,7 @@ void server::handleClientConnections(int serverSocketFileDescriptor)
 
         connectedSockets.push_back(*newAcceptedSocket);
 
-        printReceivedDataThread(newAcceptedSocket);
+        printReceivedDataThread<char>(newAcceptedSocket);
     }
 
     close(serverSocketFileDescriptor);
@@ -426,8 +420,7 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
     return connectedSockets;
 }
 
-bool
-server::getServerStatus(void) const noexcept
+bool server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
@@ -493,14 +486,15 @@ void server::SQLfetchFileTable(void)
     sql::Statement *stmt = nullptr;
     sql::ResultSet *res = nullptr;
 
-    std::string SQLquery = "SELECT * FROM file WHERE id=" + std::to_string(__user->getSessionID());
+    std::string SQLquery = "SELECT * FROM file WHERE user_id=" + std::to_string(__user->getSessionID());
 
     stmt = db->getCon()->createStatement();
     res = stmt->executeQuery(SQLquery);
 
     while (res->next())
     {
-        int id = res->getInt("id");
+        int userID = res->getInt("user_id");
+        int fileID = res->getInt("file_id");
         int fileSize = res->getInt("size");
         int downloads = res->getInt("no_of_downloads");
 
@@ -509,7 +503,7 @@ void server::SQLfetchFileTable(void)
         char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(fileName, sqlstr.asStdString().c_str());
 
-        user::userFiles t_uf(fileName, id, fileSize, downloads);
+        user::userFiles t_uf(fileName, userID, fileID, fileSize, downloads);
 
         __user->addToUserFiles(t_uf);
 
@@ -541,14 +535,15 @@ int server::addToFileTable(const char *fileName, const int fileSize)
     try
     {
         std::string tableName = "file";
-        std::string query = "INSERT INTO " + tableName + " (id, name, size, no_of_downloads) VALUES (?, ?, ?, ?)";
+        std::string query = "INSERT INTO " + tableName + " (user_id, file_id, name, size, no_of_downloads) VALUES (?, ?, ?, ?, ?)";
 
         sql::PreparedStatement *prepStmt = db->getCon()->prepareStatement(query);
 
         prepStmt->setInt(1, __user->getSessionID());
-        prepStmt->setString(2, std::string(fileName));
-        prepStmt->setInt(3, fileSize);
-        prepStmt->setInt(4, 0);
+        prepStmt->setInt(2, __userFiles.size());
+        prepStmt->setString(3, std::string(fileName));
+        prepStmt->setInt(4, fileSize);
+        prepStmt->setInt(5, 0);
 
         prepStmt->executeUpdate();
 

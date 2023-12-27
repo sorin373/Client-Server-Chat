@@ -102,10 +102,11 @@ void user::addFileInQueue(const std::string fileName) noexcept
 
 /* UserFiles table */
 
-user::userFiles::userFiles(const char *fileName, const int id, const int fileSize, const int noDownloads)
+user::userFiles::userFiles(const char *fileName, const int uesrID, const int fileID, const int fileSize, const int noDownloads)
 {
     this->fileName = strdup(fileName);
-    this->id = id;
+    this->userID = userID;
+    this->fileID = fileID;
     this->fileSize = fileSize;
     this->noDownloads = noDownloads;
 }
@@ -115,9 +116,14 @@ char *user::userFiles::getFileName(void) const noexcept
     return fileName;
 }
 
-int user::userFiles::getId(void) const noexcept
+int user::userFiles::getUserID(void) const noexcept
 {
-    return id;
+    return userID;
+}
+
+int user::userFiles::getFileID(void) const noexcept
+{
+    return fileID;
 }
 
 int user::userFiles::getFileSize(void) const noexcept
@@ -265,7 +271,7 @@ void user::buildIndexHTML(void)
     {
         strcpy(fileName, uf[i].getFileName());
 
-        std::string th1 = "<tr><th scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getId()) + "</th>";
+        std::string th1 = "<tr><th scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getFileID()) + "</th>";
         std::string th2 = "<th scope=\"row\">" + std::string(uf[i].getFileName()) + "</th>";
         std::string th3 = "<th scope=\"row\">" + std::to_string(uf[i].getFileSize()) + "</th>";
         std::string th4 = "<th scope=\"row\">" + std::to_string(uf[i].getNoDownloads()) + "</th>";
