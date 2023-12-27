@@ -83,6 +83,10 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
         if (__user->changePasswordRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
+    if (findString(route, "/create_account"))
+        if (__user->createAccountRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+
     return EXIT_SUCCESS;
 }
 

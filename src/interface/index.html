@@ -1,0 +1,88 @@
+<!--
+    By applying C++ logic, the "index.html" webpage is built dynamically.
+    Consequently, programming commands written in C++ are used to produce or adjust content, structure and HTML elements during runtime.
+-->
+<!DOCTYPE html>
+                        <html lang="en">
+
+                        <head>
+                            <meta charset="UTF-8"/>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                            <meta http-equiv="refresh" content="120">
+
+                            <title>http-server</title>
+                            
+                            <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+                                integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet"/>
+                            <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+                                integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"></script>
+
+                            <link rel="icon" href="static/assets/logo.png"/>
+                            <link href="static/stylesheet/index.css" rel="stylesheet"/>
+
+                            <style>
+                                a {
+                                    text-decoration: none;
+                                    font-size: 15pt;
+                                    padding: 1px 6px;
+                                    color: rgb(66, 66, 66) !important;
+                                }
+
+                                a:hover {
+                                    color: #005ed8 !important;
+                                }
+                            </style>
+                        </head>
+
+                        <body>
+                            <div class="main-container">
+                                <div class="title-container">
+                                    <p>http-server</p>
+                                    <a class="btn btn-primary ext-ref" href="login.html">Logout</a>
+                                </div>
+                                <div class="container">
+                                    <table class="table" style="margin: auto;">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">#</th>
+                                                <th scope="col">File Name</th>
+                                                <th scope="col">File Size</th>
+                                                <th scope="col">Downloads</th>
+                                                <th scope="col" style="width: 85px;"></th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+        </tbody>
+        </table>
+        </div>
+        <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data"">
+            <input type="file" name="filename">
+            <input type="submit" class="btn btn-primary">
+        </form>
+
+        <script>
+            document.getElementById('addFileForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                fetch('/addFile', {
+                    method: 'POST',
+                    body: new FormData(document.getElementById('addFileForm'))
+                })
+                .then(response => {
+                    console.log('Form submitted successfully!');
+                })
+                .catch(error => {
+                    console.error('Form submission failed:', error);
+                });
+
+                setTimeout(function() {
+                    location.reload();
+                }, 2000);
+            });
+        </script>
+
+        </div>
+        </body>
+        </html>
+     

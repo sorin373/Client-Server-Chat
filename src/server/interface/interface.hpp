@@ -79,12 +79,14 @@ namespace net
             int loginRoute(char *buffer, int acceptedSocketFileDescriptor);
             int addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
             int changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor);
+            int createAccountRoute(char *buffer, int acceptedSocketFileDescriptor);
 
             void addToUserCredentials(const userCredentials __uc) noexcept;
             void addToUserFiles(const userFiles __uf) noexcept;
             void addFileInQueue(const std::string fileName) noexcept;
 
             bool validateCredentials(char *username, char *password);
+            bool findUsername(char *username);
 
             void buildIndexHTML(void);
 
