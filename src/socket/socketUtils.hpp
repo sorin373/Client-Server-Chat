@@ -18,6 +18,7 @@ namespace net
         int createSocket(void);
         int connectToServer(int socketFileDescriptor, struct sockaddr_in *address);
         struct sockaddr_in *IPv4Address(const char *ipAddress = localHostAddress, int port = DEFAULT_PORT);
+        void closeSocket(int socketFileDescriptor);
 
         ~SocketUtils() = default;
     };

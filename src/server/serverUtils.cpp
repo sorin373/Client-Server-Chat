@@ -2,6 +2,7 @@
 #include "declarations.hpp"
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string.h>
 #include <sstream>
@@ -18,7 +19,7 @@ using namespace net::interface;
 
 volatile bool server::SERVER_RUNNING = false;
 
-template void server::__MASTER_THREAD__<char>(int serverSocketFileDescriptor);
+template void server::__SERVER_INIT__<char>(int serverSocketFileDescriptor);
 
 server::server(const int clientSocketFileDescriptor)
 {
@@ -310,7 +311,7 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
 
         if (bytesReceived <= 0)
         {
-            std::cerr << "\nReceive failed: "
+            std::cerr << "-- Receive failed: "
                       << socket->getError() << "\n";
 
             postRecv(acceptedSocketFD);
@@ -318,10 +319,13 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
             break;
         }
 
-        std::cout << "\n____________________________________________________________\n\n";
+        if (DEBUG_FLAG)
+            std::cout << "\n____________________________________________________________\n\n";
 
         buffer[bytesReceived] = '\0';
-        std::cout << buffer;
+
+        if (DEBUG_FLAG)
+            std::cout << buffer;
 
         HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
     }
@@ -350,25 +354,31 @@ void server::handleClientConnections(int serverSocketFileDescriptor)
 
         receivedDataHandlerThread<T>(newAcceptedSocket);
     }
-
-    close(serverSocketFileDescriptor);
 }
 
 void server::consoleListener(void)
 {
+    underline(75);
+
     char input[101] = "";
 
     while (SERVER_RUNNING)
     {
+        std::cout << std::setw(5) << " " << "--> ";
         std::cin >> input;
 
         if (strcasecmp(input, "exit") == 0)
+        {
             SERVER_RUNNING = false;
+
+            if (!DEBUG_FLAG)
+                system("clear");
+        }            
     }
 }
 
 template <typename T>
-void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
+void server::__SERVER_INIT__(int serverSocketFileDescriptor)
 {
     SERVER_RUNNING = true;
 
@@ -379,8 +389,8 @@ void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
     std::thread workerThread(&server::handleClientConnections<T>, this, serverSocketFileDescriptor);
     workerThread.detach();
 
-    // std::thread consoleListenerThread(&consoleListener);
-    // consoleListenerThread.join();
+    std::thread consoleListenerThread(&consoleListener);
+    consoleListenerThread.join();
 }
 
 int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
@@ -432,8 +442,7 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
     return connectedSockets;
 }
 
-bool
-server::getServerStatus(void) const noexcept
+bool server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
@@ -670,7 +679,7 @@ int server::__database_init__(void)
     free(username);
     free(password);
 
-    SQLfetchUserTable(); // get all users
+    SQLfetchUserTable();
 
     return EXIT_SUCCESS;
 }

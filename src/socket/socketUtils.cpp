@@ -3,11 +3,14 @@
 #include <iostream>
 #include <stdlib.h>
 #include <cstring>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-static char *exec(const char *cmd)
+using namespace net;
+
+char *exec(const char *cmd)
 {
     FILE *pipe = popen(cmd, "r");
 
@@ -35,8 +38,6 @@ static char *exec(const char *cmd)
 
     return result;
 }
-
-using namespace net;
 
 int SocketUtils::createSocket(void)
 {
@@ -101,4 +102,9 @@ char *SocketUtils::getMachineIPv4Address(void)
     delete[] ifconfigOutput;
 
     return nullptr;
+}
+
+void SocketUtils::closeSocket(int socketFileDescriptor)
+{
+    close(socketFileDescriptor);
 }

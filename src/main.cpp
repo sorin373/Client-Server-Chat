@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstring>
+#include <iomanip>
 
 using namespace net;
 
@@ -9,37 +11,20 @@ int main(int argc, char *argv[])
 {
     int port = 0;
 
-    if (argc > 2)
-    {
-        std::cerr << "Invalid number of arguments provided.\n"
-                  << "Usage: ./httpServer [port]\n"
-                  << "If no port is provided, the default port will be used.\n";
+    port = getMainArguments(argc, argv);
 
+    if (port == -1)
         return EXIT_FAILURE;
-    }
 
-    if (argc == 1)
-        port = DEFAULT_PORT;
-    else if (argc == 2)
-        if (isNumeric(argv[1]))
-            port = atoi(argv[1]);
-            
-    if (port == 0)
-    {
-        std::cerr << "Invalid port number provided. Please use a valid port number (e.g., 5000).\n"
-                  << "Usage: ./httpServer [port]\n"
-                  << "If no port is provided, the default port will be used.\n";
-
-        return EXIT_FAILURE;
-    }
-        
     SocketUtils serverSocket;
 
     int serverSocketFD = serverSocket.createSocket();
 
     if (serverSocketFD == -1)
     {
-        std::cerr << "Failed to create socket!\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Socket creation failed.\n";
+
         return EXIT_FAILURE;
     }
 
@@ -47,8 +32,12 @@ int main(int argc, char *argv[])
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Database initialization failed.\n";
+
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
+        serverSocket.closeSocket(serverSocketFD);
 
         return EXIT_FAILURE;
     }
@@ -57,21 +46,25 @@ int main(int argc, char *argv[])
 
     if (machineIPv4Address == nullptr)
     {
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Null pointer encountered for machine's IPv4 address.\n";
+
+        serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         delete __server;
 
         return EXIT_FAILURE;
     }
 
-    std::cout << machineIPv4Address << ":" << port << "\n";
-
     struct sockaddr_in *serverAddress = serverSocket.IPv4Address(machineIPv4Address, port);
 
     if (__server->bindServer(serverSocketFD, serverAddress) != 0)
     {
-        std::cerr << "Error binding the server!\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Server encountered an error during the binding process.\n";
         perror("bind");
 
+        serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         free(serverAddress);
         delete __server;
@@ -80,10 +73,29 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    std::cout << "Server socket bound successfully!\n";
+    system("clear");
+
+    std::cout << "\n\n"
+              << std::setw(30) << " "
+              << "+-------------+\n"
+              << std::setw(30) << " "
+              << "| HTTP-SERVER |\n"
+              << std::setw(30) << " "
+              << "+-------------+\n";
+
+    underline(75);
+
+    std::cout << std::setw(5) << " "
+              << "--> Server socket bound successfully!\n"
+              << std::setw(5) << " "
+              << "--> Access the server through your web browser via: \e[1m" << machineIPv4Address << ":" << port << "\e[0m\n";
 
     if (listen(serverSocketFD, 10) == -1)
     {
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to initiate listening on the server socket.\n";
+
+        serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
         free(serverAddress);
         delete __server;
@@ -91,8 +103,9 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    __server->__MASTER_THREAD__<char>(serverSocketFD);
+    __server->__SERVER_INIT__<char>(serverSocketFD);
 
+    serverSocket.closeSocket(serverSocketFD);
     shutdown(serverSocketFD, SHUT_RDWR);
     free(serverAddress);
     delete __server;

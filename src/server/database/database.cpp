@@ -2,6 +2,7 @@
 
 #include <mysql_connection.h>
 #include <mysql_driver.h>
+#include <iomanip>
 #include <cstring>
 #include <vector>
 
@@ -9,12 +10,11 @@ using namespace net;
 
 /*Database*/
 
-server::database::database(sql::Driver *driver, sql::Connection *con, 
+server::database::database(sql::Driver *driver, sql::Connection *con,
                            const char *hostname, const char *username, const char *password)
-{   
+{
     this->driver = driver;
     this->con = con;
-
     this->__credentials = new dbCredentials(hostname, username, password);
 }
 
@@ -61,7 +61,16 @@ char *server::database::dbCredentials::getPassword(void) const noexcept
 
 int server::database::dbCredentials::getCredentials(char *hostname, char *username, char *password)
 {
-    std::cout << "hostname: ";
+    system("clear");
+
+    std::cout << "\n\n"
+              << std::setw(13) << " "
+              << "DATABASE CONNECTION\n"
+              << std::setw(4) << " "
+              << "======================================\n"
+              << std::setw(5) << " "
+              << "Hostname: ";
+
     std::cin.get(hostname, LENGHT);
 
     size_t len = strlen(hostname);
@@ -70,7 +79,8 @@ int server::database::dbCredentials::getCredentials(char *hostname, char *userna
         return EXIT_FAILURE;
 
     std::cin.get();
-    std::cout << "username: ";
+    std::cout << std::setw(5) << " "
+              << "Username: ";
     std::cin.get(username, LENGHT);
 
     len = strlen(username);
@@ -79,7 +89,8 @@ int server::database::dbCredentials::getCredentials(char *hostname, char *userna
         return EXIT_FAILURE;
 
     std::cin.get();
-    std::cout << "password: ";
+    std::cout << std::setw(5) << " "
+              << "Password: ";
     std::cin.get(password, LENGHT);
 
     len = strlen(password);
@@ -92,7 +103,12 @@ int server::database::dbCredentials::getCredentials(char *hostname, char *userna
 
 server::database::dbCredentials::~dbCredentials()
 {
-    free(hostname);
-    free(username);
-    free(password);
+    free(this->hostname);
+    this->hostname = nullptr;
+
+    free(this->username);
+    this->username = nullptr;
+
+    free(this->password);
+    this->password = nullptr;
 }
