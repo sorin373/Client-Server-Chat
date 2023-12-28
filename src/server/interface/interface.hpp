@@ -1,8 +1,6 @@
 #ifndef __INTERFACE_HPP__
 #define __INTERFACE_HPP__
 
-#define INDEX_HTML "interface/index.html"
-
 #include <vector>
 #include <string>
 #include <stdlib.h>
@@ -93,7 +91,7 @@ namespace net
 
             ~user() = default;
         };
-    }
-}
+    };
+};
 
 #endif

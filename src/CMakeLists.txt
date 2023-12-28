@@ -15,10 +15,23 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
     )
 endif()
 
-add_subdirectory(server)
+set(FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR "/usr")
+include_directories(${FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR}/include)
+link_directories(${FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR}/lib)
+
+add_executable(${PROJECT_NAME}
+    "main.cpp"
+    "socket/socketUtils.cpp"
+    "server/serverUtils.cpp" 
+    "server/database/database.cpp" 
+    "server/interface/interface.cpp"
+    "server/declarations.cpp"
+)
+
+target_link_libraries(${PROJECT_NAME} mysqlcppconn)
 
 set(DIR "${CMAKE_CURRENT_SOURCE_DIR}/interface")
-set(DESTINATION_DIR "${CMAKE_BINARY_DIR}/server")
+set(DESTINATION_DIR "${CMAKE_BINARY_DIR}")
 
 file(REMOVE_RECURSE ${DESTINATION_DIR})
 

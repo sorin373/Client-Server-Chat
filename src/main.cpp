@@ -1,5 +1,4 @@
-#include "serverUtils.hpp"
-#include "declarations.hpp"
+#include "httpServer.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -8,17 +7,34 @@ using namespace net;
 
 int main(int argc, char *argv[])
 {
-    std::ofstream index;
-    index.open("interface/index.html", std::ofstream::out | std::ofstream::trunc);
-    index.close();
-
     int port = 0;
 
-    if (argc < 2)
-        port = DEFAULT_PORT;
-    else
-        port = atoi(argv[1]);
+    if (argc > 2)
+    {
+        std::cerr << "Invalid number of arguments provided.\n"
+                  << "Usage: ./httpServer [port]\n"
+                  << "If no port is provided, the default port will be used.\n";
 
+        return EXIT_FAILURE;
+    }
+
+    if (argc == 1)
+        port = DEFAULT_PORT;
+    else if (argc == 2)
+        if (isNumeric(argv[1]))
+            port = atoi(argv[1]);
+
+    std::cout << port << std::endl;
+            
+    if (port == 0)
+    {
+        std::cerr << "Invalid port number provided. Please use a valid port number (e.g., 5000).\n";
+        std::cerr << "Usage: ./httpServer [port]\n";
+        std::cerr << "If no port is provided, the default port will be used.\n";
+
+        return EXIT_FAILURE;
+    }
+        
     SocketUtils serverSocket;
 
     int serverSocketFD = serverSocket.createSocket();
@@ -26,7 +42,6 @@ int main(int argc, char *argv[])
     if (serverSocketFD == -1)
     {
         std::cerr << "Failed to create socket!\n";
-
         return EXIT_FAILURE;
     }
 
@@ -78,7 +93,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    __server->__MASTER_THREAD__(serverSocketFD);
+    __server->__MASTER_THREAD__<char>(serverSocketFD);
 
     shutdown(serverSocketFD, SHUT_RDWR);
     free(serverAddress);
@@ -86,6 +101,4 @@ int main(int argc, char *argv[])
     delete[] machineIPv4Address;
 
     return EXIT_SUCCESS;
-
-    return 0;
 }

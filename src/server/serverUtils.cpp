@@ -18,6 +18,8 @@ using namespace net::interface;
 
 volatile bool server::SERVER_RUNNING = false;
 
+template void server::__MASTER_THREAD__<char>(int serverSocketFileDescriptor);
+
 server::server(const int clientSocketFileDescriptor)
 {
     this->clientSocketFileDescriptor = clientSocketFileDescriptor;
@@ -365,11 +367,16 @@ void server::consoleListener(void)
     }
 }
 
+template <typename T>
 void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
 {
     SERVER_RUNNING = true;
 
-    std::thread workerThread(&server::handleClientConnections<char>, this, serverSocketFileDescriptor);
+    std::ofstream index;
+    index.open(INDEX_HTML_PATH, std::ofstream::out | std::ofstream::trunc);
+    index.close();
+
+    std::thread workerThread(&server::handleClientConnections<T>, this, serverSocketFileDescriptor);
     workerThread.detach();
 
     std::thread consoleListenerThread(&consoleListener);

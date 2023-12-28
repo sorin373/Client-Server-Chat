@@ -5,6 +5,7 @@
 
 extern net::server *__server;
 
-bool findString(const char haystack[], const char needle[]); // created this bec. strstr modifies the string
+bool findString(const char haystack[], const char needle[]);
+bool isNumeric(const char *str);
 
 #endif

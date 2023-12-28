@@ -151,7 +151,7 @@ int user::userFiles::getNoDownloads(void) const noexcept
 
 void user::buildIndexHTML(void)
 {
-    std::ofstream index_html(INDEX_HTML);
+    std::ofstream index_html(INDEX_HTML_PATH);
 
     char firstHTML[] = R"(<!DOCTYPE html>
                         <html lang="en">

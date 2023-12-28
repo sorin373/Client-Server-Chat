@@ -12,6 +12,7 @@ namespace net
 {    
     constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
     constexpr char LOCAL_STORAGE_PATH[] = "interface/storage/";
+    constexpr char INDEX_HTML_PATH[] = "interface/index.html";
 
     class server
     {
@@ -55,7 +56,7 @@ namespace net
     public:
         server(const int clientSocketFileDescriptor);
 
-        void __MASTER_THREAD__(int serverSocketFileDescriptor);
+        template <typename T> void __MASTER_THREAD__(int serverSocketFileDescriptor);
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
         int __database_init__(void);
         void SQLfetchUserTable(void);
