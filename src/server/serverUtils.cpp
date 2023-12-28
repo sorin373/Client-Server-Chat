@@ -626,13 +626,26 @@ int server::__database_init__(void)
         return EXIT_FAILURE;
     }
 
-    if (server::database::dbCredentials::getCredentials(hostname, username, password) == EXIT_FAILURE)
+    char *database = (char *)malloc(LENGHT * sizeof(char) + 1);
+
+    if (database == NULL)
+    {
+        std::cerr << "Failed to allocate database name memory!\n";
+        free(hostname);
+        free(username);
+        free(password);
+
+        return EXIT_FAILURE;
+    }
+
+    if (server::database::dbCredentials::getCredentials(hostname, username, password, database) == EXIT_FAILURE)
     {
         std::cerr << "Failed to get MySQL schema credentails!\n";
 
         free(hostname);
         free(username);
         free(password);
+        free(database);
 
         return EXIT_FAILURE;
     }
@@ -652,13 +665,14 @@ int server::__database_init__(void)
             free(hostname);
             free(username);
             free(password);
+            free(database);
 
             return EXIT_FAILURE;
         }
 
-        con->setSchema("Pinnacle");
+        con->setSchema(database);
 
-        db = new server::database(driver, con, hostname, username, password);
+        db = new server::database(driver, con, hostname, username, password, database);
         __user = new interface::user;
     }
     catch (sql::SQLException &e)
@@ -671,6 +685,7 @@ int server::__database_init__(void)
         free(hostname);
         free(username);
         free(password);
+        free(database);
 
         return EXIT_FAILURE;
     }
@@ -678,6 +693,7 @@ int server::__database_init__(void)
     free(hostname);
     free(username);
     free(password);
+    free(database);
 
     SQLfetchUserTable();
 

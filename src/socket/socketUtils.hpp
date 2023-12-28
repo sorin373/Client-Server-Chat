@@ -1,4 +1,3 @@
-#pragma once
 #ifndef __SOCKET_UTILS_HPP__
 #define __SOCKET_UTILS_HPP__
 

@@ -58,6 +58,7 @@ namespace net
 
         template <typename T> void __SERVER_INIT__(int serverSocketFileDescriptor);
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
+        
         int __database_init__(void);
         void SQLfetchUserTable(void);
         void SQLfetchFileTable(void);

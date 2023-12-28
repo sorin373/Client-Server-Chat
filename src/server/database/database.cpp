@@ -11,11 +11,11 @@ using namespace net;
 /*Database*/
 
 server::database::database(sql::Driver *driver, sql::Connection *con,
-                           const char *hostname, const char *username, const char *password)
+                           const char *hostname, const char *username, const char *password, const char *database)
 {
     this->driver = driver;
     this->con = con;
-    this->__credentials = new dbCredentials(hostname, username, password);
+    this->__credentials = new dbCredentials(hostname, username, password, database);
 }
 
 sql::Connection *server::database::getCon(void) const noexcept
@@ -28,6 +28,11 @@ sql::Driver *server::database::getDriver(void) const noexcept
     return driver;
 }
 
+class server::database::dbCredentials *server::database::getDbCredentials(void) const noexcept
+{
+    return __credentials;
+}
+
 server::database::~database()
 {
     delete __credentials;
@@ -37,11 +42,12 @@ server::database::~database()
 
 /*Credentials*/
 
-server::database::dbCredentials::dbCredentials(const char *hostname, const char *username, const char *password)
+server::database::dbCredentials::dbCredentials(const char *hostname, const char *username, const char *password, const char *database)
 {
     this->hostname = strdup(hostname);
     this->username = strdup(username);
     this->password = strdup(password);
+    this->database = strdup(database);
 }
 
 char *server::database::dbCredentials::getHostname(void) const noexcept
@@ -59,7 +65,12 @@ char *server::database::dbCredentials::getPassword(void) const noexcept
     return const_cast<char *>(password);
 }
 
-int server::database::dbCredentials::getCredentials(char *hostname, char *username, char *password)
+char *server::database::dbCredentials::getDatabase(void) const noexcept
+{
+    return const_cast<char *>(database);
+}
+
+int server::database::dbCredentials::getCredentials(char *hostname, char *username, char *password, char *database)
 {
     system("clear");
 
@@ -98,6 +109,16 @@ int server::database::dbCredentials::getCredentials(char *hostname, char *userna
     if (len > PASSWORD_LENGHT || len == 0)
         return EXIT_FAILURE;
 
+    std::cin.get();
+    std::cout << std::setw(5) << " "
+              << "Database: ";
+    std::cin.get(database, LENGHT);
+
+    len = strlen(database);
+
+    if (len > DATABASE_LENGHT || len == 0)
+        return EXIT_FAILURE;
+
     return EXIT_SUCCESS;
 }
 
@@ -111,4 +132,7 @@ server::database::dbCredentials::~dbCredentials()
 
     free(this->password);
     this->password = nullptr;
+
+    free(this->database);
+    this->database = nullptr;
 }
