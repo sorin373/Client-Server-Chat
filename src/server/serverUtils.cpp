@@ -379,8 +379,8 @@ void server::__MASTER_THREAD__(int serverSocketFileDescriptor)
     std::thread workerThread(&server::handleClientConnections<T>, this, serverSocketFileDescriptor);
     workerThread.detach();
 
-    std::thread consoleListenerThread(&consoleListener);
-    consoleListenerThread.join();
+    // std::thread consoleListenerThread(&consoleListener);
+    // consoleListenerThread.join();
 }
 
 int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
@@ -688,4 +688,6 @@ server::~server()
         delete this->__user;
         this->__user = nullptr;
     }
+
+    connectedSockets.clear();
 }

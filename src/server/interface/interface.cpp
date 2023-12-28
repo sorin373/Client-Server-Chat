@@ -627,3 +627,19 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     return EXIT_SUCCESS;
 }
+
+user::~user()
+{
+    for (auto &__uc : uc)
+    {
+         free(__uc.getUsername());
+         free(__uc.getPassword());
+    }
+
+    uc.clear();
+
+    for (auto &__uf : uf)
+        free(__uf.getFileName());
+
+    uf.clear();
+}

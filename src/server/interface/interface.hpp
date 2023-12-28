@@ -89,7 +89,7 @@ namespace net
 
             void buildIndexHTML(void);
 
-            ~user() = default;
+            ~user();
         };
     };
 };

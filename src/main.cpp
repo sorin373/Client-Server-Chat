@@ -23,14 +23,12 @@ int main(int argc, char *argv[])
     else if (argc == 2)
         if (isNumeric(argv[1]))
             port = atoi(argv[1]);
-
-    std::cout << port << std::endl;
             
     if (port == 0)
     {
-        std::cerr << "Invalid port number provided. Please use a valid port number (e.g., 5000).\n";
-        std::cerr << "Usage: ./httpServer [port]\n";
-        std::cerr << "If no port is provided, the default port will be used.\n";
+        std::cerr << "Invalid port number provided. Please use a valid port number (e.g., 5000).\n"
+                  << "Usage: ./httpServer [port]\n"
+                  << "If no port is provided, the default port will be used.\n";
 
         return EXIT_FAILURE;
     }
