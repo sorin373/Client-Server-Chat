@@ -5,6 +5,7 @@
 #include "../database/database.hpp"
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <cstring>
 #include <string>
@@ -46,11 +47,6 @@ user::user()
 std::vector<class user::userCredentials> user::getUserCredentials(void) const noexcept
 {
     return uc;
-}
-
-int user::getUserCredentialsSize(void) const noexcept
-{
-    return uc.size();
 }
 
 std::vector<class user::userFiles> user::getUserFiles(void) const noexcept
@@ -152,6 +148,12 @@ int user::userFiles::getNoDownloads(void) const noexcept
 void user::buildIndexHTML(void)
 {
     std::ofstream index_html(INDEX_HTML_PATH);
+
+    if (!index_html.is_open())
+    {
+        std::cerr << std::setw(5) << " " << "Error: Failed to open file: " << INDEX_HTML_PATH << "\n";
+        return;
+    }
 
     char firstHTML[] = R"(<!DOCTYPE html>
                         <html lang="en">

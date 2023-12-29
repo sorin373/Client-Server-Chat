@@ -10,7 +10,10 @@ using namespace net;
 
 /*Database*/
 
-server::database::database(sql::Driver *driver, sql::Connection *con,
+template class server<char>;
+
+template <typename T>
+server<T>::database::database(sql::Driver *driver, sql::Connection *con,
                            const char *hostname, const char *username, const char *password, const char *database)
 {
     this->driver = driver;
@@ -18,22 +21,26 @@ server::database::database(sql::Driver *driver, sql::Connection *con,
     this->__credentials = new dbCredentials(hostname, username, password, database);
 }
 
-sql::Connection *server::database::getCon(void) const noexcept
+template <typename T>
+sql::Connection *server<T>::database::getCon(void) const noexcept
 {
     return con;
 }
 
-sql::Driver *server::database::getDriver(void) const noexcept
+template <typename T>
+sql::Driver *server<T>::database::getDriver(void) const noexcept
 {
     return driver;
 }
 
-class server::database::dbCredentials *server::database::getDbCredentials(void) const noexcept
+template <typename T>
+class server<T>::database::dbCredentials *server<T>::database::getDbCredentials(void) const noexcept
 {
     return __credentials;
 }
 
-server::database::~database()
+template <typename T>
+server<T>::database::~database()
 {
     delete __credentials;
     con->close();
@@ -42,7 +49,8 @@ server::database::~database()
 
 /*Credentials*/
 
-server::database::dbCredentials::dbCredentials(const char *hostname, const char *username, const char *password, const char *database)
+template <typename T>
+server<T>::database::dbCredentials::dbCredentials(const char *hostname, const char *username, const char *password, const char *database)
 {
     this->hostname = strdup(hostname);
     this->username = strdup(username);
@@ -50,27 +58,32 @@ server::database::dbCredentials::dbCredentials(const char *hostname, const char 
     this->database = strdup(database);
 }
 
-char *server::database::dbCredentials::getHostname(void) const noexcept
+template <typename T>
+char *server<T>::database::dbCredentials::getHostname(void) const noexcept
 {
     return const_cast<char *>(hostname);
 }
 
-char *server::database::dbCredentials::getUsername(void) const noexcept
+template <typename T>
+char *server<T>::database::dbCredentials::getUsername(void) const noexcept
 {
     return const_cast<char *>(username);
 }
 
-char *server::database::dbCredentials::getPassword(void) const noexcept
+template <typename T>
+char *server<T>::database::dbCredentials::getPassword(void) const noexcept
 {
     return const_cast<char *>(password);
 }
 
-char *server::database::dbCredentials::getDatabase(void) const noexcept
+template <typename T>
+char *server<T>::database::dbCredentials::getDatabase(void) const noexcept
 {
     return const_cast<char *>(database);
 }
 
-int server::database::dbCredentials::getCredentials(char *hostname, char *username, char *password, char *database)
+template <typename T>
+int server<T>::database::dbCredentials::getCredentials(char *hostname, char *username, char *password, char *database)
 {
     system("clear");
 
@@ -125,7 +138,8 @@ int server::database::dbCredentials::getCredentials(char *hostname, char *userna
     return EXIT_SUCCESS;
 }
 
-server::database::dbCredentials::~dbCredentials()
+template <typename T>
+server<T>::database::dbCredentials::~dbCredentials()
 {
     free(this->hostname);
     this->hostname = nullptr;

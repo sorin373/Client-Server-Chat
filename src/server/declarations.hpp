@@ -4,7 +4,7 @@
 #include "serverUtils.hpp"
 
 // Extern pointer to the instance of the net::server class. This allows all files that include this header file to have access to this variable
-extern net::server *__server;
+extern net::server<char> *__server;
 
 extern bool DEBUG_FLAG;
 

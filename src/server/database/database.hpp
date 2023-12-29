@@ -14,7 +14,7 @@
 
 namespace net
 {
-    class server::database
+    template <typename T> class server<T>::database
     {
     public:
         class dbCredentials

@@ -4,7 +4,7 @@
 #include <cstring>
 #include <iomanip>
 
-net::server *__server = nullptr;
+net::server<char> *__server = nullptr;
 bool DEBUG_FLAG = false;
 
 bool findString(const char haystack[], const char needle[])

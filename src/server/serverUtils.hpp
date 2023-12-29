@@ -1,7 +1,7 @@
 /**
- * 
+ *
  *  @file         serverUtils.hpp
- * 
+ *
  *  @copyright    MIT License
  *
  *                Copyright (c) 2023 Sorin Tudose
@@ -22,8 +22,8 @@
  *                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  *                LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *                SOFTWARE.  
- *  
+ *                SOFTWARE.
+ *
  *  @brief        This C++ header file declares the 'server' class which contains core functionalites of an HTTP server.
  *
  */
@@ -46,16 +46,16 @@ namespace net
     constexpr char INDEX_HTML_PATH[] = "interface/index.html";
 
     // Class implementing core functionalities of an HTTP server
+    template <typename T>
     class server
     {
     public:
         static volatile bool SERVER_RUNNING;
-        // Class implementing core functionalities of database. However the tables are stored in the interface class.
+        // Forward declaration for the class implementing core functionalities of database. However the tables are stored in the interface class.
         class database;
 
     public:
-        // Class describing a
-        template <typename S>
+        // Class describing a network socket that has been accepted in a TCP server
         class acceptedSocket
         {
         private:
@@ -68,22 +68,19 @@ namespace net
             void getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error);
             int getAcceptedSocketFileDescriptor(void) const noexcept;
             int getError(void) const noexcept;
-            bool getAcceptStatus(void) const noexcept;
             struct sockaddr_in getIpAddress(void) const noexcept;
 
             ~acceptedSocket() = default;
         };
 
     private:
-        std::vector<struct acceptedSocket<char>> connectedSockets;
+        std::vector<struct acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
 
-        class database *db;
-        class interface::user *__user;
+        class database *db;            // Pointer to the database object.
+        class interface::user *__user; // Pointer to the user object.
 
-        template <typename T>
         void handleClientConnections(int serverSocketFileDescriptor);
-        template <typename T>
-        void receivedDataHandlerThread(class acceptedSocket<T> *psocket);
+        void receivedDataHandlerThread(class acceptedSocket *socket);
         static void consoleListener(void);
         void postRecv(const int acceptedSocketFileDescriptor);
         int formatFile(const std::string fileName);
@@ -98,59 +95,68 @@ namespace net
          *   - Creates a detached thread that handles client connections
          *   - Creates a thread that listens for console input
          */
-        template <typename T>
         void __SERVER_INIT__(int serverSocketFileDescriptor);
 
         /*
-         * This function binds a socket to a specific address and port:
+         * This function binds a socket to a specific address and port. Return 0 for success, -1 for errors:
          *   - Default address: 127.0.0.1
          *   - Default port:    8080
          */
         int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
 
-        // This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.
+        /*
+         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.
+         *   - It allocates memory for the 'database' object class using the new operator (memory release is handled automatically)
+         *   - It allocates memory for the 'user' object class using the new operator (memory release is handled automatically)
+         */
         int __database_init__(void);
 
-        // This function retrives the "user" table from the database
+        // This function retrieves the "user" table from the database
         void SQLfetchUserTable(void);
 
-        // This function retrives the "file" table from the database
+        // This function retrieves the "file" table from the database
         void SQLfetchFileTable(void);
 
-        // Adds the files uploaded to the server. Returns 0 on success, 1 for errors.
+        /**
+         * @brief This function adds the files uploaded to the server.
+         * @return Returns 0 on success, 1 for errors.
+         */
         int addToFileTable(const char *fileName, const int fileSize);
 
-        // This function accepts client connections
-        template <typename T>
-        void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket);
+        // This function accepts client connections.
+        void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket *__acceptedSocket);
 
-        // This function receives the data from the client
-        template <typename T>
-        void receivedDataHandler(class acceptedSocket<T> *socket);
+        // This function receives the data sent by a client.
+        void receivedDataHandler(class acceptedSocket *socket);
 
-        // This function handles HTTP POST requests. Returns 0 on success, 1 for errors.
-        template <typename T>
+        /**
+         * @brief This function handles HTTP POST requests.
+         * @return Returns 0 on success, 1 for errors.
+         */
         int POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
 
-        // This function handles HTTP GET requests. Returns 0 on success, -1 for errors.
-        template <typename T>
+        /**
+         * @brief This function handles HTTP GET requests.
+         * @return Returns 0 on success, 1 for errors.
+         */
         int GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor);
 
-        // This function decided whether the HTTP request is a POST or GET request. Returns 0 on success, 1 for errors.
-        template <typename T>
+        /**
+         * @brief This function decides whether the HTTP request is a POST or GET request.
+         * @return Returns 0 on success, 1 for errors.
+         */
         int HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
 
-        // This function retrives a vector where the connected clients are stored
-        template <typename T>
-        std::vector<class acceptedSocket<T>> getConnectedSockets(void) const noexcept;
+        // This function retrieves a vector where the connected clients are stored
+        std::vector<class acceptedSocket> getConnectedSockets(void) const noexcept;
 
-        // This function retrives the status of the server. Returns true if the server is running, otherwise false.
+        // This function retrieves the status of the server. Returns true if the server is running, otherwise false.
         bool getServerStatus(void) const noexcept;
 
-        // This function retrives a pointer to the "database" object
+        // This function retrieves a pointer to the "database" object
         class database *getSQLdatabase(void) const noexcept;
 
-        // This function retrives a pointer to the "user" object
+        // This function retrieves a pointer to the "user" object
         class interface::user *getUser(void) const noexcept;
 
         ~server();

@@ -17,32 +17,34 @@
 using namespace net;
 using namespace net::interface;
 
-volatile bool server::SERVER_RUNNING = false;
+template class server<char>;
 
-template void server::__SERVER_INIT__<char>(int serverSocketFileDescriptor);
+template <typename T>
+volatile bool server<T>::SERVER_RUNNING = false;
 
-server::server()
+template <typename T>
+server<T>::server()
 {
     this->db = nullptr;
     this->__user = nullptr;
 }
 
 template <typename T>
-void server::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket<T> *__acceptedSocket)
+void server<T>::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket *__acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
 
     int clientSocketFD = accept(serverSocketFileDescriptor, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
 
-    __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0, clientSocketFD <= 0);
+    __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
 }
 
 char *route = nullptr;
 bool changeRoute = false;
 
 template <typename T>
-int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
     uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
     char *charBuffer = reinterpret_cast<char *>(buffer);
@@ -97,7 +99,7 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
 }
 
 template <typename T>
-int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
+int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 {
     bool USE_DEFAULT_ROUTE = false;
 
@@ -176,7 +178,7 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 char *requestType = nullptr;
 
 template <typename T>
-int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
     char *charBuffer = reinterpret_cast<char *>(buffer);
     char *copyBuffer = new char[strlen(charBuffer) + 1];
@@ -208,14 +210,14 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
     }
 
     if (strcmp(requestType, "GET") == 0)
-        if (GETrequestsHandler<T>(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (GETrequestsHandler(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
         }
 
     if (strcmp(requestType, "POST") == 0)
-        if (POSTrequestsHandler<T>(buffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
+        if (POSTrequestsHandler(buffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
@@ -226,7 +228,8 @@ int server::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
     return EXIT_SUCCESS;
 }
 
-int server::formatFile(const std::string fileName)
+template <typename T>
+int server<T>::formatFile(const std::string fileName)
 {
     std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
 
@@ -282,7 +285,8 @@ int server::formatFile(const std::string fileName)
     return EXIT_SUCCESS;
 }
 
-void server::postRecv(const int acceptedSocketFileDescriptor)
+template <typename T>
+void server<T>::postRecv(const int acceptedSocketFileDescriptor)
 {
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     std::string file = __user->getFileInQueue();
@@ -302,7 +306,7 @@ void server::postRecv(const int acceptedSocketFileDescriptor)
 }
 
 template <typename T>
-void server::receivedDataHandler(class acceptedSocket<T> *socket)
+void server<T>::receivedDataHandler(class acceptedSocket *socket)
 {
     int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
 
@@ -335,7 +339,7 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
         if (DEBUG_FLAG)
             std::cout << " " << buffer;
 
-        HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
+        HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
 
     close(socket->getAcceptedSocketFileDescriptor());
@@ -343,28 +347,29 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
 }
 
 template <typename T>
-void server::receivedDataHandlerThread(class acceptedSocket<T> *psocket)
+void server<T>::receivedDataHandlerThread(class acceptedSocket *socket)
 {
-    std::thread printThread(&server::receivedDataHandler<T>, this, psocket);
+    std::thread printThread(&server::receivedDataHandler, this, socket);
     printThread.detach();
 }
 
 template <typename T>
-void server::handleClientConnections(int serverSocketFileDescriptor)
+void server<T>::handleClientConnections(int serverSocketFileDescriptor)
 {
     while (server::SERVER_RUNNING)
     {
-        server::acceptedSocket<T> *newAcceptedSocket = new server::acceptedSocket<T>();
+        server::acceptedSocket *newAcceptedSocket = new server::acceptedSocket();
 
         acceptConnection(serverSocketFileDescriptor, newAcceptedSocket);
 
         connectedSockets.push_back(*newAcceptedSocket);
 
-        receivedDataHandlerThread<T>(newAcceptedSocket);
+        receivedDataHandlerThread(newAcceptedSocket);
     }
 }
 
-void server::consoleListener(void)
+template <typename T>
+void server<T>::consoleListener(void)
 {
     underline(75);
 
@@ -387,7 +392,7 @@ void server::consoleListener(void)
 }
 
 template <typename T>
-void server::__SERVER_INIT__(int serverSocketFileDescriptor)
+void server<T>::__SERVER_INIT__(int serverSocketFileDescriptor)
 {
     SERVER_RUNNING = true;
 
@@ -395,66 +400,71 @@ void server::__SERVER_INIT__(int serverSocketFileDescriptor)
     index.open(INDEX_HTML_PATH, std::ofstream::out | std::ofstream::trunc);
     index.close();
 
-    std::thread workerThread(&server::handleClientConnections<T>, this, serverSocketFileDescriptor);
+    std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
     workerThread.detach();
 
     std::thread consoleListenerThread(&consoleListener);
     consoleListenerThread.join();
 }
 
-int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
+template <typename T>
+int server<T>::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
 {
     return bind(serverSocketFileDescriptor, (struct sockaddr *)serverAddress, sizeof(struct sockaddr_in));
 }
 
-template <typename S>
-void server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error)
+template <typename T>
+void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error)
 {
     this->ipAddress = ipAddress;
     this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
     this->error = error;
 }
 
-template <typename S>
-struct sockaddr_in server::acceptedSocket<S>::getIpAddress(void) const noexcept
+template <typename T>
+struct sockaddr_in server<T>::acceptedSocket::getIpAddress(void) const noexcept
 {
     return ipAddress;
 }
 
-template <typename S>
-int server::acceptedSocket<S>::getError(void) const noexcept
+template <typename T>
+int server<T>::acceptedSocket::getError(void) const noexcept
 {
     return error;
 }
 
-template <typename S>
-int server::acceptedSocket<S>::getAcceptedSocketFileDescriptor(void) const noexcept
+template <typename T>
+int server<T>::acceptedSocket::getAcceptedSocketFileDescriptor(void) const noexcept
 {
     return acceptedSocketFileDescriptor;
 }
 
 template <typename T>
-std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) const noexcept
+std::vector<class server<T>::acceptedSocket> server<T>::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
 }
 
-bool server::getServerStatus(void) const noexcept
+template <typename T>
+bool server<T>::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
 
-class server::database *server::getSQLdatabase(void) const noexcept
+template <typename T>
+class server<T>::database *server<T>::getSQLdatabase(void) const noexcept
 {
     return db;
 }
 
-class interface::user *server::getUser(void) const noexcept
+template <typename T>
+class interface::user *server<T>::getUser(void) const noexcept
 {
     return __user;
 }
 
-void server::SQLfetchUserTable(void)
+template <typename T>
+void server<T>::SQLfetchUserTable(void)
 {
     __user->clearUserCredentials();
 
@@ -493,7 +503,8 @@ void server::SQLfetchUserTable(void)
     delete stmt;
 }
 
-void server::SQLfetchFileTable(void)
+template <typename T>
+void server<T>::SQLfetchFileTable(void)
 {
     __user->clearUserFiles();
 
@@ -531,7 +542,8 @@ void server::SQLfetchFileTable(void)
     delete stmt;
 }
 
-int server::addToFileTable(const char *fileName, const int fileSize)
+template <typename T>
+int server<T>::addToFileTable(const char *fileName, const int fileSize)
 {
     bool found = false;
     std::vector<class user::userFiles> __userFiles = __user->getUserFiles();
@@ -580,11 +592,12 @@ int server::addToFileTable(const char *fileName, const int fileSize)
     return EXIT_SUCCESS;
 }
 
-int server::__database_init__(void)
+template <typename T>
+int server<T>::__database_init__(void)
 {
     if (db != nullptr)
     {
-        std::cerr << "Database is live!\n";
+        std::cout << std::setw(5) << " " << "--> Database is already running.\n";
         return EXIT_SUCCESS;
     }
 
@@ -592,7 +605,7 @@ int server::__database_init__(void)
 
     if (hostname == NULL)
     {
-        std::cerr << "Failed to allocate hostname memory!\n";
+        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate hostname memory.\n";
 
         return EXIT_FAILURE;
     }
@@ -601,7 +614,7 @@ int server::__database_init__(void)
 
     if (username == NULL)
     {
-        std::cerr << "Failed to allocate username memory!\n";
+        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate username memory.\n";
         free(hostname);
 
         return EXIT_FAILURE;
@@ -611,7 +624,7 @@ int server::__database_init__(void)
 
     if (password == NULL)
     {
-        std::cerr << "Failed to allocate password memory!\n";
+        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate password memory.\n";
         free(hostname);
         free(username);
 
@@ -622,7 +635,7 @@ int server::__database_init__(void)
 
     if (database == NULL)
     {
-        std::cerr << "Failed to allocate database name memory!\n";
+        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate database name memory.\n";
         free(hostname);
         free(username);
         free(password);
@@ -630,9 +643,9 @@ int server::__database_init__(void)
         return EXIT_FAILURE;
     }
 
-    if (server::database::dbCredentials::getCredentials(hostname, username, password, database) == EXIT_FAILURE)
+    if (server<T>::database::dbCredentials::getCredentials(hostname, username, password, database) == EXIT_FAILURE)
     {
-        std::cerr << "Failed to get MySQL schema credentails!\n";
+        std::cerr << std::setw(5) << " " << "--> Error: Failed to fetch MySQL schema credentails.\n";
 
         free(hostname);
         free(username);
@@ -652,7 +665,7 @@ int server::__database_init__(void)
 
         if (con == nullptr)
         {
-            std::cerr << "Failed to establish a connection to the database.\n";
+            std::cerr << std::setw(5) << " " << "--> Error: Failed to establish a connection to the database.\n";
 
             free(hostname);
             free(username);
@@ -664,7 +677,7 @@ int server::__database_init__(void)
 
         con->setSchema(database);
 
-        db = new server::database(driver, con, hostname, username, password, database);
+        db = new server<T>::database(driver, con, hostname, username, password, database);
         __user = new interface::user;
     }
     catch (sql::SQLException &e)
@@ -692,7 +705,8 @@ int server::__database_init__(void)
     return EXIT_SUCCESS;
 }
 
-server::~server()
+template <typename T>
+server<T>::~server()
 {
     if (this->db != nullptr)
     {

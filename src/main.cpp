@@ -24,7 +24,7 @@
  *                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *                SOFTWARE.
  *
- * Comaptibility: The application was built and tested on Ubuntu 22.04. In the GitHub repository the lastest DEB install package is
+ * Comaptibility: The application was built and tested on Ubuntu 22.04. In the GitHub repository the latest DEB install package is
  *                available for download.
  *
  * @author        Sorin Tudose
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    __server = new server;
+    __server = new server<char>();
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    __server->__SERVER_INIT__<char>(serverSocketFD);
+    __server->__SERVER_INIT__(serverSocketFD);
 
     serverSocket.closeSocket(serverSocketFD);
     shutdown(serverSocketFD, SHUT_RDWR);
