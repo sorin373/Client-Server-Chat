@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="test.png" alt="Project Logo or Banner" width="200" height="200">
+  <img src="src/interface/static/assets/logo.png" alt="Project Logo or Banner" width="200" height="200">
 </p>
 
 <h3 align="center">
