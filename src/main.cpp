@@ -1,7 +1,7 @@
 /**
- * 
+ *
  * @file          main.cpp
- * 
+ *
  * @copyright     MIT License
  *
  *                Copyright (c) 2023 Sorin Tudose
@@ -29,7 +29,7 @@
  *
  * @author        Sorin Tudose
  *
- * @brief:        This is a simple C++ HTTP server implementation using the Linux Socket API. The main feature is the ability to upload and download
+ * @brief         This is a simple C++ HTTP server implementation using the Linux Socket API. The main feature is the ability to upload and download
  *                files using HTTP requests. Consequently, the data fed into the server is stored locally on my personal computer in a MySQL database
  *                using the MySQL cpp connector library.
  *
@@ -42,7 +42,7 @@
  *                extra permissions to write / read the application files.
  *
  *                Thank you for checking out my project! :D
- * 
+ *
  */
 
 #include "httpServer.hpp"
@@ -51,7 +51,6 @@
 #include <fstream>
 #include <cstring>
 #include <iomanip>
-#include <cppconn/driver.h>
 
 using namespace net;
 
@@ -108,9 +107,11 @@ int main(int argc, char *argv[])
 
     if (__server->bindServer(serverSocketFD, serverAddress) != 0)
     {
-        std::cerr << "\n" << std::setw(5) << " "
+        std::cerr << "\n"
+                  << std::setw(5) << " "
                   << "--> Server encountered an error during the binding process.\n"
-                  << std::setw(5) << " " << "--> ";
+                  << std::setw(5) << " "
+                  << "--> ";
 
         perror("Bind");
 
