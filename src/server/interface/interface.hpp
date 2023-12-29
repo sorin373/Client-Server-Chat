@@ -97,11 +97,8 @@ namespace net
             std::string fileInQueue;
 
             /**
-             *
              * @brief This function validates user credentials.
-             *
              * @return Returns true on success and false if the user credentials are not valid.
-             *
              */
             bool validateCredentials(char *username, char *password);
             bool findUsername(char *username);
@@ -122,11 +119,8 @@ namespace net
             int getSessionID(void) const noexcept;
 
             /**
-             *
              * @brief This function retrieves the authentification status.
-             *
              * @return Returns true if the user is signed in, false otherwise.
-             *
              */
             bool getAuthStatus(void) const noexcept;
 
@@ -198,6 +192,7 @@ namespace net
             /**
              *
              * @brief This function handles the '/delete_files' route, sending an appropriate HTTP response to the client.
+             *        It deletes the files from the server. (automatically the files on the local machine will be deleted as well)
              *
              * @param buffer Contains the request data.
              * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.

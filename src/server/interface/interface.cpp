@@ -125,7 +125,7 @@ char *user::userFiles::getFileName(void) const noexcept
     return fileName;
 }
 
-int user::userFiles::getUserID(void) const noexcept
+int user::userFiles::getUserID(void) const noexcept(true)
 {
     return userID;
 }
@@ -140,7 +140,7 @@ int user::userFiles::getFileSize(void) const noexcept
     return fileSize;
 }
 
-int user::userFiles::getNoDownloads(void) const noexcept
+int user::userFiles::getNoDownloads(void) const noexcept(true)
 {
     return noDownloads;
 }
@@ -609,17 +609,34 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     if (cfileID != nullptr)
         fileID = atoi(cfileID);
 
-    std::string query = "DELETE FROM file WHERE file_id=(?)";
+    std::string query = "SELECT name FROM file WHERE file_id=(?)";
+    sql::ResultSet *res = nullptr;
+
     sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, fileID);
+    res = prepStmt->executeQuery();
 
+    while (res->next())
+         std::string fileName = res->getString("name");
+
+    delete res;
+    delete prepStmt;
+
+    std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;
+
+    std::string deleteQuery = "DELETE FROM file WHERE file_id=(?)";
+
+    prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
+
+    prepStmt->setInt(1, fileID);
     prepStmt->executeUpdate();
 
     delete prepStmt;
-
+    
     __server->SQLfetchFileTable();
     __server->getUser()->buildIndexHTML();
+    remove(fileToDelete.c_str());
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {

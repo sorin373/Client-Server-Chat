@@ -40,7 +40,7 @@
 namespace net
 {
     /**
-     *  @brief temp.bin is a file that is created when uploading a file to the server
+     *  @brief 'temp.bin' is a file that is created when uploading a file to the server
      *         After being written the file is correctly formated and copied. Finally temp.bin is removed.
      */
     constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
@@ -68,24 +68,44 @@ namespace net
             acceptedSocket() = default;
 
             void getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error);
-            int getAcceptedSocketFileDescriptor(void) const noexcept;
-            int getError(void) const noexcept;
-            struct sockaddr_in getIpAddress(void) const noexcept;
+            int getAcceptedSocketFileDescriptor(void) const noexcept(true);
+            int getError(void) const noexcept(true);
+            struct sockaddr_in getIpAddress(void) const noexcept(true);
 
             ~acceptedSocket() = default;
         };
 
     private:
         std::vector<struct acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
-
-        class database *db;            // Pointer to the database object.
-        class interface::user *__user; // Pointer to the user object.
-
+        class database        *db;                           // Pointer to the 'database' object.
+        class interface::user *__user;                       // Pointer to the 'user' object.
+        
+        /**
+         * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
+         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         */
         void handleClientConnections(int serverSocketFileDescriptor);
+
+        /**
+         * @brief This function crestes a thread for an accepted socket. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
+         * @param acceptedSocket Object describing a network socket that has been accepted in a TCP server.
+         */
         void receivedDataHandlerThread(class acceptedSocket *socket);
-        static void consoleListener(void);
-        void postRecv(const int acceptedSocketFileDescriptor);
+
+        /**
+         * @brief If a file has been uploaded to the server this function performs post receive file formating on the 'temp.bin' file. 
+         * @return Returns 0 on success, 1 for errors.
+         */
         int formatFile(const std::string fileName);
+        
+        /**
+         * @brief If a file has been uploaded to the server this function performs post receive operations such as: 
+         *        file formatting, adding the file metadata to the database and clearing the file from the queue.
+         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         */
+        void postRecv(const int acceptedSocketFileDescriptor);
+
+        static void consoleListener(void);
 
     public:
         server();

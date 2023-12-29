@@ -1,5 +1,7 @@
 #include "serverUtils.hpp"
 #include "declarations.hpp"
+#include "interface/interface.hpp"
+#include "database/database.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -9,8 +11,6 @@
 #include <vector>
 #include <thread>
 #include <netinet/in.h>
-#include "interface/interface.hpp"
-#include "database/database.hpp"
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
 
@@ -21,6 +21,8 @@ template class server<char>;
 
 template <typename T>
 volatile bool server<T>::SERVER_RUNNING = false;
+
+/* server */
 
 template <typename T>
 server<T>::server()
@@ -414,32 +416,6 @@ int server<T>::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *se
 }
 
 template <typename T>
-void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error)
-{
-    this->ipAddress = ipAddress;
-    this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
-    this->error = error;
-}
-
-template <typename T>
-struct sockaddr_in server<T>::acceptedSocket::getIpAddress(void) const noexcept
-{
-    return ipAddress;
-}
-
-template <typename T>
-int server<T>::acceptedSocket::getError(void) const noexcept
-{
-    return error;
-}
-
-template <typename T>
-int server<T>::acceptedSocket::getAcceptedSocketFileDescriptor(void) const noexcept
-{
-    return acceptedSocketFileDescriptor;
-}
-
-template <typename T>
 std::vector<class server<T>::acceptedSocket> server<T>::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
@@ -558,6 +534,24 @@ int server<T>::addToFileTable(const char *fileName, const int fileSize)
     if (found)
         return EXIT_SUCCESS;
 
+    int maxID = 0;
+
+    sql::Statement *stmt = nullptr;
+    sql::ResultSet *res = nullptr;
+
+    stmt = db->getCon()->createStatement();
+    res = stmt->executeQuery("SELECT file_id FROM file");
+
+    while (res->next())
+    {
+        int fileID = res->getInt("file_id");
+        if (fileID > maxID)
+            maxID = fileID;
+    }
+
+    delete stmt;
+    delete res;
+
     try
     {
         std::string tableName = "file";
@@ -566,7 +560,7 @@ int server<T>::addToFileTable(const char *fileName, const int fileSize)
         sql::PreparedStatement *prepStmt = db->getCon()->prepareStatement(query);
 
         prepStmt->setInt(1, __user->getSessionID());
-        prepStmt->setInt(2, __userFiles.size());
+        prepStmt->setInt(2, maxID + 1);
         prepStmt->setString(3, std::string(fileName));
         prepStmt->setInt(4, fileSize);
         prepStmt->setInt(5, 0);
@@ -721,4 +715,32 @@ server<T>::~server()
     }
 
     connectedSockets.clear();
+}
+
+/* acceptedSocket */
+
+template <typename T>
+void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error)
+{
+    this->ipAddress = ipAddress;
+    this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
+    this->error = error;
+}
+
+template <typename T>
+struct sockaddr_in server<T>::acceptedSocket::getIpAddress(void) const noexcept
+{
+    return ipAddress;
+}
+
+template <typename T>
+int server<T>::acceptedSocket::getError(void) const noexcept
+{
+    return error;
+}
+
+template <typename T>
+int server<T>::acceptedSocket::getAcceptedSocketFileDescriptor(void) const noexcept
+{
+    return acceptedSocketFileDescriptor;
 }

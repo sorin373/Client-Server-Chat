@@ -37,7 +37,7 @@
  *
  * Github:        https://github.com/sorin373/HTTP-Server
  *
- * Test it:       In order to successfully run the server on your local machine you first need to setup a database. I uploaded the table formats on github
+ * Test it:       In order to successfully run the server on your local machine you first need to setup a database. I uploaded the table formats int GitHub repository
  *                as CSV files which can be used to get the app running quickly. Moreover keep in mind that the executeable must be run with SUDO as it needs
  *                extra permissions to write / read the application files.
  *
@@ -51,6 +51,7 @@
 #include <fstream>
 #include <cstring>
 #include <iomanip>
+#include <cppconn/driver.h>
 
 using namespace net;
 
@@ -137,9 +138,13 @@ int main(int argc, char *argv[])
     underline(75);
 
     std::cout << std::setw(5) << " "
+              << "--> Database authentication successful!\n"
+              << std::setw(5) << " "
               << "--> Server socket bound successfully!\n"
               << std::setw(5) << " "
-              << "--> Access the server through your web browser via: \e[1m" << machineIPv4Address << ":" << port << "\e[0m\n";
+              << "--> Access the server through your web browser via: \e[1m" << machineIPv4Address << ":" << port << "\e[0m\n"
+              << std::setw(5) << " "
+              << "    In order to shutdown the server type 'exit' in the console!\n";
 
     if (listen(serverSocketFD, 10) == -1)
     {

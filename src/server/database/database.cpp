@@ -8,7 +8,7 @@
 
 using namespace net;
 
-/*Database*/
+/* Database */
 
 template class server<char>;
 
@@ -18,7 +18,7 @@ server<T>::database::database(sql::Driver *driver, sql::Connection *con,
 {
     this->driver = driver;
     this->con = con;
-    this->__credentials = new dbCredentials(hostname, username, password, database);
+    this->databaseCredentials = new dbCredentials(hostname, username, password, database);
 }
 
 template <typename T>
@@ -36,18 +36,18 @@ sql::Driver *server<T>::database::getDriver(void) const noexcept
 template <typename T>
 class server<T>::database::dbCredentials *server<T>::database::getDbCredentials(void) const noexcept
 {
-    return __credentials;
+    return databaseCredentials;
 }
 
 template <typename T>
 server<T>::database::~database()
 {
-    delete __credentials;
+    delete databaseCredentials;
     con->close();
     delete con;
 }
 
-/*Credentials*/
+/* dbCredentials */
 
 template <typename T>
 server<T>::database::dbCredentials::dbCredentials(const char *hostname, const char *username, const char *password, const char *database)

@@ -1,24 +1,30 @@
+/**
+ * 
+ * @file addFileRequest.js
+ * 
+ * @brief This JS script sends a form containg the file data that is sent to the HTTP server
+ * 
+ */
+
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById('addFileForm').addEventListener('submit', function(event) {
+    document.getElementById('addFileForm').addEventListener('submit', function (event) {
         event.preventDefault();
 
         fetch('/addFile', {
             method: 'POST',
             body: new FormData(document.getElementById('addFileForm'))
         })
-        .then(response => {
-            if (response.ok) {
-                console.log('Form submitted successfully!');
-            }
-        })
-        .catch(error => {
-            console.error('Form submission failed:', error);
-        });
+            .then(response => {
+                if (response.ok) {
+                    console.log('Form submitted successfully!');
+                }
+            })
+            .catch(error => {
+                console.error('Form submission failed:', error);
+            });
 
-        setTimeout(function() {
-            location.reload();
-        }, 2000);
+        location.reload();
 
-        alert('File added successfully!');
+        alert('File added successfully!\nRefresh the page in order to see the changes.');
     });
 });
