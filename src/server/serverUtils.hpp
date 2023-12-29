@@ -68,9 +68,9 @@ namespace net
             acceptedSocket() = default;
 
             void getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error);
-            int getAcceptedSocketFileDescriptor(void) const noexcept(true);
-            int getError(void) const noexcept(true);
-            struct sockaddr_in getIpAddress(void) const noexcept(true);
+            int getAcceptedSocketFileDescriptor(void) const noexcept;
+            int getError(void) const noexcept;
+            struct sockaddr_in getIpAddress(void) const noexcept;
 
             ~acceptedSocket() = default;
         };
