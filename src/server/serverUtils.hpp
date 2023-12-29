@@ -39,9 +39,11 @@
 
 namespace net
 {
-    constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin"; // temp.bin is a file that is created when uploading a file to the server
-                                                                           // After being written the file is correctly formated and copied
-                                                                           // Finally temp.bin is removed
+    /**
+     *  @brief temp.bin is a file that is created when uploading a file to the server
+     *         After being written the file is correctly formated and copied. Finally temp.bin is removed.
+     */
+    constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
     constexpr char LOCAL_STORAGE_PATH[] = "interface/storage/";
     constexpr char INDEX_HTML_PATH[] = "interface/index.html";
 
@@ -131,32 +133,32 @@ namespace net
 
         /**
          * @brief This function handles HTTP POST requests.
-         * 
+         *
          * @param buffer Contains the request data.
          * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
          * @param __bytesReceived The size of the current buffer
-         * 
+         *
          * @return Returns 0 on success, 1 for errors.
          */
         int POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
 
         /**
          * @brief This function handles HTTP GET requests.
-         * 
+         *
          * @param buffer Contains the request data.
          * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
-         * 
+         *
          * @return Returns 0 on success, 1 for errors.
          */
         int GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor);
 
         /**
          * @brief This function decides whether the HTTP request is a POST or GET request.
-         * 
+         *
          * @param buffer Contains the request data.
          * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
          * @param __bytesReceived The size of the current buffer
-         * 
+         *
          * @return Returns 0 on success, 1 for errors.
          */
         int HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
