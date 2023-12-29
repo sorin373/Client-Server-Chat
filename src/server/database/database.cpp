@@ -119,6 +119,9 @@ int server::database::dbCredentials::getCredentials(char *hostname, char *userna
     if (len > DATABASE_LENGHT || len == 0)
         return EXIT_FAILURE;
 
+    std::cout << std::setw(4) << " "
+              << "======================================\n";
+
     return EXIT_SUCCESS;
 }
 

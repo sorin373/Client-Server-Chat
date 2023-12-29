@@ -7,7 +7,7 @@
 net::server *__server = nullptr;
 bool DEBUG_FLAG = false;
 
-bool findString(const char haystack[], const char needle[]) // created this bec. strstr modifies the string
+bool findString(const char haystack[], const char needle[])
 {
     char *__copyHaystack = new char[strlen(haystack) + 1];
     strcpy(__copyHaystack, haystack);

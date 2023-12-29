@@ -49,4 +49,4 @@ namespace net
     };
 };
 
-#endif
+#endif // __DATABASE_HPP__

@@ -21,9 +21,8 @@ volatile bool server::SERVER_RUNNING = false;
 
 template void server::__SERVER_INIT__<char>(int serverSocketFileDescriptor);
 
-server::server(const int clientSocketFileDescriptor)
+server::server()
 {
-    this->clientSocketFileDescriptor = clientSocketFileDescriptor;
     this->db = nullptr;
     this->__user = nullptr;
 }
@@ -75,11 +74,11 @@ int server::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssi
     }
 
     if (findString(route, "/userlogin"))
-        if(__user->loginRoute(charBuffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (__user->loginRoute(charBuffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/addFile"))
-        if(__user->addFilesRoute(buffer, byteBuffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
+        if (__user->addFilesRoute(buffer, byteBuffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/change_password"))
@@ -122,18 +121,18 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     if (path == nullptr || (strlen(path) == 1 && path[0] == '/'))
         USE_DEFAULT_ROUTE = true;
 
-    if (strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 && strcmp(path, "/createAccount.html") != 0  && 
+    if (strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 && strcmp(path, "/createAccount.html") != 0 &&
         !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
-            USE_DEFAULT_ROUTE = true;
+        USE_DEFAULT_ROUTE = true;
 
     if (strcmp(path, "/login.html") == 0)
     {
         __user->resetAuthStatus();
         __user->resetSessionID();
     }
-    
+
     char fullPath[strlen(root) + strlen(path) + 1] = "";
-    
+
     if (path != nullptr && !findString(path, "interface"))
         strcpy(fullPath, root);
 
@@ -148,7 +147,9 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 
     if (!file.is_open())
     {
-        std::cerr << "Failed to open: " << path << '\n';
+        if (DEBUG_FLAG)
+            std::cerr << std::setw(5) << " "
+                      << "--> Encountered an error while attempting to open the file: " << path << '\n';
         return EXIT_FAILURE;
     }
 
@@ -164,7 +165,8 @@ int server::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 
     if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
     {
-        std::cerr << "Failed to send response.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send HTTP response.\n";
         return EXIT_FAILURE;
     }
 
@@ -294,7 +296,8 @@ void server::postRecv(const int acceptedSocketFileDescriptor)
         __user->clearFileInQueue();
 
         if (send(acceptedSocketFileDescriptor, response, strlen(response), 0) == -1)
-            std::cerr << "Failed to send response.\n";
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send HTTP response.\n";
     }
 }
 
@@ -311,8 +314,10 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
 
         if (bytesReceived <= 0)
         {
-            std::cerr << "-- Receive failed: "
-                      << socket->getError() << "\n";
+            if (DEBUG_FLAG)
+                std::cerr << std::setw(5) << " "
+                          << "--> Receive failed: "
+                          << socket->getError() << "\n";
 
             postRecv(acceptedSocketFD);
 
@@ -320,12 +325,15 @@ void server::receivedDataHandler(class acceptedSocket<T> *socket)
         }
 
         if (DEBUG_FLAG)
-            std::cout << "\n____________________________________________________________\n\n";
+        {
+            std::cout << "\n";
+            underline(75);
+        }
 
         buffer[bytesReceived] = '\0';
 
         if (DEBUG_FLAG)
-            std::cout << buffer;
+            std::cout << " " << buffer;
 
         HTTPrequestsHandler<T>(buffer, acceptedSocketFD, bytesReceived);
     }
@@ -364,7 +372,8 @@ void server::consoleListener(void)
 
     while (SERVER_RUNNING)
     {
-        std::cout << std::setw(5) << " " << "--> ";
+        std::cout << std::setw(5) << " "
+                  << "--> ";
         std::cin >> input;
 
         if (strcasecmp(input, "exit") == 0)
@@ -373,7 +382,7 @@ void server::consoleListener(void)
 
             if (!DEBUG_FLAG)
                 system("clear");
-        }            
+        }
     }
 }
 
@@ -398,17 +407,11 @@ int server::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serve
     return bind(serverSocketFileDescriptor, (struct sockaddr *)serverAddress, sizeof(struct sockaddr_in));
 }
 
-int server::getClientSocketFileDescriptor(void) const noexcept
-{
-    return clientSocketFileDescriptor;
-}
-
 template <typename S>
-void server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const bool acceptStatus, const int error)
+void server::acceptedSocket<S>::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error)
 {
     this->ipAddress = ipAddress;
     this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
-    this->acceptStatus = acceptStatus;
     this->error = error;
 }
 
@@ -422,12 +425,6 @@ template <typename S>
 int server::acceptedSocket<S>::getError(void) const noexcept
 {
     return error;
-}
-
-template <typename S>
-bool server::acceptedSocket<S>::getAcceptStatus(void) const noexcept
-{
-    return acceptStatus;
 }
 
 template <typename S>
@@ -445,11 +442,6 @@ std::vector<class server::acceptedSocket<T>> server::getConnectedSockets(void) c
 bool server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
-}
-
-int server::getNoOfConnectedSockets(void) const noexcept
-{
-    return connectedSockets.size();
 }
 
 class server::database *server::getSQLdatabase(void) const noexcept

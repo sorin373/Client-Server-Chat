@@ -90,8 +90,8 @@ namespace net
             void buildIndexHTML(void);
 
             ~user();
-        };
-    };
-};
+        }; // user
+    }; // interface 
+}; // net
 
-#endif
+#endif // __INTERFACE_HPP__

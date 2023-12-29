@@ -23,13 +23,18 @@
  *                LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *                SOFTWARE.
- *
+ * 
+ *  @brief        This C++ header file includes essential header files used for the server implementation
+ * 
  */
 
 #ifndef __HTTP_SERVER_HPP__
 #define __HTTP_SERVER_HPP__
 
+// This header file contains important global variable declarations and function prototypes
 #include "server/declarations.hpp"
+
+// This header file contains the server class prototype
 #include "server/serverUtils.hpp"
 
-#endif
+#endif // __HTTP_SERVER_HPP__

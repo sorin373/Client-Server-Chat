@@ -24,7 +24,8 @@
  *                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *                SOFTWARE.
  *
- * Comaptibility: The program was built and tested on Ubuntu 22.04.
+ * Comaptibility: The application was built and tested on Ubuntu 22.04. In the GitHub repository the lastest DEB install package is
+ *                available for download.
  *
  * @author        Sorin Tudose
  *
@@ -36,7 +37,9 @@
  *
  * Github:        https://github.com/sorin373/HTTP-Server
  *
- * Test it:       In order to successfully run the server on your local machine you first need to setup a database. 
+ * Test it:       In order to successfully run the server on your local machine you first need to setup a database. I uploaded the table formats on github
+ *                as CSV files which can be used to get the app running quickly. Moreover keep in mind that the executeable must be run with SUDO as it needs
+ *                extra permissions to write / read the application files.
  *
  *                Thank you for checking out my project! :D
  * 
@@ -72,7 +75,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    __server = new server(serverSocketFD);
+    __server = new server;
 
     if (__server->__database_init__() == EXIT_FAILURE)
     {
@@ -104,9 +107,13 @@ int main(int argc, char *argv[])
 
     if (__server->bindServer(serverSocketFD, serverAddress) != 0)
     {
-        std::cerr << std::setw(5) << " "
-                  << "--> Server encountered an error during the binding process.\n";
-        perror("bind");
+        std::cerr << "\n" << std::setw(5) << " "
+                  << "--> Server encountered an error during the binding process.\n"
+                  << std::setw(5) << " " << "--> ";
+
+        perror("Bind");
+
+        std::cout << ".\n";
 
         serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
@@ -120,11 +127,11 @@ int main(int argc, char *argv[])
     system("clear");
 
     std::cout << "\n\n"
-              << std::setw(30) << " "
+              << std::setw(5) << " "
               << "+-------------+\n"
-              << std::setw(30) << " "
+              << std::setw(5) << " "
               << "| HTTP-SERVER |\n"
-              << std::setw(30) << " "
+              << std::setw(5) << " "
               << "+-------------+\n";
 
     underline(75);
