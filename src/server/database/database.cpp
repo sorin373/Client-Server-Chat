@@ -1,3 +1,4 @@
+#include "../declarations.hpp"
 #include "database.hpp"
 
 #include <mysql_connection.h>
@@ -115,7 +116,10 @@ int server<T>::database::dbCredentials::getCredentials(char *hostname, char *use
     std::cin.get();
     std::cout << std::setw(5) << " "
               << "Password: ";
+
+    toggleEcho(false);
     std::cin.get(password, LENGHT);
+    toggleEcho(true);
 
     len = strlen(password);
 
@@ -123,7 +127,7 @@ int server<T>::database::dbCredentials::getCredentials(char *hostname, char *use
         return EXIT_FAILURE;
 
     std::cin.get();
-    std::cout << std::setw(5) << " "
+    std::cout << "\n" << std::setw(5) << " "
               << "Database: ";
     std::cin.get(database, LENGHT);
 

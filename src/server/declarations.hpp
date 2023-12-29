@@ -63,4 +63,7 @@ int getMainArguments(int argc, char *argv[]);
 // This function is designed to generate an underline of a specified width.
 void underline(const unsigned int vWidth);
 
+// Function to turn off echoing in terminal
+void toggleEcho(bool enable);
+
 #endif //__DECLARATIONS_HPP__

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cstring>
 #include <iomanip>
+#include <termios.h>
+#include <unistd.h>
 
 net::server<char> *__server = nullptr;
 
@@ -18,7 +20,7 @@ bool findString(const char haystack[], const char needle[])
         delete[] __copyHaystack;
         return true;
     }
-    
+
     delete[] __copyHaystack;
     return false;
 }
@@ -203,4 +205,19 @@ void underline(const unsigned int vWidth)
     std::cout << '_' << "\n";
     std::cout.fill(fillLine);
     std::cout << "\n";
+}
+
+void toggleEcho(bool enable)
+{
+    struct termios settings;
+    tcgetattr(STDIN_FILENO, &settings);
+
+    if (!enable)
+        // Disable echo
+        settings.c_lflag &= ~ECHO;
+    else
+        // Enable echo
+        settings.c_lflag |= ECHO;
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &settings);
 }
