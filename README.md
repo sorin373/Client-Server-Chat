@@ -334,7 +334,7 @@ If these fields contain valid data, the user account will be updated in the data
 
 > **Note**: I do not provide any sample data. The database is meant to be empty when first used. <br> Users can create accounts, add files and delete files when using the application.
 
-> **Note**: It is highly important that the table names are kept as they are hard coded in the program. Having said that the database name is up to you as you are require to enter it when the application is ran.
+> **Note**: It is highly important that the table names are kept as they are hard coded in the program. Having said that the database name is up to you as it is required to enter it when the application is ran.
 
 <hr>
 
