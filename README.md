@@ -83,7 +83,7 @@ sudo apt-get install libmysqlcppconn-dev
 
 - The application supports **file uploading** which enables users to share files between machines on a **local network**. Using an HTML **form** element, an **HTTP POST request** is sent to the server containg the file data together with the request metadata. This is later stored in a `temp.bin` file for later formatting. After receiving all the HTTP request contents, the file data is extracted and stored locally in a file, ensuring it has the appropriate name and extension. The file formatting consists in:
     
-    1) Retrieving the file name together with the file extension
+1) Retrieving the file name together with the file extension
 
     ```C++
     if (findString(buffer, "filename="))
@@ -133,7 +133,7 @@ sudo apt-get install libmysqlcppconn-dev
     }
     ```
 
-    2) Extracting the file content located between the two boundaries: ***------WebKitFormBoundary***
+2) Extracting the file content located between the two boundaries: ***------WebKitFormBoundary***
 
     ```C++
     std::string line;
