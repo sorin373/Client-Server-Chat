@@ -34,7 +34,7 @@ In order to complete the CS50 course I was required to build a personal computer
 
 1. Download the Debian package (`.deb` file) from the [GitHub Releases](https://github.com/sorin373/HTTP-Server/releases/tag/v1.0.0) page.
 2. Install the package using the software installer
-3. By default, SpeedyGo will be installed in the `/usr/httpServer` directory. To run the application, open your terminal here and execute:
+3. By default, the installation path is the `/usr/httpServer` directory. To run the application, open your terminal here and execute:
 
 ```bash
 ./httpServer [port] [-debug]
@@ -49,7 +49,7 @@ In order to complete the CS50 course I was required to build a personal computer
 sudo rpm -i httpServer-1.0.0-Linux.rpm
 ```
 
-3. By default, SpeedyGo will be installed in the `/usr/httpServer` directory. To run the application, open your terminal here and execute:
+3. By default, the installation path is the `/usr/httpServer` directory. To run the application, open your terminal here and execute:
 
 ```bash
 ./httpServer [port] [-debug]
