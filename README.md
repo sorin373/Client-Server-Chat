@@ -8,7 +8,7 @@
 
 </h3>
 
-In order to complete the CS50 course I was required to build a personal computer science project. As a result I decided to implement a simple HTTP server, which enables users to upload and download files within their local network.
+In order to complete the CS50 course I was required to build a personal computer science project. As a result, I decided to implement a simple HTTP server, which enables users to upload and download files within their local network.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](https://github.com/sorin373/HTTP-Server/blob/main/README.md)
 
@@ -57,7 +57,7 @@ sudo rpm -i httpServer-1.0.0-Linux.rpm
 
 # Building the executable binaries
 
-In order to build the application CMake and MySql-Connector-CPP need to be installed.
+In order to build the application [CMake](https://cmake.org/download/) and **MySql-Connector-CPP** need to be installed.
 
 ```bash
 sudo apt-get update && sudo apt-get upgrade
