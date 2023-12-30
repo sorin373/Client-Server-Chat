@@ -25,6 +25,7 @@ In order to complete the CS50 course I was required to build a personal computer
   - [Create account](#create-account)
   - [Change password](#change-password)
 - [MySql-Database](#mysql-database)
+- [Bibliography](#bibliography)
 - [Contact](#contact)
 
 # Installation
@@ -336,6 +337,13 @@ If these fields contain valid data, the user account will be updated in the data
 > **Note**: It is highly important that the table names are kept as they are hard coded in the program. Having said that the database name is up to you as you are require to enter it when the application is ran.
 
 <hr>
+
+# Bibliography
+
+- https://dev.mysql.com/doc/connector-cpp/1.1/en/connector-cpp-getting-started-examples.html
+- https://getbootstrap.com/docs/5.0/getting-started/introduction/
+- https://www.linuxhowtos.org/C_C++/socket.htm
+- "*C++ Network Programming Volume 1*", written by Douglas C.Schmidt and Stephen D.Huston
 
 # Contact
 
