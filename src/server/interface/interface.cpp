@@ -151,7 +151,8 @@ void user::buildIndexHTML(void)
 
     if (!index_html.is_open())
     {
-        std::cerr << std::setw(5) << " " << "Error: Failed to open file: " << INDEX_HTML_PATH << "\n";
+        std::cerr << std::setw(5) << " "
+                  << "Error: Failed to open file: " << INDEX_HTML_PATH << "\n";
         return;
     }
 
@@ -363,12 +364,15 @@ int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
 
         const std::string t_buffer = std::string(buffer);
 
+        // define the pattern
         std::regex fileNameRegex(R"(filename=\"([^\"]+)\")");
         std::smatch match;
 
+        // searches in the string 't_buffer' for matches
         if (std::regex_search(t_buffer, match, fileNameRegex))
             fileName = match.str(1);
 
+        // Variable used to generate unique name for files which do not have a valid file name
         fileCount++;
 
         if (fileName.length() > 40)
@@ -390,11 +394,13 @@ int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
         }
         else
         {
+            // Replacing spaces with underlines
             for (unsigned int i = 0, n = fileName.length(); i < n; i++)
                 if (fileName[i] == ' ')
                     fileName[i] = '_';
         }
-        
+
+        // Adds the new file in a queue to be inserted in the database
         addFileInQueue(fileName);
     }
 
@@ -561,7 +567,7 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
 
             return EXIT_SUCCESS;
         }
-        
+
         std::string query = "INSERT INTO user VALUES (?, ?, ?)";
         sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
 
@@ -618,7 +624,7 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     res = prepStmt->executeQuery();
 
     while (res->next())
-         std::string fileName = res->getString("name");
+        std::string fileName = res->getString("name");
 
     delete res;
     delete prepStmt;
@@ -633,7 +639,7 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     prepStmt->executeUpdate();
 
     delete prepStmt;
-    
+
     __server->SQLfetchFileTable();
     __server->getUser()->buildIndexHTML();
     remove(fileToDelete.c_str());
@@ -651,8 +657,8 @@ user::~user()
 {
     for (auto &__uc : uc)
     {
-         free(__uc.getUsername());
-         free(__uc.getPassword());
+        free(__uc.getUsername());
+        free(__uc.getPassword());
     }
 
     uc.clear();
