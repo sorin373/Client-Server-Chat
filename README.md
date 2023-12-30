@@ -18,12 +18,13 @@ In order to complete the CS50 course I was required to build a personal computer
   - [Unix (Debian)](#unix-debian)
   - [Unix (RPM-based)](#unix-rpm-based)
 - [Building the executable binaries](#building-the-executable-binaries)
+- [Server functionalities](#server-functionalities)
 - [Features](#features)
   - [Upload files](#upload-files)
   - [Delete files](#delete-files)
   - [Create account](#create-account)
   - [Change password](#change-password)
-- [MySql-Database initialisation](#mysql-database-initialisation)
+- [MySql-Database](#mysql-database)
 - [Contact](#contact)
 
 # Installation
@@ -75,9 +76,21 @@ sudo apt-get install libmysqlcppconn-dev
 
 - After that, download the zip file containing the latest project files from the GitHub repository, open the folder in Visual Studio Code and use the CMake commands to build the application (or install the [CMake](https://marketplace.visualstudio.com/items?itemName=twxs.cmake) and [CMake Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools) extensions).
 
+# Server functionalities
+
+- This HTTP server has the ability to distinguish between `GET` and `POST` requests. It automatically sends the request to the correct function where it is processed.
+- The server runs on a `thread`, detached from the `main` function, together with another `thread` that listens for console input. 
+- When the binding process is performed the user internet address is read automatically by running `ifconfig` in the background. The **address**, together with the **port number** will be displayed in the console if the server starts successfully, for the user to paste them in the browser.
+- The default port number, the server listens to is **`8080`**.
+- The server supports multiple connections at the same time, the connected sockets being stored in a vector.
+- When running the application you can specify any valid port number if you wish to override the default one. Moreover, when the application is also ran using the `-debug` flag, the server admin (this only means that `-debug` only affects the console output on the machine, the server was started) can vizualize the HTTP requests and serveral other error messages. This, however, does not mean that when in normal mode there are no errors being shown to the screen.
+- Last but not least, the server displays any SQL errors produced in the program
+
+> **Note** For more information about the sever features there is more documentation in the **[server header file](https://github.com/sorin373/HTTP-Server/blob/main/src/server/serverUtils.hpp)**.
+
 # Features
 
-> **Note**: All functions that are related to the routing process are also documented in the interface header (**[interface.hpp](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp)**).
+> **Note**: All functions that are related to the routing process are also documented in the **[interface header](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp)**.
 
 ## Upload files
 
@@ -304,7 +317,7 @@ If these fields contain valid data, the user account will be updated in the data
 
 <hr>
 
-# MySql-Database initialisation
+# MySql-Database
 
 ![img](/assets/ERD.png)
 
@@ -316,7 +329,13 @@ If these fields contain valid data, the user account will be updated in the data
 
 - I provide the `table formats` and the `self-contained file` in the [demo](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp) folder for a quicker setup.
 
+<hr>
+
 > **Note**: I do not provide any sample data. The database is meant to be empty when first used. <br> Users can create accounts, add files and delete files when using the application.
+
+> **Note**: It is highly important that the table names are kept as they are hard coded in the program. Having said that the database name is up to you as you are require to enter it when the application is ran.
+
+<hr>
 
 # Contact
 
