@@ -50,8 +50,9 @@ int server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, 
 {
     uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
     char *charBuffer = reinterpret_cast<char *>(buffer);
-
-    if (changeRoute) // determines the route from the first buffer
+    
+    // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
+    if (changeRoute) 
     {
         if (route != nullptr)
             delete[] route;
@@ -110,6 +111,9 @@ int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     char *path = nullptr;
     char *allocatedBuffer = reinterpret_cast<char *>(buffer);
 
+    if (allocatedBuffer == nullptr)
+        return EXIT_FAILURE;
+
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
         if (allocatedBuffer[i] == '/')
         {
@@ -117,37 +121,41 @@ int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
             break;
         }
 
-    if (path != nullptr)
+    if (path == nullptr)
+        USE_DEFAULT_ROUTE = true;
+
+    std::ifstream file;
+
+    if (!USE_DEFAULT_ROUTE)
+    {
         for (int i = 0, n = strlen(path); i < n; i++)
             if (path[i] == ' ')
                 path[i] = '\0';
 
-    if (path == nullptr || (strlen(path) == 1 && path[0] == '/'))
-        USE_DEFAULT_ROUTE = true;
+        if ((strlen(path) == 1 && path[0] == '/'))
+            USE_DEFAULT_ROUTE = true;
 
-    if (strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 && strcmp(path, "/createAccount.html") != 0 &&
-        !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
-        USE_DEFAULT_ROUTE = true;
+        if (strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 && strcmp(path, "/createAccount.html") != 0 &&
+            !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
+            USE_DEFAULT_ROUTE = true;
 
-    if (strcmp(path, "/login.html") == 0)
-    {
-        __user->resetAuthStatus();
-        __user->resetSessionID();
-    }
+        if (strcmp(path, "/login.html") == 0)
+        {
+            __user->resetAuthStatus();
+            __user->resetSessionID();
+        }
 
-    char fullPath[strlen(root) + strlen(path) + 1] = "";
+        char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-    if (path != nullptr && !findString(path, "interface"))
-        strcpy(fullPath, root);
+        if (!findString(path, "interface"))
+            strcpy(fullPath, root);
 
-    strcat(fullPath, path);
+        strcat(fullPath, path);
 
-    std::ifstream file;
-
-    if (USE_DEFAULT_ROUTE)
-        file.open(defaultRoute, std::ios::binary);
-    else
         file.open(fullPath, std::ios::binary);
+    }
+    else
+        file.open(defaultRoute, std::ios::binary);
 
     if (!file.is_open())
     {
@@ -233,6 +241,7 @@ int server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, 
 template <typename T>
 int server<T>::formatFile(const std::string fileName)
 {
+    // Open the create binary file
     std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
 
     if (!file.is_open())
@@ -241,6 +250,7 @@ int server<T>::formatFile(const std::string fileName)
         return EXIT_FAILURE;
     }
 
+    // Open the new file that will contain the formatted file data
     std::ofstream outFile(std::string(LOCAL_STORAGE_PATH) + fileName, std::ios::binary);
 
     if (!outFile.is_open())
@@ -256,6 +266,7 @@ int server<T>::formatFile(const std::string fileName)
 
     while (std::getline(file, line))
     {
+        // Check for boundary
         if (!foundBoundary && line.find("------WebKitFormBoundary") != std::string::npos)
         {
             foundBoundary = true;
@@ -264,10 +275,11 @@ int server<T>::formatFile(const std::string fileName)
 
         if (foundBoundary && line.find("Content-Type:") != std::string::npos)
         {
-            std::getline(file, line);
+            std::getline(file, line); // Skip line
 
             while (std::getline(file, line))
-            {
+            {   
+                // Read until the second boundary is found
                 if (line.find("------WebKitFormBoundary") != std::string::npos)
                     break;
 
@@ -281,6 +293,7 @@ int server<T>::formatFile(const std::string fileName)
     file.close();
     outFile.close();
 
+    // Remove 'temp.bin'
     if (remove(BINARY_FILE_TEMP_PATH) != 0)
         std::cerr << "Failed to removed temp.bin!\n";
 
@@ -591,7 +604,8 @@ int server<T>::__database_init__(void)
 {
     if (db != nullptr)
     {
-        std::cout << std::setw(5) << " " << "--> Database is already running.\n";
+        std::cout << std::setw(5) << " "
+                  << "--> Database is already running.\n";
         return EXIT_SUCCESS;
     }
 
@@ -599,7 +613,8 @@ int server<T>::__database_init__(void)
 
     if (hostname == NULL)
     {
-        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate hostname memory.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to allocate hostname memory.\n";
 
         return EXIT_FAILURE;
     }
@@ -608,7 +623,8 @@ int server<T>::__database_init__(void)
 
     if (username == NULL)
     {
-        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate username memory.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to allocate username memory.\n";
         free(hostname);
 
         return EXIT_FAILURE;
@@ -618,7 +634,8 @@ int server<T>::__database_init__(void)
 
     if (password == NULL)
     {
-        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate password memory.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to allocate password memory.\n";
         free(hostname);
         free(username);
 
@@ -629,7 +646,8 @@ int server<T>::__database_init__(void)
 
     if (database == NULL)
     {
-        std::cerr << std::setw(5) << " " << "--> Error: Failed to allocate database name memory.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to allocate database name memory.\n";
         free(hostname);
         free(username);
         free(password);
@@ -639,7 +657,8 @@ int server<T>::__database_init__(void)
 
     if (server<T>::database::dbCredentials::getCredentials(hostname, username, password, database) == EXIT_FAILURE)
     {
-        std::cerr << std::setw(5) << " " << "--> Error: Failed to fetch MySQL schema credentails.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to fetch MySQL schema credentails.\n";
 
         free(hostname);
         free(username);
@@ -659,7 +678,8 @@ int server<T>::__database_init__(void)
 
         if (con == nullptr)
         {
-            std::cerr << std::setw(5) << " " << "--> Error: Failed to establish a connection to the database.\n";
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to establish a connection to the database.\n";
 
             free(hostname);
             free(username);
@@ -676,10 +696,10 @@ int server<T>::__database_init__(void)
     }
     catch (sql::SQLException &e)
     {
-        std::cerr << "\n"
-                  << "Error code: " << e.getErrorCode() << "\n"
-                  << "Error message: " << e.what() << "\n"
-                  << "SQLState: " << e.getSQLState() << "\n";
+        std::cerr << "\n\n"
+                  << std::setw(5) << " " << "Error code: " << e.getErrorCode() << "\n"
+                  << std::setw(5) << " " << "Error message: " << e.what() << "\n"
+                  << std::setw(5) << " " << "SQLState: " << e.getSQLState() << "\n\n";
 
         free(hostname);
         free(username);
