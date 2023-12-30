@@ -298,7 +298,7 @@ If these fields contain valid data, the user account will be updated in the data
     }
     ```
 
-<br><hr>
+<hr>
 
 > **Note**: If the form on each page is submitted correctly the user will be redirected to the `login.html` page. However, if the data is incorrect the user will be redirected to the same web page. There is no `apology` / `error` page available yet.
 
