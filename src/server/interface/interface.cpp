@@ -331,7 +331,8 @@ int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
     {
         if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
         {
-            std::cerr << "Failed to send response.\n";
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
             return EXIT_FAILURE;
         }
 
@@ -342,7 +343,8 @@ int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
-        std::cerr << "Failed to send response.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send response.\n";
         return EXIT_FAILURE;
     }
 
@@ -477,7 +479,8 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
         {
             if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
             {
-                std::cerr << "Failed to send response.\n";
+                std::cerr << std::setw(5) << " "
+                          << "--> Error: Failed to send response.\n";
                 return EXIT_FAILURE;
             }
 
@@ -498,14 +501,16 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
 
         if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
         {
-            std::cerr << "Failed to send response.\n";
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
             return EXIT_FAILURE;
         }
     }
 
     if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
     {
-        std::cerr << "Failed to send response.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send response.\n";
         return EXIT_FAILURE;
     }
 
@@ -519,7 +524,9 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     unsigned int count = 0;
     char *username = nullptr, *password = nullptr, *confirmation = nullptr, *ptr = nullptr;
+
     ptr = strstr(buffer, "username=");
+
     if (ptr != nullptr)
     {
         char *str = strtok(ptr, "&");
@@ -557,40 +564,47 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
         if (strlen(confirmation) > strlen(password) || confirmation == nullptr)
             return EXIT_FAILURE;
 
+        // Check if the username already exists in the database and if the password is the same as the confirmation
         if (findUsername(username) || strcmp(password, confirmation) != 0)
         {
             if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
             {
-                std::cerr << "Failed to send response.\n";
+                std::cerr << std::setw(5) << " "
+                          << "--> Error: Failed to send response.\n";
                 return EXIT_FAILURE;
             }
 
             return EXIT_SUCCESS;
         }
 
+        // Prepare query to insert the new account information
         std::string query = "INSERT INTO user VALUES (?, ?, ?)";
         sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
 
         prepStmt->setInt(1, uc.size());
-        prepStmt->setString(2, std::string(username));
         prepStmt->setString(3, std::string(password));
+        prepStmt->setString(2, std::string(username));
 
+        // Execute the query
         prepStmt->executeUpdate();
 
         delete prepStmt;
 
+        // Fetch the user table containg the updated data
         __server->SQLfetchUserTable();
 
         if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
         {
-            std::cerr << "Failed to send response.\n";
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
             return EXIT_FAILURE;
         }
     }
 
     if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
     {
-        std::cerr << "Failed to send response.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send response.\n";
         return EXIT_FAILURE;
     }
 
@@ -615,6 +629,7 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     if (cfileID != nullptr)
         fileID = atoi(cfileID);
 
+    // Fetch the file name using the file ID for later use
     std::string query = "SELECT name FROM file WHERE file_id=(?)";
     sql::ResultSet *res = nullptr;
 
@@ -629,8 +644,7 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     delete res;
     delete prepStmt;
 
-    std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;
-
+    // Delete the file from the database using the file ID
     std::string deleteQuery = "DELETE FROM file WHERE file_id=(?)";
 
     prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
@@ -642,11 +656,15 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     __server->SQLfetchFileTable();
     __server->getUser()->buildIndexHTML();
+
+    // Using the file name remove the file from local storage
+    std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;
     remove(fileToDelete.c_str());
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
-        std::cerr << "Failed to send response.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send response.\n";
         return EXIT_FAILURE;
     }
 

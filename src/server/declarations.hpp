@@ -56,7 +56,7 @@ bool isNumeric(const char *str);
 
 /**
  * @brief This function is called at the begining of the main function. It checks if the arguments provided by the user are valid and what is the port value.
- * @return Returns 0 on success, 1 for errors.
+ * @return Returns 0 on success, -1 for errors.
  */
 int getMainArguments(int argc, char *argv[]);
 

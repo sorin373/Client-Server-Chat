@@ -111,7 +111,7 @@ namespace net
         server();
 
         /*
-         * This generic function does the following:
+         * This function does the following:
          *   - Sets the server status as running
          *   - Deletes content written in index.html
          *   - Creates a detached thread that handles client connections

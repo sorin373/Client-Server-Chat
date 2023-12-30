@@ -20,9 +20,9 @@ In order to complete the CS50 course I was required to build a personal computer
 - [Building the executable binaries](#building-the-executable-binaries)
 - [Features](#features)
   - [Upload files](#upload-files)
-  - [Delete files]()
-  - [Create account]()
-  - [Change password]()
+  - [Delete files](#delete-files)
+  - [Create account](#create-account)
+  - [Change password](#change-password)
 - [MySql](#mysql-service)
   - [Database initialisation](#database-initialisation)
   - [Create the required tables](#create-the-required-tables)
@@ -79,11 +79,13 @@ sudo apt-get install libmysqlcppconn-dev
 
 # Features
 
+> **Note**: All functions that are related to the routing process are also documented in the interface header (`interface.hpp`).
+
 ## Upload files
 
 - The application supports **file uploading** which enables users to share files between machines on a **local network**. Using an HTML **form** element, an **HTTP POST request** is sent to the server containg the file data together with the request metadata. This is later stored in a `temp.bin` file for later formatting. After receiving all the HTTP request contents, the file data is extracted and stored locally in a file, ensuring it has the appropriate name and extension. The file formatting consists in:
     
-1) Retrieving the file name together with the file extension
+1) Retrieving the **file name** together with the **file extension**
 
     ```C++
     if (findString(buffer, "filename="))
@@ -133,7 +135,7 @@ sudo apt-get install libmysqlcppconn-dev
     }
     ```
 
-2) Extracting the file content located between the two boundaries: ***------WebKitFormBoundary***
+2) Extracting the **file content** located between the **two boundaries** (`------WebKitFormBoundary`)
 
     ```C++
     std::string line;
@@ -172,3 +174,132 @@ sudo apt-get install libmysqlcppconn-dev
     if (remove(BINARY_FILE_TEMP_PATH) != 0)
         std::cerr << "Failed to removed temp.bin!\n";
     ```
+
+## Delete files
+
+- The user has the ability to delete the files added to the server. This is done by clicking a button, which in return sends an **HTTP POST** request to the server. This request contains the **file ID** which the application uses to delete the file from the database. 
+- Moreover, after the file is removed `index.html` is rebuilt and the `file` table is fetched.
+
+    ```C++
+    // Fetch the file name using the file ID for later use
+    std::string query = "SELECT name FROM file WHERE file_id=(?)";
+    sql::ResultSet *res = nullptr;
+
+    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+    prepStmt->setInt(1, fileID);
+    res = prepStmt->executeQuery();
+
+    while (res->next())
+        std::string fileName = res->getString("name");
+
+    delete res;
+    delete prepStmt;
+
+    // Delete the file from the database using the file ID
+    std::string deleteQuery = "DELETE FROM file WHERE file_id=(?)";
+
+    prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
+
+    prepStmt->setInt(1, fileID);
+    prepStmt->executeUpdate();
+
+    delete prepStmt;
+
+    __server->SQLfetchFileTable();
+    __server->getUser()->buildIndexHTML();
+
+    // Using the file name remove the file from local storage
+    std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;
+    remove(fileToDelete.c_str());
+    ```
+
+## Create account
+
+- In addition, users are also able to create a new account on the server. The `createAccount.html` page is prebuilt and it is fetched using a **HTTP GET** request sent by the browser. After correctly filling in the form, an **HTTP POST** request is sent containg all the reuquired data for an account to be opened: `Username`, `Password`, and the `Password Confirmation`. Once these are validated the information about the user account is insterted into the database and the user is redirected back to the login. 
+- It is important to know that the user accounts can not yet be deleted once they are created and that the usernames are unique throughout the database.
+
+    ```C++
+    // Check if the username already exists in the database and if the password is the same as the confirmation
+    if (findUsername(username) || strcmp(password, confirmation) != 0)
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+        {
+            std::cerr << std::setw(5) << " " << "--> Error: Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    // Prepare query to insert the new account information
+    std::string query = "INSERT INTO user VALUES (?, ?, ?)";
+    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+    prepStmt->setInt(1, uc.size());
+    prepStmt->setString(3, std::string(password));
+    prepStmt->setString(2, std::string(username));
+
+    // Execute the query
+    prepStmt->executeUpdate();
+
+    delete prepStmt;
+
+    // Fetch the user table containg the updated data
+    __server->SQLfetchUserTable();
+
+    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
+    {
+        std::cerr << std::setw(5) << " " << "--> Error: Failed to send response.\n";
+        return EXIT_FAILURE;
+    }
+    ```
+
+## Change password
+
+- Finally, users can change their password. This can be done ONLY IF the current password has not been forgotten.
+- On the `login.html` page there is a button when clicked sends an **HTTP GET** request to the server in order to fetch the `changePassword.html` file. After reaching this web page the users needs to fill in another form consiting in: `username`, `Old Password`, `New Password` and the `New Password Confirmation`.
+If these fields contain valid data, the user account will be updated in the database with the new password.
+
+    ```C++
+    // Check if old credentials are valid and if the new password is the same as the confirmation
+    if (!validateCredentials(username, oldPassword) || strcmp(newPassword, confirmation) != 0)
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+        {
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    // Prepare query to update the user
+    std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
+    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+    prepStmt->setString(1, std::string(newPassword));
+    prepStmt->setString(2, std::string(username));
+
+    // Execute the query
+    prepStmt->executeUpdate();
+
+    delete prepStmt;
+
+    // Fetch the user table containg the updated data
+    __server->SQLfetchUserTable();
+
+    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
+    {
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send response.\n";
+        return EXIT_FAILURE;
+    }
+    ```
+
+<br><hr>
+
+> **Note**: If the form on each page is submitted correctly the user will be redirected to the `login.html` page. However, if the data is incorrect the user will be redirected to the same web page. There is no `apology` / `error` page available yet.
+
+> **Note**: All input fields are checked for correct length using `C++` logic in oreder to avoid any buffer overflows.
