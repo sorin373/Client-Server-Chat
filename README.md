@@ -23,9 +23,7 @@ In order to complete the CS50 course I was required to build a personal computer
   - [Delete files](#delete-files)
   - [Create account](#create-account)
   - [Change password](#change-password)
-- [MySql](#mysql-service)
-  - [Database initialisation](#database-initialisation)
-  - [Create the required tables](#create-the-required-tables)
+- [MySql-Database initialisation](#mysql-database-initialisation)
 - [Contact](#contact)
 
 # Installation
@@ -79,7 +77,7 @@ sudo apt-get install libmysqlcppconn-dev
 
 # Features
 
-> **Note**: All functions that are related to the routing process are also documented in the interface header (`interface.hpp`).
+> **Note**: All functions that are related to the routing process are also documented in the interface header (**[interface.hpp](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp)**).
 
 ## Upload files
 
@@ -303,3 +301,23 @@ If these fields contain valid data, the user account will be updated in the data
 > **Note**: If the form on each page is submitted correctly the user will be redirected to the `login.html` page. However, if the data is incorrect the user will be redirected to the same web page. There is no `apology` / `error` page available yet.
 
 > **Note**: All input fields are checked for correct length using `C++` logic in oreder to avoid any buffer overflows.
+
+<hr>
+
+# MySql-Database initialisation
+
+![img](/assets/ERD.png)
+
+- The `httpServer` database contains two tables: the `file` table and the `user` table.
+- The relationship between the tables is `One-to-Many`.
+- My application communicates with the **MySql database** using the **MySql-Connector-CPP** library.
+
+- Before running the application a local MySql database, witch will house the necessary data, needs to be created (either commands or the MySql Workbench can be used for this task).
+
+- I provide the `table formats` and the `self-contained file` in the [demo](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp) folder for a quicker setup.
+
+> **Note**: I do not provide any sample data. The database is meant to be empty when first used. <br> Users can create accounts, add files and delete files when using the application.
+
+# Contact
+
+I hope this project was beneficial and helpful. If you want to get in touch with me, you can do so through my personal email: sorin.andrei.tudose@gmail.com.<br><br>Wishing you a delightful and productive day! 
