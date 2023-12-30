@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
         perror("Bind");
 
-        std::cout << ".\n";
+        std::cout << "\n";
 
         serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);

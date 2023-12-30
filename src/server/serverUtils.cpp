@@ -52,7 +52,7 @@ int server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, 
     char *charBuffer = reinterpret_cast<char *>(buffer);
     
     // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
-    if (changeRoute) 
+    if (changeRoute)
     {
         if (route != nullptr)
             delete[] route;
@@ -139,22 +139,26 @@ int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
             !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
             USE_DEFAULT_ROUTE = true;
 
-        if (strcmp(path, "/login.html") == 0)
+        if (!USE_DEFAULT_ROUTE)
         {
-            __user->resetAuthStatus();
-            __user->resetSessionID();
+            if (strcmp(path, "/login.html") == 0)
+            {
+                __user->resetAuthStatus();
+                __user->resetSessionID();
+            }
+
+            char fullPath[strlen(root) + strlen(path) + 1] = "";
+
+            if (!findString(path, "interface"))
+                strcpy(fullPath, root);
+
+            strcat(fullPath, path);
+
+            file.open(fullPath, std::ios::binary);
         }
-
-        char fullPath[strlen(root) + strlen(path) + 1] = "";
-
-        if (!findString(path, "interface"))
-            strcpy(fullPath, root);
-
-        strcat(fullPath, path);
-
-        file.open(fullPath, std::ios::binary);
     }
-    else
+
+    if (USE_DEFAULT_ROUTE)
         file.open(defaultRoute, std::ios::binary);
 
     if (!file.is_open())
@@ -278,7 +282,7 @@ int server<T>::formatFile(const std::string fileName)
             std::getline(file, line); // Skip line
 
             while (std::getline(file, line))
-            {   
+            {
                 // Read until the second boundary is found
                 if (line.find("------WebKitFormBoundary") != std::string::npos)
                     break;
@@ -410,10 +414,6 @@ template <typename T>
 void server<T>::__SERVER_INIT__(int serverSocketFileDescriptor)
 {
     SERVER_RUNNING = true;
-
-    std::ofstream index;
-    index.open(INDEX_HTML_PATH, std::ofstream::out | std::ofstream::trunc);
-    index.close();
 
     std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
     workerThread.detach();
@@ -697,9 +697,12 @@ int server<T>::__database_init__(void)
     catch (sql::SQLException &e)
     {
         std::cerr << "\n\n"
-                  << std::setw(5) << " " << "Error code: " << e.getErrorCode() << "\n"
-                  << std::setw(5) << " " << "Error message: " << e.what() << "\n"
-                  << std::setw(5) << " " << "SQLState: " << e.getSQLState() << "\n\n";
+                  << std::setw(5) << " "
+                  << "Error code: " << e.getErrorCode() << "\n"
+                  << std::setw(5) << " "
+                  << "Error message: " << e.what() << "\n"
+                  << std::setw(5) << " "
+                  << "SQLState: " << e.getSQLState() << "\n\n";
 
         free(hostname);
         free(username);
