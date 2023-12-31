@@ -81,11 +81,11 @@ sudo apt-get install libmysqlcppconn-dev
 
 - This HTTP server has the ability to distinguish between `GET` and `POST` requests. It automatically sends the request to the correct function where it is processed.
 - The server runs on a `thread`, detached from the `main` function, together with another `thread` that listens for console input. 
-- When the binding process is performed the user internet address is read automatically by running `ifconfig` in the background. The **address**, together with the **port number** will be displayed in the console if the server starts successfully, for the user to paste them in the browser.
+- When the binding process is performed the user's internet address is read automatically by running `ifconfig` in the background. The **address**, together with the **port number** will be displayed in the console if the server starts successfully, for the user to paste them in the browser.
 - The default port number, the server listens to is **`8080`**.
 - The server supports multiple connections at the same time, the connected sockets being stored in a vector.
-- When running the application you can specify any valid port number if you wish to override the default one. Moreover, when the application is also ran using the `-debug` flag, the server admin (this only means that `-debug` only affects the console output on the machine, the server was started) can vizualize the HTTP requests and serveral other error messages. This, however, does not mean that when in normal mode there are no errors being shown to the screen.
-- Last but not least, the server displays any SQL errors produced in the program
+- When running the application you can specify any valid port number if you wish to override the default one. Moreover, when the application is also ran using the `-debug` flag, the server admin (this only means that `-debug` only affects the console output on the machine, the server was started) can vizualize the HTTP requests and serveral other error messages. This, however, does not mean that when in normal mode there are no errors being shown on the screen.
+- Last but not least, the server displays any SQL errors produced by the program.
 
 > **Note** For more information about the sever features there is more documentation in the **[server header file](https://github.com/sorin373/HTTP-Server/blob/main/src/server/serverUtils.hpp)**.
 
@@ -228,7 +228,7 @@ sudo apt-get install libmysqlcppconn-dev
 
 ## Create account
 
-- In addition, users are also able to create a new account on the server. The `createAccount.html` page is prebuilt and it is fetched using a **HTTP GET** request sent by the browser. After correctly filling in the form, an **HTTP POST** request is sent containg all the reuquired data for an account to be opened: `Username`, `Password`, and the `Password Confirmation`. Once these are validated the information about the user account is insterted into the database and the user is redirected back to the login. 
+- In addition, users are also able to create a new account on the server. The `createAccount.html` page is prebuilt and it is fetched using a **HTTP GET** request sent by the browser. After correctly filling in the form, an **HTTP POST** request is sent containg all the reuquired data for an account to be opened: `Username`, `Password`, and the `Password Confirmation`. Once these are validated, the information about the user account is insterted into the database and the user is redirected back to the login. 
 - It is important to know that the user accounts can not yet be deleted once they are created and that the usernames are unique throughout the database.
 
     ```C++
@@ -270,8 +270,8 @@ sudo apt-get install libmysqlcppconn-dev
 ## Change password
 
 - Finally, users can change their password. This can be done ONLY IF the current password has not been forgotten.
-- On the `login.html` page there is a button when clicked sends an **HTTP GET** request to the server in order to fetch the `changePassword.html` file. After reaching this web page the users needs to fill in another form consiting in: `username`, `Old Password`, `New Password` and the `New Password Confirmation`.
-If these fields contain valid data, the user account will be updated in the database with the new password.
+- On the `login.html` page there is a button when clicked sends an **HTTP GET** request to the server in order to fetch the `changePassword.html` file. After reaching this web page the users needs to fill in another form consiting of: `username`, `Old Password`, `New Password` and the `New Password Confirmation`.
+If these fields contain valid pieces of data, the new user account's password will be updated in the database.
 
     ```C++
     // Check if old credentials are valid and if the new password is the same as the confirmation
@@ -314,7 +314,7 @@ If these fields contain valid data, the user account will be updated in the data
 
 > **Note**: If the form on each page is submitted correctly the user will be redirected to the `login.html` page. However, if the data is incorrect the user should be redirected to `apology.html`.
 
-> **Note**: All input fields are checked for correct length using `C++` logic in oreder to avoid any buffer overflows.
+> **Note**: All input fields are checked for correct length using `C++` logic in order to avoid any buffer overflows.
 
 <hr>
 
@@ -326,7 +326,7 @@ If these fields contain valid data, the user account will be updated in the data
 - The relationship between the tables is `One-to-Many`.
 - My application communicates with the **MySql database** using the **MySql-Connector-CPP** library.
 
-- Before running the application a local MySql database, witch will house the necessary data, needs to be created (either commands or the MySql Workbench can be used for this task).
+- Before running the application a local MySql database, which will house the necessary data, needs to be created (either commands or the MySql Workbench can be used for this task).
 
 - I provide the `table formats` and the `self-contained file` in the [demo](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp) folder for a quicker setup.
 
@@ -334,7 +334,7 @@ If these fields contain valid data, the user account will be updated in the data
 
 > **Note**: I do not provide any sample data. The database is meant to be empty when first used. <br> Users can create accounts, add files and delete files when using the application.
 
-> **Note**: It is highly important that the table names are kept as they are hard coded in the program. Having said that the database name is up to you as it is required to enter it when the application is ran.
+> **Note**: It is highly important that the table names are kept, as they are hard coded in the program. Having said that the database name is up to you as it is required to enter it when the application is ran.
 
 <hr>
 
