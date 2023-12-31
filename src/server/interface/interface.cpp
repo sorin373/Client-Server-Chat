@@ -311,7 +311,10 @@ int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (strlen(temp_username) > NET_USERNAME_LENGHT || temp_username == nullptr)
+    if (temp_username == nullptr)
+        return EXIT_FAILURE;
+
+    if (strlen(temp_username) > NET_USERNAME_LENGHT)
         return EXIT_FAILURE;
 
     ptr = strtok(NULL, " ");
@@ -324,7 +327,10 @@ int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (strlen(temp_password) > NET_PASSWORD_LENGHT || temp_password == nullptr)
+    if (temp_password == nullptr)
+        return EXIT_FAILURE;
+
+    if (strlen(temp_password) > NET_PASSWORD_LENGHT)
         return EXIT_FAILURE;
 
     if (!validateCredentials(temp_username, temp_password))
@@ -425,89 +431,112 @@ int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
 int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
-    char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /changePassword.html\r\nConnection: close\r\n\r\n";
+    char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /apology.html\r\nConnection: close\r\n\r\n";
 
-    char *username = nullptr, *oldPassword = nullptr, *newPassword = nullptr, *confirmation = nullptr, *ptr = nullptr;
-    unsigned int count = 0;
+    char *username = nullptr, *oldPassword = nullptr, *newPassword = nullptr, *confirmation = nullptr, *ptr = NULL;
 
     ptr = strstr(buffer, "username=");
+    ptr = strtok(ptr, "&");
 
-    if (ptr != nullptr)
-    {
-        char *str = strtok(ptr, "&");
-
-        while (str != NULL)
-        {
-            for (unsigned int i = 0, n = strlen(str); i < n; i++)
-                if (str[i] == '=')
-                    switch (count)
-                    {
-                    case 0:
-                        username = &str[++i];
-                        break;
-                    case 1:
-                        oldPassword = &str[++i];
-                        break;
-                    case 2:
-                        newPassword = &str[++i];
-                        break;
-                    case 3:
-                        confirmation = &str[++i];
-                        break;
-
-                    default:
-                        break;
-                    }
-
-            str = strtok(NULL, "& ");
-            count++;
-        }
-
-        if (strlen(username) > NET_USERNAME_LENGHT || username == nullptr)
-            return EXIT_FAILURE;
-
-        if (strlen(oldPassword) > NET_PASSWORD_LENGHT || oldPassword == nullptr)
-            return EXIT_FAILURE;
-
-        if (strlen(newPassword) > NET_PASSWORD_LENGHT || newPassword == nullptr)
-            return EXIT_FAILURE;
-
-        if (strlen(confirmation) > strlen(newPassword) || confirmation == nullptr)
-            return EXIT_FAILURE;
-
-        if (!validateCredentials(username, oldPassword) || strcmp(newPassword, confirmation) != 0)
-        {
-            if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+    if (ptr != NULL)
+        for (unsigned int i = 0, len = strlen(ptr); i < len; i++)
+            if (ptr[i] == '=')
             {
-                std::cerr << std::setw(5) << " "
-                          << "--> Error: Failed to send response.\n";
-                return EXIT_FAILURE;
+                username = &ptr[++i];
+                break;
             }
 
-            return EXIT_SUCCESS;
-        }
+    if (username == nullptr)
+        return EXIT_FAILURE;
 
-        std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
-        sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    if (strlen(username) > NET_USERNAME_LENGHT)
+        return EXIT_FAILURE;
 
-        prepStmt->setString(1, std::string(newPassword));
-        prepStmt->setString(2, std::string(username));
+    ptr = strtok(NULL, "&");
 
-        prepStmt->executeUpdate();
+    if (ptr != NULL)
+        for (unsigned int i = 0, len = strlen(ptr); i < len; i++)
+            if (ptr[i] == '=')
+            {
+                oldPassword = &ptr[++i];
+                break;
+            }
 
-        delete prepStmt;
+    if (oldPassword == nullptr)
+        return EXIT_FAILURE;
 
-        __server->SQLfetchUserTable();
+    if (strlen(oldPassword) > NET_PASSWORD_LENGHT)
+        return EXIT_FAILURE;
 
-        if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
+    ptr = strtok(NULL, "&");
+
+    if (ptr != NULL)
+        for (unsigned int i = 0, len = strlen(ptr); i < len; i++)
+            if (ptr[i] == '=')
+            {
+                newPassword = &ptr[++i];
+                break;
+            }
+
+    if (newPassword == nullptr)
+        return EXIT_FAILURE;
+
+    if (strlen(newPassword) > NET_PASSWORD_LENGHT)
+        return EXIT_FAILURE;
+
+    ptr = strtok(NULL, " ");
+
+    if (ptr != NULL)
+        for (unsigned int i = 0, len = strlen(ptr); i < len; i++)
+            if (ptr[i] == '=')
+            {
+                confirmation = &ptr[++i];
+                break;
+            }
+
+    if (confirmation == nullptr)
+        return EXIT_FAILURE;
+
+    if (strlen(confirmation) > strlen(newPassword))
+        return EXIT_FAILURE;
+
+    if (!validateCredentials(username, oldPassword))
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
         {
             std::cerr << std::setw(5) << " "
                       << "--> Error: Failed to send response.\n";
             return EXIT_FAILURE;
         }
+
+        return EXIT_SUCCESS;
     }
 
-    if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+    if (strcmp(newPassword, confirmation) != 0)
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+        {
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
+    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+    prepStmt->setString(1, std::string(newPassword));
+    prepStmt->setString(2, std::string(username));
+
+    prepStmt->executeUpdate();
+
+    delete prepStmt;
+
+    __server->SQLfetchUserTable();
+
+    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to send response.\n";
@@ -520,88 +549,103 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
 int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
-    char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /createAccount.html\r\nConnection: close\r\n\r\n";
+    char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /apology.html\r\nConnection: close\r\n\r\n";
 
     unsigned int count = 0;
-    char *username = nullptr, *password = nullptr, *confirmation = nullptr, *ptr = nullptr;
+    char *username = nullptr, *password = nullptr, *confirmation = nullptr, *ptr = NULL;
 
     ptr = strstr(buffer, "username=");
+    ptr = strtok(ptr, "&");
 
-    if (ptr != nullptr)
-    {
-        char *str = strtok(ptr, "&");
-
-        while (str != NULL)
-        {
-            for (unsigned int i = 0, n = strlen(str); i < n; i++)
-                if (str[i] == '=')
-                    switch (count)
-                    {
-                    case 0:
-                        username = &str[++i];
-                        break;
-                    case 1:
-                        password = &str[++i];
-                        break;
-                    case 2:
-                        confirmation = &str[++i];
-                        break;
-
-                    default:
-                        break;
-                    }
-
-            str = strtok(NULL, "& ");
-            count++;
-        }
-
-        if (strlen(username) > NET_USERNAME_LENGHT || username == nullptr)
-            return EXIT_FAILURE;
-
-        if (strlen(password) > NET_PASSWORD_LENGHT || password == nullptr)
-            return EXIT_FAILURE;
-
-        if (strlen(confirmation) > strlen(password) || confirmation == nullptr)
-            return EXIT_FAILURE;
-
-        // Check if the username already exists in the database and if the password is the same as the confirmation
-        if (findUsername(username) || strcmp(password, confirmation) != 0)
-        {
-            if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+    if (ptr != NULL)
+        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+            if (ptr[i] == '=')
             {
-                std::cerr << std::setw(5) << " "
-                          << "--> Error: Failed to send response.\n";
-                return EXIT_FAILURE;
+                username = &ptr[++i];
+                break;
             }
 
-            return EXIT_SUCCESS;
-        }
+    if (username == nullptr)
+        return EXIT_FAILURE;
 
-        // Prepare query to insert the new account information
-        std::string query = "INSERT INTO user VALUES (?, ?, ?)";
-        sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    if (strlen(username) > NET_USERNAME_LENGHT)
+        return EXIT_FAILURE;
 
-        prepStmt->setInt(1, uc.size());
-        prepStmt->setString(3, std::string(password));
-        prepStmt->setString(2, std::string(username));
+    ptr = strtok(NULL, "&");
 
-        // Execute the query
-        prepStmt->executeUpdate();
+    if (ptr != NULL)
+        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+            if (ptr[i] == '=')
+            {
+                password = &ptr[++i];
+                break;
+            }
 
-        delete prepStmt;
+    if (password == nullptr)
+        return EXIT_FAILURE;
 
-        // Fetch the user table containg the updated data
-        __server->SQLfetchUserTable();
+    if (strlen(password) > NET_PASSWORD_LENGHT)
+        return EXIT_FAILURE;
 
-        if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
+    ptr = strtok(NULL, " ");
+
+    if (ptr != NULL)
+        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+            if (ptr[i] == '=')
+            {
+                confirmation = &ptr[++i];
+                break;
+            }
+
+    if (confirmation == nullptr)
+        return EXIT_FAILURE;
+
+    if (strlen(confirmation) > strlen(password))
+        return EXIT_FAILURE;
+
+    // Check if the username already exists in the database
+    if (findUsername(username))
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
         {
             std::cerr << std::setw(5) << " "
                       << "--> Error: Failed to send response.\n";
             return EXIT_FAILURE;
         }
+
+        return EXIT_SUCCESS;    
     }
 
-    if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+    // Check if the password is the same as the confirmation
+    if (strcmp(password, confirmation) != 0)
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+        {
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    // Prepare query to insert the new account information
+    std::string query = "INSERT INTO user VALUES (?, ?, ?)";
+    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+    prepStmt->setInt(1, uc.size());
+    prepStmt->setString(3, std::string(password));
+    prepStmt->setString(2, std::string(username));
+
+    // Execute the query
+    prepStmt->executeUpdate();
+
+    delete prepStmt;
+
+    // Fetch the user table containg the updated data
+    __server->SQLfetchUserTable();
+
+    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to send response.\n";

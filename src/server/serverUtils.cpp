@@ -50,15 +50,15 @@ int server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, 
 {
     uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
     char *charBuffer = reinterpret_cast<char *>(buffer);
-    
+
     // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
     if (changeRoute)
     {
         if (route != nullptr)
             delete[] route;
 
-        char *ptr = new char[strlen(buffer) + 1];
-        strcpy(ptr, buffer);
+        char *ptr = new char[strlen(charBuffer) + 1];
+        strcpy(ptr, charBuffer);
 
         for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
             if (ptr[i] == '/')
@@ -135,8 +135,8 @@ int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
         if ((strlen(path) == 1 && path[0] == '/'))
             USE_DEFAULT_ROUTE = true;
 
-        if (strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 && strcmp(path, "/createAccount.html") != 0 &&
-            !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
+        if (strcmp(path, "/apology.html") != 0 && strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 &&
+            strcmp(path, "/createAccount.html") != 0 && !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
             USE_DEFAULT_ROUTE = true;
 
         if (!USE_DEFAULT_ROUTE)
@@ -338,7 +338,7 @@ void server<T>::receivedDataHandler(class acceptedSocket *socket)
         if (bytesReceived <= 0)
         {
             if (DEBUG_FLAG)
-                std::cerr << std::setw(5) << " "
+                std::cerr << "\n" << std::setw(5) << " "
                           << "--> Receive failed: "
                           << socket->getError() << "\n";
 
@@ -356,7 +356,7 @@ void server<T>::receivedDataHandler(class acceptedSocket *socket)
         buffer[bytesReceived] = '\0';
 
         if (DEBUG_FLAG)
-            std::cout << " " << buffer;
+            std::cout << buffer;
 
         HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
