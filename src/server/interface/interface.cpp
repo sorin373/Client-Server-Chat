@@ -500,6 +500,7 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     if (strlen(confirmation) > strlen(newPassword))
         return EXIT_FAILURE;
 
+    // Check if old credentials are valid
     if (!validateCredentials(username, oldPassword))
     {
         if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
@@ -512,6 +513,7 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
         return EXIT_SUCCESS;
     }
 
+    // Check if the new password is the same as the confirmation
     if (strcmp(newPassword, confirmation) != 0)
     {
         if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
@@ -524,16 +526,19 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
         return EXIT_SUCCESS;
     }
 
+    // Prepare query to update the user
     std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
     sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));
     prepStmt->setString(2, std::string(username));
 
+    // Execute the query
     prepStmt->executeUpdate();
 
     delete prepStmt;
 
+    // Fetch the user table containg the updated data
     __server->SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)

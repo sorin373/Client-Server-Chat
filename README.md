@@ -232,12 +232,26 @@ sudo apt-get install libmysqlcppconn-dev
 - It is important to know that the user accounts can not yet be deleted once they are created and that the usernames are unique throughout the database.
 
     ```C++
-    // Check if the username already exists in the database and if the password is the same as the confirmation
-    if (findUsername(username) || strcmp(password, confirmation) != 0)
+    // Check if the username already exists in the database
+    if (findUsername(username))
     {
         if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
         {
-            std::cerr << std::setw(5) << " " << "--> Error: Failed to send response.\n";
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;    
+    }
+
+    // Check if the password is the same as the confirmation
+    if (strcmp(password, confirmation) != 0)
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+        {
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
             return EXIT_FAILURE;
         }
 
@@ -262,7 +276,8 @@ sudo apt-get install libmysqlcppconn-dev
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
-        std::cerr << std::setw(5) << " " << "--> Error: Failed to send response.\n";
+        std::cerr << std::setw(5) << " "
+                  << "--> Error: Failed to send response.\n";
         return EXIT_FAILURE;
     }
     ```
@@ -274,8 +289,21 @@ sudo apt-get install libmysqlcppconn-dev
 If these fields contain valid pieces of data, the new user account's password will be updated in the database.
 
     ```C++
-    // Check if old credentials are valid and if the new password is the same as the confirmation
-    if (!validateCredentials(username, oldPassword) || strcmp(newPassword, confirmation) != 0)
+    // Check if old credentials are valid
+    if (!validateCredentials(username, oldPassword))
+    {
+        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
+        {
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send response.\n";
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+    }
+
+    // Check if the new password is the same as the confirmation
+    if (strcmp(newPassword, confirmation) != 0)
     {
         if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
         {
