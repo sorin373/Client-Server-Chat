@@ -212,7 +212,6 @@ void user::buildIndexHTML(void)
     index_html << firstHTML;
 
     char fileName[256] = "";
-    char pdfExtension[] = ".pdf";
 
     for (unsigned int i = 0, n = uf.size(); i < n; i++)
     {
