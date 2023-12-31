@@ -312,7 +312,7 @@ If these fields contain valid data, the user account will be updated in the data
 
 <hr>
 
-> **Note**: If the form on each page is submitted correctly the user will be redirected to the `login.html` page. However, if the data is incorrect the user will be redirected to the same web page. There is no `apology` / `error` page available yet.
+> **Note**: If the form on each page is submitted correctly the user will be redirected to the `login.html` page. However, if the data is incorrect the user should be redirected to `apology.html`.
 
 > **Note**: All input fields are checked for correct length using `C++` logic in oreder to avoid any buffer overflows.
 
