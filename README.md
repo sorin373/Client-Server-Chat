@@ -356,7 +356,7 @@ If these fields contain valid pieces of data, the new user account's password wi
 
 - Before running the application a local MySql database, which will house the necessary data, needs to be created (either commands or the MySql Workbench can be used for this task).
 
-- I provide the `table formats` and the `self-contained file` in the [demo](https://github.com/sorin373/HTTP-Server/blob/main/src/server/interface/interface.hpp) folder for a quicker setup.
+- I provide the `table formats` and the `self-contained file` in the [demo](https://github.com/sorin373/HTTP-Server/tree/main/demo) folder for a quicker setup.
 
 <hr>
 
