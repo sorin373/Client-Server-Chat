@@ -375,4 +375,4 @@ If these fields contain valid pieces of data, the new user account's password wi
 
 # Contact
 
-I hope this project was beneficial and helpful. If you want to get in touch with me, you can do so through my personal email: sorin.andrei.tudose@gmail.com.<br><br>Wishing you a delightful and productive day! 
+I hope this project was beneficial and helpful. If you want to get in touch with me, you can do so through my personal email: <br> <br> sorin.andrei.tudose@gmail.com<br><br>Wishing you a delightful and productive day! 
