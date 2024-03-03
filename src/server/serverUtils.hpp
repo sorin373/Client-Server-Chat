@@ -34,12 +34,15 @@
 #include "interface/interface.hpp"
 #include "../socket/socketUtils.hpp"
 
-#include <vector>
 #include <mysql_connection.h>
 #include <mysql_driver.h>
+#include <vector>
 
-#define LENGHT     256
-#define SQL_LENGHT 65
+enum : short
+{
+    LENGHT     = 256,
+    SQL_LENGHT = 65   
+};
 
 namespace net
 {
@@ -48,8 +51,8 @@ namespace net
      *         After being written the file is correctly formated and copied. Finally temp.bin is removed.
      */
     constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
-    constexpr char LOCAL_STORAGE_PATH[] = "interface/storage/";
-    constexpr char INDEX_HTML_PATH[] = "interface/index.html";
+    constexpr char LOCAL_STORAGE_PATH[]    = "interface/storage/";
+    constexpr char INDEX_HTML_PATH[]       = "interface/index.html";
 
     // Class implementing core functionalities of an HTTP server
     template <typename T>
@@ -76,7 +79,7 @@ namespace net
                 char *getPassword(void) const noexcept;
                 char *getDatabase(void) const noexcept;
 
-                static int getCred(const char *hostname, const char *username, const char *password, const char *database);
+                static int getCred(char *hostname, char *username, char *password, char *database);
 
                 ~db_cred();
             };

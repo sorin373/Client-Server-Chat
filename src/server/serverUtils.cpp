@@ -1,12 +1,14 @@
-#include "serverUtils.hpp"
 #include "global.hpp"
 #include "interface/interface.hpp"
+
+#ifndef serverUtils_hpp
+#include "serverUtils.hpp"
+#endif
 
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string.h>
-#include <cstring>
 #include <sstream>
 #include <vector>
 #include <thread>
@@ -95,7 +97,7 @@ char *server<T>::db::db_cred::getDatabase(void) const noexcept
 }
 
 template <typename T>
-int server<T>::db::db_cred::getCred(const char *hostname, const char *username, const char *password, const char *database)
+int server<T>::db::db_cred::getCred(char *hostname, char *username, char *password, char *database)
 {
     system("clear");
 
@@ -838,7 +840,7 @@ int server<T>::__database_init__(void)
 
         con->setSchema(database);
 
-        db = new server<T>::db(driver, con, hostname, username, password, database);
+        db = new typename server<T>::db(driver, con, hostname, username, password, database);
         __user = new interface::user;
     }
     catch (sql::SQLException &e)
