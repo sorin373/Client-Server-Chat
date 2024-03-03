@@ -35,6 +35,11 @@
 #include "../socket/socketUtils.hpp"
 
 #include <vector>
+#include <mysql_connection.h>
+#include <mysql_driver.h>
+
+#define LENGHT     256
+#define SQL_LENGHT 65
 
 namespace net
 {
@@ -52,8 +57,58 @@ namespace net
     {
     public:
         static volatile bool SERVER_RUNNING;
+
         // Forward declaration for the class implementing core functionalities of database. However the tables are stored in the interface class.
-        class database;
+        class db
+        {
+        public:
+            // Nested class describing the database credentials object.
+            class db_cred
+            {
+            private:
+                char *hostname, *username, *password, *database;
+
+            public:
+                db_cred(const char *hostname, const char *username, const char *password, const char *database);
+
+                char *getHostname(void) const noexcept;
+                char *getUsername(void) const noexcept;
+                char *getPassword(void) const noexcept;
+                char *getDatabase(void) const noexcept;
+
+                static int getCred(const char *hostname, const char *username, const char *password, const char *database);
+
+                ~db_cred();
+            };
+        
+        private:
+            class db_cred   *dbCred; // Pointer to the 'db_cred' object.
+            sql::Connection *con;
+            sql::Driver     *driver;
+        
+        public:
+            db(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password, const char *database);
+        
+            /**
+             * @brief This function retrieves the SQL driver.
+             * @return Returns a pointer to the SQL driver object.
+             */
+            sql::Driver *getDriver(void)  const noexcept;
+
+            /**
+             * @brief This function retrieves the database connection.
+             * @return Returns a pointer to the SQL connection object.
+             */
+            sql::Connection *getCon(void) const noexcept;
+
+            /**
+             * @brief This function retrieves the database credentials.
+             * @return Returns a pointer to the database credentials object.
+             */
+            class db_cred *getDB_Cred(void) const noexcept;
+
+            ~db();
+        };
 
     public:
         // Class describing a network socket that has been accepted in a TCP server
@@ -76,8 +131,9 @@ namespace net
 
     private:
         std::vector<struct acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
-        class database        *db;                           // Pointer to the 'database' object.
         class interface::user *__user;                       // Pointer to the 'user' object.
+        class db              *db;                           // Pointer to the 'database' object.
+        
         
         /**
          * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
@@ -89,7 +145,7 @@ namespace net
          * @brief This function crestes a thread for an accepted socket. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
          * @param acceptedSocket Object describing a network socket that has been accepted in a TCP server.
          */
-        void receivedDataHandlerThread(class acceptedSocket *socket);
+        void receivedDataHandlerThread(class acceptedSocket socket);
 
         /**
          * @brief If a file has been uploaded to the server this function performs post receive file formating on the 'temp.bin' file. 
@@ -145,10 +201,10 @@ namespace net
         int addToFileTable(const char *fileName, const int fileSize);
 
         // This function accepts client connections.
-        void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket *__acceptedSocket);
+        void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket &__acceptedSocket);
 
         // This function receives the data sent by a client.
-        void receivedDataHandler(class acceptedSocket *socket);
+        void receivedDataHandler(const class acceptedSocket socket);
 
         /**
          * @brief This function handles HTTP POST requests.
@@ -189,7 +245,7 @@ namespace net
         bool getServerStatus(void) const noexcept;
 
         // This function retrieves a pointer to the "database" object
-        class database *getSQLdatabase(void) const noexcept;
+        class db *getSQLdatabase(void) const noexcept;
 
         // This function retrieves a pointer to the "user" object
         class interface::user *getUser(void) const noexcept;

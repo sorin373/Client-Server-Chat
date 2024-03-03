@@ -1,4 +1,4 @@
-#include "declarations.hpp"
+#include "global.hpp"
 
 #include <iostream>
 #include <cstring>

@@ -1,8 +1,7 @@
 #include "interface.hpp"
 
 #include "../serverUtils.hpp"
-#include "../declarations.hpp"
-#include "../database/database.hpp"
+#include "../global.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -125,7 +124,7 @@ char *user::userFiles::getFileName(void) const noexcept
     return fileName;
 }
 
-int user::userFiles::getUserID(void) const noexcept(true)
+int user::userFiles::getUserID(void) const noexcept
 {
     return userID;
 }
@@ -140,7 +139,7 @@ int user::userFiles::getFileSize(void) const noexcept
     return fileSize;
 }
 
-int user::userFiles::getNoDownloads(void) const noexcept(true)
+int user::userFiles::getNoDownloads(void) const noexcept
 {
     return noDownloads;
 }

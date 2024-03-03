@@ -1,12 +1,12 @@
 #include "serverUtils.hpp"
-#include "declarations.hpp"
+#include "global.hpp"
 #include "interface/interface.hpp"
-#include "database/database.hpp"
 
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <string.h>
+#include <cstring>
 #include <sstream>
 #include <vector>
 #include <thread>
@@ -22,6 +22,153 @@ template class server<char>;
 template <typename T>
 volatile bool server<T>::SERVER_RUNNING = false;
 
+/* db */
+
+template <typename T>
+server<T>::db::db(sql::Driver *driver, sql::Connection *con,
+                  const char *hostname, const char *username, const char *password, const char *database)
+{
+    this->driver = driver;
+    this->con = con;
+    this->dbCred = new db_cred(hostname, username, password, database);
+}
+
+template <typename T>
+sql::Connection *server<T>::db::getCon(void) const noexcept
+{
+    return con;
+}
+
+template <typename T>
+sql::Driver *server<T>::db::getDriver(void) const noexcept
+{
+    return driver;
+}
+
+template <typename T>
+class server<T>::db::db_cred *server<T>::db::getDB_Cred(void) const noexcept
+{
+    return dbCred;
+}
+
+template <typename T>
+server<T>::db::~db()
+{
+    delete dbCred;
+    con->close();
+    delete con;
+}
+
+/* db_cred */
+
+template <typename T>
+server<T>::db::db_cred::db_cred(const char *hostname, const char *username, const char *password, const char *database)
+{
+    this->hostname = strdup(hostname);
+    this->username = strdup(username);
+    this->password = strdup(password);
+    this->database = strdup(database);
+}
+
+template <typename T>
+char *server<T>::db::db_cred::getHostname(void) const noexcept
+{
+    return const_cast<char *>(hostname);
+}
+
+template <typename T>
+char *server<T>::db::db_cred::getUsername(void) const noexcept
+{
+    return const_cast<char *>(username);
+}
+
+template <typename T>
+char *server<T>::db::db_cred::getPassword(void) const noexcept
+{
+    return const_cast<char *>(password);
+}
+
+template <typename T>
+char *server<T>::db::db_cred::getDatabase(void) const noexcept
+{
+    return const_cast<char *>(database);
+}
+
+template <typename T>
+int server<T>::db::db_cred::getCred(const char *hostname, const char *username, const char *password, const char *database)
+{
+    system("clear");
+
+    std::cout << "\n\n"
+              << std::setw(13) << " "
+              << "DATABASE CONNECTION\n"
+              << std::setw(4) << " "
+              << "======================================\n"
+              << std::setw(5) << " "
+              << "Hostname: ";
+
+    std::cin.get(hostname, LENGHT);
+
+    size_t len = strlen(hostname);
+
+    if (len > SQL_LENGHT || len == 0)
+        return EXIT_FAILURE;
+
+    std::cin.get();
+    std::cout << std::setw(5) << " "
+              << "Username: ";
+    std::cin.get(username, LENGHT);
+
+    len = strlen(username);
+
+    if (len > SQL_LENGHT || len == 0)
+        return EXIT_FAILURE;
+
+    std::cin.get();
+    std::cout << std::setw(5) << " "
+              << "Password: ";
+
+    toggleEcho(false);
+    std::cin.get(password, LENGHT);
+    toggleEcho(true);
+
+    len = strlen(password);
+
+    if (len > SQL_LENGHT || len == 0)
+        return EXIT_FAILURE;
+
+    std::cin.get();
+    std::cout << "\n" << std::setw(5) << " "
+              << "Database: ";
+    std::cin.get(database, LENGHT);
+
+    len = strlen(database);
+
+    if (len > SQL_LENGHT || len == 0)
+        return EXIT_FAILURE;
+
+    std::cout << std::setw(4) << " "
+              << "======================================\n";
+
+    return EXIT_SUCCESS;
+}
+
+template <typename T>
+server<T>::db::db_cred::~db_cred()
+{
+    free(this->hostname);
+    this->hostname = nullptr;
+
+    free(this->username);
+    this->username = nullptr;
+
+    free(this->password);
+    this->password = nullptr;
+
+    free(this->database);
+    this->database = nullptr;
+}
+
 /* server */
 
 template <typename T>
@@ -32,14 +179,14 @@ server<T>::server()
 }
 
 template <typename T>
-void server<T>::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket *__acceptedSocket)
+void server<T>::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket &__acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
 
     int clientSocketFD = accept(serverSocketFileDescriptor, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
 
-    __acceptedSocket->getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
+    __acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
 }
 
 char *route = nullptr;
@@ -325,9 +472,9 @@ void server<T>::postRecv(const int acceptedSocketFileDescriptor)
 }
 
 template <typename T>
-void server<T>::receivedDataHandler(class acceptedSocket *socket)
+void server<T>::receivedDataHandler(const class acceptedSocket socket)
 {
-    int acceptedSocketFD = socket->getAcceptedSocketFileDescriptor();
+    int acceptedSocketFD = socket.getAcceptedSocketFileDescriptor();
 
     T buffer[1025];
 
@@ -338,9 +485,10 @@ void server<T>::receivedDataHandler(class acceptedSocket *socket)
         if (bytesReceived <= 0)
         {
             if (DEBUG_FLAG)
-                std::cerr << "\n" << std::setw(5) << " "
+                std::cerr << "\n"
+                          << std::setw(5) << " "
                           << "--> Receive failed: "
-                          << socket->getError() << "\n";
+                          << socket.getError() << "\n";
 
             postRecv(acceptedSocketFD);
 
@@ -361,12 +509,11 @@ void server<T>::receivedDataHandler(class acceptedSocket *socket)
         HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
 
-    close(socket->getAcceptedSocketFileDescriptor());
-    delete socket;
+    close(socket.getAcceptedSocketFileDescriptor());
 }
 
 template <typename T>
-void server<T>::receivedDataHandlerThread(class acceptedSocket *socket)
+void server<T>::receivedDataHandlerThread(class acceptedSocket socket)
 {
     std::thread printThread(&server::receivedDataHandler, this, socket);
     printThread.detach();
@@ -377,11 +524,11 @@ void server<T>::handleClientConnections(int serverSocketFileDescriptor)
 {
     while (server::SERVER_RUNNING)
     {
-        server::acceptedSocket *newAcceptedSocket = new server::acceptedSocket();
+        server::acceptedSocket newAcceptedSocket;
 
         acceptConnection(serverSocketFileDescriptor, newAcceptedSocket);
 
-        connectedSockets.push_back(*newAcceptedSocket);
+        connectedSockets.push_back(newAcceptedSocket);
 
         receivedDataHandlerThread(newAcceptedSocket);
     }
@@ -441,7 +588,7 @@ bool server<T>::getServerStatus(void) const noexcept
 }
 
 template <typename T>
-class server<T>::database *server<T>::getSQLdatabase(void) const noexcept
+class server<T>::db *server<T>::getSQLdatabase(void) const noexcept
 {
     return db;
 }
@@ -655,7 +802,7 @@ int server<T>::__database_init__(void)
         return EXIT_FAILURE;
     }
 
-    if (server<T>::database::dbCredentials::getCredentials(hostname, username, password, database) == EXIT_FAILURE)
+    if (server<T>::db::db_cred::getCred(hostname, username, password, database) == EXIT_FAILURE)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to fetch MySQL schema credentails.\n";
@@ -691,7 +838,7 @@ int server<T>::__database_init__(void)
 
         con->setSchema(database);
 
-        db = new server<T>::database(driver, con, hostname, username, password, database);
+        db = new server<T>::db(driver, con, hostname, username, password, database);
         __user = new interface::user;
     }
     catch (sql::SQLException &e)
