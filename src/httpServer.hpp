@@ -32,7 +32,7 @@
 #define __HTTP_SERVER_HPP__
 
 // This C++ header file contains important extern variable declarations and helper functions prototypes
-#include "server/declarations.hpp"
+#include "server/global.hpp"
 
 // This C++ header file contains the server class prototype
 #include "server/serverUtils.hpp"

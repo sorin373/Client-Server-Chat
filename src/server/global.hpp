@@ -28,8 +28,8 @@
  *
  */
 
-#ifndef __DECLARATIONS_HPP__
-#define __DECLARATIONS_HPP__
+#ifndef __GLOBAL_HPP__
+#define __GLOBAL_HPP__
 
 #include "serverUtils.hpp"
 

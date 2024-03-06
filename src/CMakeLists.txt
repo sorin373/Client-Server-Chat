@@ -23,9 +23,8 @@ add_executable(${PROJECT_NAME}
     "main.cpp"
     "socket/socketUtils.cpp"
     "server/serverUtils.cpp" 
-    "server/database/database.cpp" 
     "server/interface/interface.cpp"
-    "server/declarations.cpp"
+    "server/global.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} mysqlcppconn)
