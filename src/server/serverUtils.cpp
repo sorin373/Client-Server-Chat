@@ -12,6 +12,7 @@
 #include <sstream>
 #include <vector>
 #include <thread>
+#include <memory>
 #include <netinet/in.h>
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
@@ -140,7 +141,8 @@ int server<T>::db::db_cred::getCred(char *hostname, char *username, char *passwo
         return EXIT_FAILURE;
 
     std::cin.get();
-    std::cout << "\n" << std::setw(5) << " "
+    std::cout << "\n"
+              << std::setw(5) << " "
               << "Database: ";
     std::cin.get(database, LENGHT);
 
@@ -517,8 +519,8 @@ void server<T>::receivedDataHandler(const class acceptedSocket socket)
 template <typename T>
 void server<T>::receivedDataHandlerThread(class acceptedSocket socket)
 {
-    std::thread printThread(&server::receivedDataHandler, this, socket);
-    printThread.detach();
+    std::unique_ptr<std::thread> printThread(new std::thread(&server::receivedDataHandler, this, socket));
+    printThread->detach();
 }
 
 template <typename T>

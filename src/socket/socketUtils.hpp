@@ -35,7 +35,7 @@
 
 namespace net
 {
-    constexpr char localHostAddress[] = "127.0.0.1";
+    constexpr char LOCAL_HOST_ADDRESS[] = "127.0.0.1";
     constexpr int DEFAULT_PORT = 8080;
 
     class SocketUtils
@@ -66,7 +66,7 @@ namespace net
          *    - Default address: 127.0.0.1
          *    - Default port:    8080
          */
-        struct sockaddr_in *IPv4Address(const char *ipAddress = localHostAddress, int port = DEFAULT_PORT);
+        struct sockaddr_in *IPv4Address(const char *ipAddress = LOCAL_HOST_ADDRESS, int port = DEFAULT_PORT);
 
         // This function closes the file descriptor of a socket
         void closeSocket(int socketFileDescriptor);
