@@ -38,6 +38,8 @@ extern net::server<char> *__server;
 
 extern bool DEBUG_FLAG;
 
+extern long long unsigned int TOTAL_BYTES_RECV;
+
 /**
  * @brief This function searches for a substring. 
  *

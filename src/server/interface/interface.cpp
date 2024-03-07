@@ -364,6 +364,8 @@ int fileCount;
 
 int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
+    TOTAL_BYTES_RECV += __bytesReceived;
+
     if (findString(buffer, "filename="))
     {
         fileName.clear();

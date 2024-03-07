@@ -96,7 +96,7 @@ namespace net
              * @brief This function retrieves the SQL driver.
              * @return Returns a pointer to the SQL driver object.
              */
-            sql::Driver *getDriver(void)  const noexcept;
+            sql::Driver *getDriver(void) const noexcept;
 
             /**
              * @brief This function retrieves the database connection.

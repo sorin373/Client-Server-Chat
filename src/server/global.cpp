@@ -10,6 +10,8 @@ net::server<char> *__server = nullptr;
 
 bool DEBUG_FLAG = false;
 
+long long unsigned int TOTAL_BYTES_RECV = 0;
+
 bool findString(const char haystack[], const char needle[])
 {
     char *__copyHaystack = new char[strlen(haystack) + 1];

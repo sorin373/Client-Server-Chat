@@ -12,7 +12,6 @@
 #include <sstream>
 #include <vector>
 #include <thread>
-#include <memory>
 #include <netinet/in.h>
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
@@ -230,23 +229,23 @@ int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
     }
 
     if (findString(route, "/userlogin"))
-        if (__user->loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (!__user->loginRoute(charBuffer, acceptedSocketFD))
             return EXIT_FAILURE;
 
     if (findString(route, "/addFile"))
-        if (__user->addFilesRoute(__buffer, byteBuffer, acceptedSocketFD, __bytesReceived) == EXIT_FAILURE)
+        if (!__user->addFilesRoute(__buffer, byteBuffer, acceptedSocketFD, __bytesReceived))
             return EXIT_FAILURE;
 
     if (findString(route, "/change_password"))
-        if (__user->changePasswordRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (!__user->changePasswordRoute(__buffer, acceptedSocketFD))
             return EXIT_FAILURE;
 
     if (findString(route, "/create_account"))
-        if (__user->createAccountRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (!__user->createAccountRoute(__buffer, acceptedSocketFD))
             return EXIT_FAILURE;
 
     if (findString(route, "/delete_file"))
-        if (__user->deleteFileRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (!__user->deleteFileRoute(__buffer, acceptedSocketFD))
             return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -465,7 +464,11 @@ void server<T>::postRecv(const int acceptedSocketFD)
     {
         formatFile(file);
 
-        addToFileTable(file.c_str(), 0);
+        TOTAL_BYTES_RECV /= 1024;
+
+        addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
+
+        TOTAL_BYTES_RECV = 0;
 
         __user->clearFileInQueue();
 
@@ -692,18 +695,11 @@ void server<T>::SQLfetchFileTable(void)
 template <typename T>
 int server<T>::addToFileTable(const char *fileName, const int fileSize)
 {
-    bool found = false;
     std::vector<class user::userFiles> __userFiles = __user->getUserFiles();
 
     for (const auto &__uf : __userFiles)
         if (strcmp(__uf.getFileName(), fileName) == 0)
-        {
-            found = true;
-            break;
-        }
-
-    if (found)
-        return EXIT_SUCCESS;
+            return EXIT_SUCCESS;
 
     int maxID = 0;
 
