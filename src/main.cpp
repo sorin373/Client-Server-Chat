@@ -77,14 +77,16 @@ int main(int argc, char *argv[])
 
     __server = new server<char>();
 
-    if (__server->__database_init__() == EXIT_FAILURE)
+    if (__server->database_easy_init() == EXIT_FAILURE)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Database initialization failed.\n";
 
         shutdown(serverSocketFD, SHUT_RDWR);
-        delete __server;
         serverSocket.closeSocket(serverSocketFD);
+
+        delete __server;
+        
 
         return EXIT_FAILURE;
     }
@@ -96,8 +98,9 @@ int main(int argc, char *argv[])
         std::cerr << std::setw(5) << " "
                   << "--> Error: Null pointer encountered for machine's IPv4 address.\n";
 
-        serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
+        serverSocket.closeSocket(serverSocketFD);
+        
         delete __server;
 
         return EXIT_FAILURE;
@@ -117,8 +120,9 @@ int main(int argc, char *argv[])
 
         std::cout << "\n";
 
-        serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
+        serverSocket.closeSocket(serverSocketFD);
+
         free(serverAddress);
         delete __server;
         delete[] machineIPv4Address;
@@ -152,18 +156,21 @@ int main(int argc, char *argv[])
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to initiate listening on the server socket.\n";
 
-        serverSocket.closeSocket(serverSocketFD);
         shutdown(serverSocketFD, SHUT_RDWR);
+        serverSocket.closeSocket(serverSocketFD);
+
         free(serverAddress);
         delete __server;
+        delete[] machineIPv4Address;
 
         return EXIT_FAILURE;
     }
 
-    __server->__SERVER_INIT__(serverSocketFD);
+    __server->server_easy_init(serverSocketFD);
 
-    serverSocket.closeSocket(serverSocketFD);
     shutdown(serverSocketFD, SHUT_RDWR);
+    serverSocket.closeSocket(serverSocketFD);
+
     free(serverAddress);
     delete __server;
     delete[] machineIPv4Address;

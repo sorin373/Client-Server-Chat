@@ -110,7 +110,7 @@ void user::addFileInQueue(const std::string fileName) noexcept
 
 /* UserFiles table */
 
-user::userFiles::userFiles(const char *fileName, const int uesrID, const int fileID, const int fileSize, const int noDownloads)
+user::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const int noDownloads)
 {
     this->fileName = strdup(fileName);
     this->userID = userID;
@@ -270,10 +270,10 @@ void user::buildIndexHTML(void)
     index_html.close();
 }
 
-bool user::validateCredentials(char *username, char *password)
+bool user::validateCredentials(const char __username[], const char __password[])
 {
     for (auto &__uc : uc)
-        if (strcmp(username, __uc.getUsername()) == 0 && strcmp(password, __uc.getPassword()) == 0)
+        if (strcmp(__username, __uc.getUsername()) == 0 && strcmp(__password, __uc.getPassword()) == 0)
         {
             this->SESSION_ID = __uc.getId();
             return true;
@@ -282,10 +282,10 @@ bool user::validateCredentials(char *username, char *password)
     return false;
 }
 
-bool user::findUsername(char *username)
+bool user::findUsername(const char __username[])
 {
     for (auto &__uc : uc)
-        if (strcmp(username, __uc.getUsername()) == 0)
+        if (strcmp(__username, __uc.getUsername()) == 0)
             return true;
 
     return false;

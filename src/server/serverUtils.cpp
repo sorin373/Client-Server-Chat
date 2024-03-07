@@ -23,7 +23,7 @@ using namespace net::interface;
 template class server<char>;
 
 template <typename T>
-volatile bool server<T>::SERVER_RUNNING = false;
+bool server<T>::SERVER_RUNNING = false;
 
 /* db */
 
@@ -183,12 +183,12 @@ server<T>::server()
 }
 
 template <typename T>
-void server<T>::acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket &__acceptedSocket)
+void server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
 
-    int clientSocketFD = accept(serverSocketFileDescriptor, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
+    int clientSocketFD = accept(serverSocketFD, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
 
     __acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
 }
@@ -197,10 +197,10 @@ char *route = nullptr;
 bool changeRoute = false;
 
 template <typename T>
-int server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __bytesReceived)
 {
-    uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
-    char *charBuffer = reinterpret_cast<char *>(buffer);
+    uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(__buffer);
+    char *charBuffer = reinterpret_cast<char *>(__buffer);
 
     // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
     if (changeRoute)
@@ -230,37 +230,37 @@ int server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, 
     }
 
     if (findString(route, "/userlogin"))
-        if (__user->loginRoute(charBuffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (__user->loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/addFile"))
-        if (__user->addFilesRoute(buffer, byteBuffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
+        if (__user->addFilesRoute(__buffer, byteBuffer, acceptedSocketFD, __bytesReceived) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/change_password"))
-        if (__user->changePasswordRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (__user->changePasswordRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/create_account"))
-        if (__user->createAccountRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (__user->createAccountRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/delete_file"))
-        if (__user->deleteFileRoute(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (__user->deleteFileRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
 
 template <typename T>
-int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
+int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
 {
     bool USE_DEFAULT_ROUTE = false;
 
     const char defaultRoute[] = "interface/login.html";
     const char root[] = "interface";
     char *path = nullptr;
-    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
+    char *allocatedBuffer = reinterpret_cast<char *>(__buffer);
 
     if (allocatedBuffer == nullptr)
         return EXIT_FAILURE;
@@ -330,7 +330,7 @@ int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
     file.seekg(0, std::ios::beg);
     response << file.rdbuf();
 
-    if (send(acceptedSocketFileDescriptor, response.str().c_str(), response.str().size(), 0) == -1)
+    if (send(acceptedSocketFD, response.str().c_str(), response.str().size(), 0) == -1)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to send HTTP response.\n";
@@ -343,9 +343,9 @@ int server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor)
 char *requestType = nullptr;
 
 template <typename T>
-int server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int server<T>::HTTPrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __bytesReceived)
 {
-    char *charBuffer = reinterpret_cast<char *>(buffer);
+    char *charBuffer = reinterpret_cast<char *>(__buffer);
     char *copyBuffer = new char[strlen(charBuffer) + 1];
 
     strcpy(copyBuffer, charBuffer);
@@ -375,14 +375,14 @@ int server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, 
     }
 
     if (strcmp(requestType, "GET") == 0)
-        if (GETrequestsHandler(buffer, acceptedSocketFileDescriptor) == EXIT_FAILURE)
+        if (GETrequestsHandler(__buffer, acceptedSocketFD) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
         }
 
     if (strcmp(requestType, "POST") == 0)
-        if (POSTrequestsHandler(buffer, acceptedSocketFileDescriptor, __bytesReceived) == EXIT_FAILURE)
+        if (POSTrequestsHandler(__buffer, acceptedSocketFD, __bytesReceived) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
@@ -456,7 +456,7 @@ int server<T>::formatFile(const std::string fileName)
 }
 
 template <typename T>
-void server<T>::postRecv(const int acceptedSocketFileDescriptor)
+void server<T>::postRecv(const int acceptedSocketFD)
 {
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     std::string file = __user->getFileInQueue();
@@ -469,16 +469,16 @@ void server<T>::postRecv(const int acceptedSocketFileDescriptor)
 
         __user->clearFileInQueue();
 
-        if (send(acceptedSocketFileDescriptor, response, strlen(response), 0) == -1)
+        if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
             std::cerr << std::setw(5) << " "
                       << "--> Error: Failed to send HTTP response.\n";
     }
 }
 
 template <typename T>
-void server<T>::receivedDataHandler(const class acceptedSocket socket)
+void server<T>::receivedDataHandler(const class acceptedSocket __socket)
 {
-    int acceptedSocketFD = socket.getAcceptedSocketFileDescriptor();
+    int acceptedSocketFD = __socket.getAcceptedSocketFD();
 
     T buffer[1025];
 
@@ -492,7 +492,7 @@ void server<T>::receivedDataHandler(const class acceptedSocket socket)
                 std::cerr << "\n"
                           << std::setw(5) << " "
                           << "--> Receive failed: "
-                          << socket.getError() << "\n";
+                          << __socket.getError() << "\n";
 
             postRecv(acceptedSocketFD);
 
@@ -513,24 +513,24 @@ void server<T>::receivedDataHandler(const class acceptedSocket socket)
         HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
 
-    close(socket.getAcceptedSocketFileDescriptor());
+    if (acceptedSocketFD >= 0)
+        close(acceptedSocketFD);
 }
 
 template <typename T>
-void server<T>::receivedDataHandlerThread(class acceptedSocket socket)
+void server<T>::receivedDataHandlerThread(const class acceptedSocket __socket)
 {
-    std::unique_ptr<std::thread> printThread(new std::thread(&server::receivedDataHandler, this, socket));
-    printThread->detach();
+    std::thread(&server::receivedDataHandler, this, __socket).detach();
 }
 
 template <typename T>
-void server<T>::handleClientConnections(int serverSocketFileDescriptor)
+void server<T>::handleClientConnections(int serverSocketFD)
 {
-    while (server::SERVER_RUNNING)
+    while (SERVER_RUNNING)
     {
-        server::acceptedSocket newAcceptedSocket;
+        acceptedSocket newAcceptedSocket;
 
-        acceptConnection(serverSocketFileDescriptor, newAcceptedSocket);
+        acceptConnection(serverSocketFD, newAcceptedSocket);
 
         connectedSockets.push_back(newAcceptedSocket);
 
@@ -553,30 +553,37 @@ void server<T>::consoleListener(void)
 
         if (strcasecmp(input, "exit") == 0)
         {
+            std::cout << std::setw(5) << " " 
+                      << "Shutting down...\n";
+
+            sleep(1);
+
             SERVER_RUNNING = false;
 
             if (!DEBUG_FLAG)
                 system("clear");
+
+            break;
         }
     }
 }
 
 template <typename T>
-void server<T>::__SERVER_INIT__(int serverSocketFileDescriptor)
+void server<T>::server_easy_init(int serverSocketFD)
 {
     SERVER_RUNNING = true;
 
-    std::thread workerThread(&server::handleClientConnections, this, serverSocketFileDescriptor);
-    workerThread.detach();
+    std::thread(&server::handleClientConnections, this, serverSocketFD).detach();
 
-    std::thread consoleListenerThread(&consoleListener);
-    consoleListenerThread.join();
+    sleep(1);
+
+    consoleListener();
 }
 
 template <typename T>
-int server<T>::bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress)
+int server<T>::bindServer(int serverSocketFD, struct sockaddr_in *__serverAddress)
 {
-    return bind(serverSocketFileDescriptor, (struct sockaddr *)serverAddress, sizeof(struct sockaddr_in));
+    return bind(serverSocketFD, (struct sockaddr *)__serverAddress, sizeof(struct sockaddr_in));
 }
 
 template <typename T>
@@ -751,7 +758,7 @@ int server<T>::addToFileTable(const char *fileName, const int fileSize)
 }
 
 template <typename T>
-int server<T>::__database_init__(void)
+int server<T>::database_easy_init(void)
 {
     if (db != nullptr)
     {
@@ -888,16 +895,23 @@ server<T>::~server()
         this->__user = nullptr;
     }
 
+    for (struct acceptedSocket &accSock : connectedSockets)
+    {
+        int socketFD = accSock.getAcceptedSocketFD();
+        if (socketFD >= 0) 
+            close(socketFD);
+    }
+    
     connectedSockets.clear();
 }
 
 /* acceptedSocket */
 
 template <typename T>
-void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error)
+void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
 {
     this->ipAddress = ipAddress;
-    this->acceptedSocketFileDescriptor = acceptedSocketFileDescriptor;
+    this->acceptedSocketFD = acceptedSocketFD;
     this->error = error;
 }
 
@@ -914,7 +928,7 @@ int server<T>::acceptedSocket::getError(void) const noexcept
 }
 
 template <typename T>
-int server<T>::acceptedSocket::getAcceptedSocketFileDescriptor(void) const noexcept
+int server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
 {
-    return acceptedSocketFileDescriptor;
+    return acceptedSocketFD;
 }

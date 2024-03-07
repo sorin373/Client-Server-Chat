@@ -75,7 +75,7 @@ namespace net
                 int userID, fileID, fileSize, noDownloads;
 
             public:
-                userFiles(const char *fileName, const int uesrID, const int fileID, const int fileSize, const int noDownloads);
+                userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const int noDownloads);
 
                 char *getFileName(void) const noexcept;
                 int getUserID(void) const noexcept;
@@ -103,8 +103,8 @@ namespace net
              * @brief This function validates user credentials.
              * @return Returns true on success and false if the user credentials are not valid.
              */
-            bool validateCredentials(char *username, char *password);
-            bool findUsername(char *username);
+            bool validateCredentials(const char  __username[], const char __password[]);
+            bool findUsername(const char __username[]);
 
         public:
             user();

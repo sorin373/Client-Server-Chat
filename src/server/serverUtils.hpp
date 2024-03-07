@@ -59,7 +59,7 @@ namespace net
     class server
     {
     public:
-        static volatile bool SERVER_RUNNING;
+        static bool SERVER_RUNNING;
 
         // Forward declaration for the class implementing core functionalities of database. However the tables are stored in the interface class.
         class db
@@ -119,13 +119,13 @@ namespace net
         {
         private:
             struct sockaddr_in ipAddress;
-            int acceptedSocketFileDescriptor, error;
+            int acceptedSocketFD, error;
 
         public:
             acceptedSocket() = default;
 
-            void getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFileDescriptor, const int error);
-            int getAcceptedSocketFileDescriptor(void) const noexcept;
+            void getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error);
+            int getAcceptedSocketFD(void) const noexcept;
             int getError(void) const noexcept;
             struct sockaddr_in getIpAddress(void) const noexcept;
 
@@ -140,15 +140,15 @@ namespace net
         
         /**
          * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
-         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          */
-        void handleClientConnections(int serverSocketFileDescriptor);
+        void handleClientConnections(int serverSocketFD);
 
         /**
          * @brief This function crestes a thread for an accepted socket. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
          * @param acceptedSocket Object describing a network socket that has been accepted in a TCP server.
          */
-        void receivedDataHandlerThread(class acceptedSocket socket);
+        void receivedDataHandlerThread(const class acceptedSocket __socket);
 
         /**
          * @brief If a file has been uploaded to the server this function performs post receive file formating on the 'temp.bin' file. 
@@ -159,9 +159,9 @@ namespace net
         /**
          * @brief If a file has been uploaded to the server this function performs post receive operations such as: 
          *        file formatting, adding the file metadata to the database and clearing the file from the queue.
-         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          */
-        void postRecv(const int acceptedSocketFileDescriptor);
+        void postRecv(const int acceptedSocketFD);
 
         static void consoleListener(void);
 
@@ -175,21 +175,21 @@ namespace net
          *   - Creates a detached thread that handles client connections
          *   - Creates a thread that listens for console input
          */
-        void __SERVER_INIT__(int serverSocketFileDescriptor);
+        void server_easy_init(int serverSocketFD);
 
         /*
          * This function binds a socket to a specific address and port. Return 0 for success, -1 for errors:
          *   - Default address: 127.0.0.1
          *   - Default port:    8080
          */
-        int bindServer(int serverSocketFileDescriptor, struct sockaddr_in *serverAddress);
+        int bindServer(int serverSocketFD, struct sockaddr_in *__serverAddress);
 
         /*
          * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.
          *   - It allocates memory for the 'database' object class using the new operator (memory release is handled automatically)
          *   - It allocates memory for the 'user' object class using the new operator (memory release is handled automatically)
          */
-        int __database_init__(void);
+        int database_easy_init(void);
 
         // This function retrieves the "user" table from the database
         void SQLfetchUserTable(void);
@@ -204,42 +204,42 @@ namespace net
         int addToFileTable(const char *fileName, const int fileSize);
 
         // This function accepts client connections.
-        void acceptConnection(const int serverSocketFileDescriptor, class acceptedSocket &__acceptedSocket);
+        void acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket);
 
         // This function receives the data sent by a client.
-        void receivedDataHandler(const class acceptedSocket socket);
+        void receivedDataHandler(const class acceptedSocket __socket);
 
         /**
          * @brief This function handles HTTP POST requests.
          *
          * @param buffer Contains the request data.
-         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          * @param __bytesReceived The size of the current buffer
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int POSTrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
+        int POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __bytesReceived);
 
         /**
          * @brief This function handles HTTP GET requests.
          *
          * @param buffer Contains the request data.
-         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int GETrequestsHandler(T *buffer, int acceptedSocketFileDescriptor);
+        int GETrequestsHandler(T *__buffer, int acceptedSocketFD);
 
         /**
          * @brief This function decides whether the HTTP request is a POST or GET request.
          *
          * @param buffer Contains the request data.
-         * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          * @param __bytesReceived The size of the current buffer
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int HTTPrequestsHandler(T *buffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
+        int HTTPrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __bytesReceived);
 
         // This function retrieves a vector where the connected clients are stored
         std::vector<class acceptedSocket> getConnectedSockets(void) const noexcept;
