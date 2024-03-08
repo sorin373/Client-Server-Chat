@@ -257,4 +257,6 @@ namespace net
     };
 };
 
+int INIT(int argc, char *argv[]);
+
 #endif // __SERVER_UTILS_HPP__

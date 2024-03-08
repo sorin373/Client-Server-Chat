@@ -19,15 +19,19 @@ set(FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR "/usr")
 include_directories(${FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR}/include)
 link_directories(${FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR}/lib)
 
+find_package(Qt5 COMPONENTS Widgets REQUIRED)
+
 add_executable(${PROJECT_NAME}
     "main.cpp"
     "socket/socketUtils.cpp"
     "server/serverUtils.cpp" 
     "server/interface/interface.cpp"
     "server/global.cpp"
+    "client/clientWindow.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} mysqlcppconn)
+target_link_libraries(${PROJECT_NAME} Qt5::Widgets)
 
 set(DIR "${CMAKE_CURRENT_SOURCE_DIR}/interface")
 set(DESTINATION_DIR "${CMAKE_BINARY_DIR}")
