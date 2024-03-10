@@ -247,6 +247,8 @@ namespace net
         // This function retrieves the status of the server. Returns true if the server is running, otherwise false.
         bool getServerStatus(void) const noexcept;
 
+        void haltServer(void) noexcept;
+
         // This function retrieves a pointer to the "database" object
         class db *getSQLdatabase(void) const noexcept;
 
@@ -255,8 +257,8 @@ namespace net
 
         ~server();
     };
-};
 
-int INIT(int argc, char *argv[]);
+    int INIT(int argc, char *argv[]);
+};
 
 #endif // __SERVER_UTILS_HPP__

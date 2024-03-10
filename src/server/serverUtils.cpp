@@ -456,7 +456,7 @@ int server<T>::formatFile(const std::string fileName)
 
 template <typename T>
 void server<T>::postRecv(const int acceptedSocketFD)
-{
+{     
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
 
     std::string file = __user->getFileInQueue();
@@ -530,13 +530,13 @@ void server<T>::receivedDataHandlerThread(const class acceptedSocket __socket)
 template <typename T>
 void server<T>::handleClientConnections(int serverSocketFD)
 {
-    while (SERVER_RUNNING)
+    while (SERVER_RUNNING == true)
     {
         acceptedSocket newAcceptedSocket;
 
         acceptConnection(serverSocketFD, newAcceptedSocket);
 
-        connectedSockets.push_back(newAcceptedSocket);
+        //connectedSockets.push_back(newAcceptedSocket);
 
         receivedDataHandlerThread(newAcceptedSocket);
     }
@@ -598,6 +598,12 @@ template <typename T>
 bool server<T>::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
+}
+
+template <typename T>
+void server<T>::haltServer(void) noexcept
+{
+    this->SERVER_RUNNING = false;
 }
 
 template <typename T>
@@ -875,8 +881,10 @@ int server<T>::database_easy_init(void)
     return EXIT_SUCCESS;
 }
 
-int INIT(int argc, char *argv[])
+int net::INIT(int argc, char *argv[])
 {
+    std::cout << "Starting...\n";
+
     int port = 0;
 
     //port = getMainArguments(argc, argv);
@@ -908,7 +916,6 @@ int INIT(int argc, char *argv[])
 
         delete __server;
         
-
         return EXIT_FAILURE;
     }
 

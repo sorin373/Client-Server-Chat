@@ -9,6 +9,8 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QTextEdit>
+#include <qdebug.h>
+#include <thread>
 
 using namespace net::ui;
 
@@ -72,24 +74,30 @@ Client::Client(QWidget *parent) : QWidget(parent)
 
 void Client::startServer()
 {
-    connect(startButton, &QPushButton::clicked, this, &Client::startButtonHandler);
-
     startButton->setEnabled(false);
     stopButton->setEnabled(true);
-    textDisplay->append("Server started!");
+    textDisplay->append("Server starting...");
+    
+    std::thread(&Client::__startServer__, this).detach();
 }
 
-void Client::startButtonHandler(void)
+void Client::__startServer__(void) noexcept
 {
-    if (__server == nullptr)
-        INIT(1, nullptr);
+    net::INIT(0, nullptr);
 }
 
 void Client::stopServer()
 {
     startButton->setEnabled(true);
     stopButton->setEnabled(false);
-    textDisplay->append("Server stopped!");
+    textDisplay->append("Server shutting down...");
+
+    std::thread(&Client::__stopServer__, this).detach();
+}
+
+void Client::__stopServer__(void) noexcept
+{
+    __server->haltServer();
 }
 
 Client::~Client()

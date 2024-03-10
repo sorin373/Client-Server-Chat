@@ -22,13 +22,14 @@ namespace net
 
         private:
             //void createMenu(void);
-            void startButtonHandler(void);
+            void __startServer__(void) noexcept;
+            void __stopServer__(void) noexcept;
 
-            QLabel *ipAddressLabel;
-            QLabel *portLabel;
             QPushButton *startButton;
             QPushButton *stopButton;
-            QTextEdit *textDisplay;
+            QTextEdit   *textDisplay;
+            QLabel      *ipAddressLabel;
+            QLabel      *portLabel;
         };
     };
 };
