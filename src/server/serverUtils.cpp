@@ -10,7 +10,6 @@
 #include <fstream>
 #include <string.h>
 #include <sstream>
-#include <vector>
 #include <thread>
 #include <netinet/in.h>
 #include <cppconn/resultset.h>
@@ -22,7 +21,7 @@ using namespace net::interface;
 template class server<char>;
 
 template <typename T>
-bool server<T>::SERVER_RUNNING = false;
+std::atomic<bool> server<T>::SERVER_RUNNING = false;
 
 /* db */
 
@@ -182,14 +181,20 @@ server<T>::server()
 }
 
 template <typename T>
-void server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket)
+bool server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
 
     int clientSocketFD = accept(serverSocketFD, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
+    
+    if (clientSocketFD > 0)
+    {
+        __acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
+        return true;
+    }
 
-    __acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
+    return false;
 }
 
 char *route = nullptr;
@@ -254,15 +259,17 @@ int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
 template <typename T>
 int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
 {
+    if (__user == nullptr) return EXIT_FAILURE;
+
     bool USE_DEFAULT_ROUTE = false;
 
     const char defaultRoute[] = "interface/login.html";
     const char root[] = "interface";
+
     char *path = nullptr;
     char *allocatedBuffer = reinterpret_cast<char *>(__buffer);
 
-    if (allocatedBuffer == nullptr)
-        return EXIT_FAILURE;
+    if (allocatedBuffer == nullptr) return EXIT_FAILURE;
 
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
         if (allocatedBuffer[i] == '/')
@@ -271,8 +278,7 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
             break;
         }
 
-    if (path == nullptr)
-        USE_DEFAULT_ROUTE = true;
+    if (path == nullptr) USE_DEFAULT_ROUTE = true;
 
     std::ifstream file;
 
@@ -282,8 +288,7 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
             if (path[i] == ' ')
                 path[i] = '\0';
 
-        if ((strlen(path) == 1 && path[0] == '/'))
-            USE_DEFAULT_ROUTE = true;
+        if ((strlen(path) == 1 && path[0] == '/')) USE_DEFAULT_ROUTE = true;
 
         if (strcmp(path, "/apology.html") != 0 && strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 &&
             strcmp(path, "/createAccount.html") != 0 && !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
@@ -308,14 +313,14 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
         }
     }
 
-    if (USE_DEFAULT_ROUTE)
-        file.open(defaultRoute, std::ios::binary);
+    if (USE_DEFAULT_ROUTE) file.open(defaultRoute, std::ios::binary);
 
     if (!file.is_open())
     {
         if (DEBUG_FLAG)
             std::cerr << std::setw(5) << " "
                       << "--> Encountered an error while attempting to open the file: " << path << '\n';
+
         return EXIT_FAILURE;
     }
 
@@ -457,6 +462,9 @@ int server<T>::formatFile(const std::string fileName)
 template <typename T>
 void server<T>::postRecv(const int acceptedSocketFD)
 {     
+    if (__user == nullptr)
+        return;
+
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
 
     std::string file = __user->getFileInQueue();
@@ -519,54 +527,75 @@ void server<T>::receivedDataHandler(const class acceptedSocket __socket)
 
     if (acceptedSocketFD >= 0)
         close(acceptedSocketFD);
+
+    if (requestType != nullptr)
+    {
+        delete[] requestType;
+        requestType = nullptr;
+    }
+
+    if (route != nullptr)
+    {
+        delete[] route;
+        route = nullptr;
+    }
 }
 
 template <typename T>
 void server<T>::receivedDataHandlerThread(const class acceptedSocket __socket)
 {
-    std::thread(&server::receivedDataHandler, this, __socket).detach();
+    std::thread t(&server<T>::receivedDataHandler, this, __socket);
+    t.detach();
 }
 
 template <typename T>
-void server<T>::handleClientConnections(int serverSocketFD)
+void server<T>::handleClientConnections(int serverSocketFD, std::mutex& mtx, std::condition_variable& cv)
 {
-    while (SERVER_RUNNING == true)
-    {
+    while (true) {
         acceptedSocket newAcceptedSocket;
 
-        acceptConnection(serverSocketFD, newAcceptedSocket);
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            if (!SERVER_RUNNING.load()) {
+                cv.notify_one(); // Notify the main thread that the handleClientConnections thread has finished
+                return;
+            }
+        }
 
-        //connectedSockets.push_back(newAcceptedSocket);
-
-        receivedDataHandlerThread(newAcceptedSocket);
+        if (!acceptConnection(serverSocketFD, newAcceptedSocket))
+            break;
     }
+
+    // Notify the main thread that the handleClientConnections thread has finished
+    cv.notify_one();
 }
 
 template <typename T>
-void server<T>::consoleListener(void)
+void server<T>::consoleListener(std::mutex& mtx, std::condition_variable& cv, std::atomic<bool>& consoleFinished)
 {
     underline(75);
 
     char input[101] = "";
 
-    while (SERVER_RUNNING)
-    {
+    while (SERVER_RUNNING.load()) {
         std::cout << std::setw(5) << " "
                   << "--> ";
         std::cin >> input;
 
-        if (strcasecmp(input, "exit") == 0)
-        {
+        if (strcasecmp(input, "exit") == 0) {
             std::cout << std::setw(5) << " " 
                       << "Shutting down...\n";
-
-            sleep(1);
-
-            SERVER_RUNNING = false;
 
             if (!DEBUG_FLAG)
                 system("clear");
 
+            SERVER_RUNNING.store(false);
+
+            {
+                std::unique_lock<std::mutex> lock(mtx);
+                consoleFinished.store(true);
+                cv.notify_one(); // Notify the waiting thread
+            }
             break;
         }
     }
@@ -575,11 +604,22 @@ void server<T>::consoleListener(void)
 template <typename T>
 void server<T>::server_easy_init(int serverSocketFD)
 {
-    SERVER_RUNNING = true;
+    SERVER_RUNNING.store(true);
+    std::atomic<bool> consoleFinished(false); // Flag to indicate when the consoleListener has finished
 
-    std::thread(&server::handleClientConnections, this, serverSocketFD).detach();
+    std::condition_variable cv;
+    std::mutex mtx;
 
-    consoleListener();
+    std::thread t(&server<T>::handleClientConnections, this, serverSocketFD, std::ref(mtx), std::ref(cv));
+
+    consoleListener(mtx, cv, consoleFinished);
+
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [&]{ return !SERVER_RUNNING.load() && consoleFinished.load(); }); // Wait until the condition variable is notified
+    }
+    
+    t.join();
 }
 
 template <typename T>
@@ -883,8 +923,6 @@ int server<T>::database_easy_init(void)
 
 int net::INIT(int argc, char *argv[])
 {
-    std::cout << "Starting...\n";
-
     int port = 0;
 
     //port = getMainArguments(argc, argv);
@@ -996,8 +1034,6 @@ int net::INIT(int argc, char *argv[])
 
     __server->server_easy_init(serverSocketFD);
 
-    sleep(5);
-
     shutdown(serverSocketFD, SHUT_RDWR);
     serverSocket.closeSocket(serverSocketFD);
 
@@ -1023,9 +1059,9 @@ server<T>::~server()
         this->__user = nullptr;
     }
 
-    for (struct acceptedSocket &accSock : connectedSockets)
+    for (struct acceptedSocket &sock : connectedSockets)
     {
-        int socketFD = accSock.getAcceptedSocketFD();
+        int socketFD = sock.getAcceptedSocketFD();
         if (socketFD >= 0) 
             close(socketFD);
     }

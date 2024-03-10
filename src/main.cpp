@@ -48,7 +48,7 @@
 #include "httpServer.hpp"
 #include "client/clientWindow.hpp"
 
-#include <QApplication>
+// #include <QApplication>
 
 #include <iostream>
 #include <fstream>
@@ -59,11 +59,13 @@ using namespace net;
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
 
-    ui::Client client;
-    client.showMaximized();
-    client.show();
+    INIT(argc, argv);
+    // QApplication app(argc, argv);
 
-    return app.exec();
+    // ui::Client client;
+    // client.showMaximized();
+    // client.show();
+
+    // return app.exec();
 }

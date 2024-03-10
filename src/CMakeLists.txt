@@ -27,7 +27,6 @@ add_executable(${PROJECT_NAME}
     "server/serverUtils.cpp" 
     "server/interface/interface.cpp"
     "server/global.cpp"
-    "client/clientWindow.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} mysqlcppconn)

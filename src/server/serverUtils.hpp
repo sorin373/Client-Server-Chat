@@ -37,6 +37,8 @@
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 #include <vector>
+#include <atomic>
+#include <condition_variable>
 
 enum : short
 {
@@ -59,7 +61,7 @@ namespace net
     class server
     {
     public:
-        static bool SERVER_RUNNING;
+        static std::atomic<bool> SERVER_RUNNING;
 
         // Forward declaration for the class implementing core functionalities of database. However the tables are stored in the interface class.
         class db
@@ -142,7 +144,7 @@ namespace net
          * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
          * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          */
-        void handleClientConnections(int serverSocketFD);
+        void handleClientConnections(int serverSocketFD, std::mutex& mtx, std::condition_variable& cv);
 
         /**
          * @brief This function crestes a thread for an accepted socket. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
@@ -163,7 +165,7 @@ namespace net
          */
         void postRecv(const int acceptedSocketFD);
 
-        static void consoleListener(void);
+        void consoleListener(std::mutex& mtx, std::condition_variable& cv, std::atomic<bool>& consoleFinished);
 
     public:
         server();
@@ -204,7 +206,7 @@ namespace net
         int addToFileTable(const char *fileName, const int fileSize);
 
         // This function accepts client connections.
-        void acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket);
+        bool acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket);
 
         // This function receives the data sent by a client.
         void receivedDataHandler(const class acceptedSocket __socket);
@@ -247,6 +249,7 @@ namespace net
         // This function retrieves the status of the server. Returns true if the server is running, otherwise false.
         bool getServerStatus(void) const noexcept;
 
+        //      Used by QT !!!!!
         void haltServer(void) noexcept;
 
         // This function retrieves a pointer to the "database" object
