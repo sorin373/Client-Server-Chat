@@ -467,24 +467,24 @@ void server<T>::postRecv(const int acceptedSocketFD)
 
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
 
-    std::string file = __user->getFileInQueue();
+    // std::string file = __user->getFileInQueue();
 
-    if (!file.empty())
-    {
-        formatFile(file);
+    // if (!file.empty())
+    // {
+    //     formatFile(file);
 
-        TOTAL_BYTES_RECV /= 1024;
+    //     TOTAL_BYTES_RECV /= 1024;
 
-        addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
+    //     addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
 
-        TOTAL_BYTES_RECV = 0;
+    //     TOTAL_BYTES_RECV = 0;
 
-        __user->clearFileInQueue();
+    //     __user->clearFileInQueue();
 
-        if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
-            std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send HTTP response.\n";
-    }
+    //     if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
+    //         std::cerr << std::setw(5) << " "
+    //                   << "--> Error: Failed to send HTTP response.\n";
+    // }
 }
 
 template <typename T>
@@ -522,10 +522,10 @@ void server<T>::receivedDataHandler(const class acceptedSocket __socket)
         if (DEBUG_FLAG)
             std::cout << buffer;
 
-        HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
+        //HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
 
-    if (acceptedSocketFD >= 0)
+    if (acceptedSocketFD > 0)
         close(acceptedSocketFD);
 
     if (requestType != nullptr)
@@ -559,7 +559,7 @@ void server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &_
 
         connectedSockets.push_back(newAcceptedSocket);
 
-        //receivedDataHandlerThread(newAcceptedSocket);
+        receivedDataHandlerThread(newAcceptedSocket);
     }
 }
 
