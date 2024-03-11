@@ -144,7 +144,7 @@ namespace net
          * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
          * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
          */
-        void handleClientConnections(int serverSocketFD, std::mutex& mtx, std::condition_variable& cv);
+        void handleClientConnections(int serverSocketFD, std::atomic<bool> &__flag);
 
         /**
          * @brief This function crestes a thread for an accepted socket. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
@@ -165,7 +165,7 @@ namespace net
          */
         void postRecv(const int acceptedSocketFD);
 
-        void consoleListener(std::mutex& mtx, std::condition_variable& cv, std::atomic<bool>& consoleFinished);
+        void consoleListener(void);
 
     public:
         server();

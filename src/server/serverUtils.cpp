@@ -21,7 +21,7 @@ using namespace net::interface;
 template class server<char>;
 
 template <typename T>
-std::atomic<bool> server<T>::SERVER_RUNNING = false;
+std::atomic<bool> server<T>::SERVER_RUNNING;
 
 /* db */
 
@@ -544,58 +544,48 @@ void server<T>::receivedDataHandler(const class acceptedSocket __socket)
 template <typename T>
 void server<T>::receivedDataHandlerThread(const class acceptedSocket __socket)
 {
-    std::thread t(&server<T>::receivedDataHandler, this, __socket);
-    t.detach();
+    std::thread(&server::receivedDataHandler, this, __socket).detach();
 }
 
 template <typename T>
-void server<T>::handleClientConnections(int serverSocketFD, std::mutex& mtx, std::condition_variable& cv)
+void server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &__flag)
 {
-    while (true) {
-        acceptedSocket newAcceptedSocket;
-
-        {
-            std::unique_lock<std::mutex> lock(mtx);
-            if (!SERVER_RUNNING.load()) {
-                cv.notify_one(); // Notify the main thread that the handleClientConnections thread has finished
-                return;
-            }
-        }
+    while (__flag.load())
+    {
+         acceptedSocket newAcceptedSocket;
 
         if (!acceptConnection(serverSocketFD, newAcceptedSocket))
             break;
-    }
 
-    // Notify the main thread that the handleClientConnections thread has finished
-    cv.notify_one();
+        connectedSockets.push_back(newAcceptedSocket);
+
+        //receivedDataHandlerThread(newAcceptedSocket);
+    }
 }
 
 template <typename T>
-void server<T>::consoleListener(std::mutex& mtx, std::condition_variable& cv, std::atomic<bool>& consoleFinished)
+void server<T>::consoleListener(void)
 {
     underline(75);
 
     char input[101] = "";
 
-    while (SERVER_RUNNING.load()) {
+    while (SERVER_RUNNING.load())
+    {
         std::cout << std::setw(5) << " "
                   << "--> ";
         std::cin >> input;
 
-        if (strcasecmp(input, "exit") == 0) {
+        if (strcasecmp(input, "exit") == 0)
+        {
             std::cout << std::setw(5) << " " 
-                      << "Shutting down...\n";
+                      << "\n--> Shutting down...\n";
+
+            SERVER_RUNNING.store(false);
 
             if (!DEBUG_FLAG)
                 system("clear");
 
-            SERVER_RUNNING.store(false);
-
-            {
-                std::unique_lock<std::mutex> lock(mtx);
-                consoleFinished.store(true);
-                cv.notify_one(); // Notify the waiting thread
-            }
             break;
         }
     }
@@ -605,21 +595,11 @@ template <typename T>
 void server<T>::server_easy_init(int serverSocketFD)
 {
     SERVER_RUNNING.store(true);
-    std::atomic<bool> consoleFinished(false); // Flag to indicate when the consoleListener has finished
 
-    std::condition_variable cv;
-    std::mutex mtx;
+    std::thread workerThread(&server::handleClientConnections, this, serverSocketFD, std::ref(SERVER_RUNNING));
+    workerThread.detach();
 
-    std::thread t(&server<T>::handleClientConnections, this, serverSocketFD, std::ref(mtx), std::ref(cv));
-
-    consoleListener(mtx, cv, consoleFinished);
-
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [&]{ return !SERVER_RUNNING.load() && consoleFinished.load(); }); // Wait until the condition variable is notified
-    }
-    
-    t.join();
+    consoleListener();
 }
 
 template <typename T>
