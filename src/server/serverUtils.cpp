@@ -10,7 +10,9 @@
 #include <fstream>
 #include <string.h>
 #include <sstream>
+#include <vector>
 #include <thread>
+#include <memory>
 #include <netinet/in.h>
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
@@ -187,7 +189,7 @@ bool server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket 
     int clientAddressSize = sizeof(clientAddress);
 
     int clientSocketFD = accept(serverSocketFD, (struct sockaddr *)&clientAddress, (socklen_t *)&clientAddressSize);
-    
+
     if (clientSocketFD > 0)
     {
         __acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
@@ -234,23 +236,23 @@ int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
     }
 
     if (findString(route, "/userlogin"))
-        if (!__user->loginRoute(charBuffer, acceptedSocketFD))
+        if (__user->loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/addFile"))
-        if (!__user->addFilesRoute(__buffer, byteBuffer, acceptedSocketFD, __bytesReceived))
+        if (__user->addFilesRoute(__buffer, byteBuffer, acceptedSocketFD, __bytesReceived) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/change_password"))
-        if (!__user->changePasswordRoute(__buffer, acceptedSocketFD))
+        if (__user->changePasswordRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/create_account"))
-        if (!__user->createAccountRoute(__buffer, acceptedSocketFD))
+        if (__user->createAccountRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/delete_file"))
-        if (!__user->deleteFileRoute(__buffer, acceptedSocketFD))
+        if (__user->deleteFileRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -259,17 +261,15 @@ int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
 template <typename T>
 int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
 {
-    if (__user == nullptr) return EXIT_FAILURE;
-
     bool USE_DEFAULT_ROUTE = false;
 
     const char defaultRoute[] = "interface/login.html";
     const char root[] = "interface";
-
     char *path = nullptr;
     char *allocatedBuffer = reinterpret_cast<char *>(__buffer);
 
-    if (allocatedBuffer == nullptr) return EXIT_FAILURE;
+    if (allocatedBuffer == nullptr)
+        return EXIT_FAILURE;
 
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
         if (allocatedBuffer[i] == '/')
@@ -278,7 +278,8 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
             break;
         }
 
-    if (path == nullptr) USE_DEFAULT_ROUTE = true;
+    if (path == nullptr)
+        USE_DEFAULT_ROUTE = true;
 
     std::ifstream file;
 
@@ -288,7 +289,8 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
             if (path[i] == ' ')
                 path[i] = '\0';
 
-        if ((strlen(path) == 1 && path[0] == '/')) USE_DEFAULT_ROUTE = true;
+        if ((strlen(path) == 1 && path[0] == '/'))
+            USE_DEFAULT_ROUTE = true;
 
         if (strcmp(path, "/apology.html") != 0 && strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 &&
             strcmp(path, "/createAccount.html") != 0 && !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
@@ -313,14 +315,14 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
         }
     }
 
-    if (USE_DEFAULT_ROUTE) file.open(defaultRoute, std::ios::binary);
+    if (USE_DEFAULT_ROUTE)
+        file.open(defaultRoute, std::ios::binary);
 
     if (!file.is_open())
     {
         if (DEBUG_FLAG)
             std::cerr << std::setw(5) << " "
                       << "--> Encountered an error while attempting to open the file: " << path << '\n';
-
         return EXIT_FAILURE;
     }
 
@@ -442,7 +444,7 @@ int server<T>::formatFile(const std::string fileName)
                 if (line.find("------WebKitFormBoundary") != std::string::npos)
                     break;
 
-                outFile << line << "\n";
+                outFile << line << std::endl;
             }
 
             break;
@@ -461,30 +463,22 @@ int server<T>::formatFile(const std::string fileName)
 
 template <typename T>
 void server<T>::postRecv(const int acceptedSocketFD)
-{     
-    if (__user == nullptr)
-        return;
-
+{
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
+    std::string file = __user->getFileInQueue();
 
-    // std::string file = __user->getFileInQueue();
+    if (!file.empty())
+    {
+        formatFile(file);
 
-    // if (!file.empty())
-    // {
-    //     formatFile(file);
+        addToFileTable(file.c_str(), 0);
 
-    //     TOTAL_BYTES_RECV /= 1024;
+        __user->clearFileInQueue();
 
-    //     addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
-
-    //     TOTAL_BYTES_RECV = 0;
-
-    //     __user->clearFileInQueue();
-
-    //     if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
-    //         std::cerr << std::setw(5) << " "
-    //                   << "--> Error: Failed to send HTTP response.\n";
-    // }
+        if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
+            std::cerr << std::setw(5) << " "
+                      << "--> Error: Failed to send HTTP response.\n";
+    }
 }
 
 template <typename T>
@@ -522,23 +516,11 @@ void server<T>::receivedDataHandler(const class acceptedSocket __socket)
         if (DEBUG_FLAG)
             std::cout << buffer;
 
-        //HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
+        HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
 
-    if (acceptedSocketFD > 0)
+    if (acceptedSocketFD >= 0)
         close(acceptedSocketFD);
-
-    if (requestType != nullptr)
-    {
-        delete[] requestType;
-        requestType = nullptr;
-    }
-
-    if (route != nullptr)
-    {
-        delete[] route;
-        route = nullptr;
-    }
 }
 
 template <typename T>
@@ -552,10 +534,9 @@ void server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &_
 {
     while (__flag.load())
     {
-         acceptedSocket newAcceptedSocket;
+        acceptedSocket newAcceptedSocket;
 
-        if (!acceptConnection(serverSocketFD, newAcceptedSocket))
-            break;
+        acceptConnection(serverSocketFD, newAcceptedSocket);
 
         connectedSockets.push_back(newAcceptedSocket);
 
@@ -570,7 +551,7 @@ void server<T>::consoleListener(void)
 
     char input[101] = "";
 
-    while (SERVER_RUNNING.load())
+    while (SERVER_RUNNING)
     {
         std::cout << std::setw(5) << " "
                   << "--> ";
@@ -579,7 +560,7 @@ void server<T>::consoleListener(void)
         if (strcasecmp(input, "exit") == 0)
         {
             std::cout << std::setw(5) << " " 
-                      << "\n--> Shutting down...\n";
+                      << "Shutting down...\n";
 
             SERVER_RUNNING.store(false);
 
@@ -596,8 +577,7 @@ void server<T>::server_easy_init(int serverSocketFD)
 {
     SERVER_RUNNING.store(true);
 
-    std::thread workerThread(&server::handleClientConnections, this, serverSocketFD, std::ref(SERVER_RUNNING));
-    workerThread.detach();
+    std::thread(&server::handleClientConnections, this, serverSocketFD, std::ref(SERVER_RUNNING)).detach();
 
     consoleListener();
 }
@@ -618,12 +598,6 @@ template <typename T>
 bool server<T>::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
-}
-
-template <typename T>
-void server<T>::haltServer(void) noexcept
-{
-    this->SERVER_RUNNING = false;
 }
 
 template <typename T>
@@ -720,11 +694,18 @@ void server<T>::SQLfetchFileTable(void)
 template <typename T>
 int server<T>::addToFileTable(const char *fileName, const int fileSize)
 {
+    bool found = false;
     std::vector<class user::userFiles> __userFiles = __user->getUserFiles();
 
     for (const auto &__uf : __userFiles)
         if (strcmp(__uf.getFileName(), fileName) == 0)
-            return EXIT_SUCCESS;
+        {
+            found = true;
+            break;
+        }
+
+    if (found)
+        return EXIT_SUCCESS;
 
     int maxID = 0;
 
@@ -901,6 +882,31 @@ int server<T>::database_easy_init(void)
     return EXIT_SUCCESS;
 }
 
+template <typename T>
+server<T>::~server()
+{
+    if (this->db != nullptr)
+    {
+        delete this->db;
+        this->db = nullptr;
+    }
+
+    if (this->__user != nullptr)
+    {
+        delete this->__user;
+        this->__user = nullptr;
+    }
+
+    for (struct acceptedSocket &accSock : connectedSockets)
+    {
+        int socketFD = accSock.getAcceptedSocketFD();
+        if (socketFD >= 0) 
+            close(socketFD);
+    }
+    
+    connectedSockets.clear();
+}
+
 int net::INIT(int argc, char *argv[])
 {
     int port = 0;
@@ -1022,31 +1028,6 @@ int net::INIT(int argc, char *argv[])
     delete[] machineIPv4Address;
 
     return EXIT_SUCCESS;
-}
-
-template <typename T>
-server<T>::~server()
-{
-    if (this->db != nullptr)
-    {
-        delete this->db;
-        this->db = nullptr;
-    }
-
-    if (this->__user != nullptr)
-    {
-        delete this->__user;
-        this->__user = nullptr;
-    }
-
-    for (struct acceptedSocket &sock : connectedSockets)
-    {
-        int socketFD = sock.getAcceptedSocketFD();
-        if (socketFD >= 0) 
-            close(socketFD);
-    }
-    
-    connectedSockets.clear();
 }
 
 /* acceptedSocket */

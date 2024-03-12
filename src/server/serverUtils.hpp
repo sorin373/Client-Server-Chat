@@ -38,7 +38,6 @@
 #include <mysql_driver.h>
 #include <vector>
 #include <atomic>
-#include <condition_variable>
 
 enum : short
 {
@@ -135,9 +134,9 @@ namespace net
         };
 
     private:
-        std::vector<struct acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
-        class interface::user *__user;                       // Pointer to the 'user' object.
-        class db              *db;                           // Pointer to the 'database' object.
+        std::vector<class acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
+        class interface::user *__user;                      // Pointer to the 'user' object.
+        class db              *db;                          // Pointer to the 'database' object.
         
         
         /**
