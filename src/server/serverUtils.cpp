@@ -12,7 +12,6 @@
 #include <sstream>
 #include <vector>
 #include <thread>
-#include <memory>
 #include <netinet/in.h>
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
@@ -20,15 +19,15 @@
 using namespace net;
 using namespace net::interface;
 
-template class server<char>;
+template class Server<char>;
 
 template <typename T>
-std::atomic<bool> server<T>::SERVER_RUNNING;
+std::atomic<bool> Server<T>::SERVER_RUNNING;
 
 /* db */
 
 template <typename T>
-server<T>::db::db(sql::Driver *driver, sql::Connection *con,
+Server<T>::db::db(sql::Driver *driver, sql::Connection *con,
                   const char *hostname, const char *username, const char *password, const char *database)
 {
     this->driver = driver;
@@ -37,35 +36,35 @@ server<T>::db::db(sql::Driver *driver, sql::Connection *con,
 }
 
 template <typename T>
-sql::Connection *server<T>::db::getCon(void) const noexcept
+sql::Connection *Server<T>::db::getCon(void) const noexcept
 {
     return con;
 }
 
 template <typename T>
-sql::Driver *server<T>::db::getDriver(void) const noexcept
+sql::Driver *Server<T>::db::getDriver(void) const noexcept
 {
     return driver;
 }
 
 template <typename T>
-class server<T>::db::db_cred *server<T>::db::getDB_Cred(void) const noexcept
+class Server<T>::db::db_cred *Server<T>::db::getDB_Cred(void) const noexcept
 {
     return dbCred;
 }
 
 template <typename T>
-server<T>::db::~db()
+Server<T>::db::~db()
 {
+    this->con->close();
+    delete this->con;
     delete dbCred;
-    con->close();
-    delete con;
 }
 
 /* db_cred */
 
 template <typename T>
-server<T>::db::db_cred::db_cred(const char *hostname, const char *username, const char *password, const char *database)
+Server<T>::db::db_cred::db_cred(const char *hostname, const char *username, const char *password, const char *database)
 {
     this->hostname = strdup(hostname);
     this->username = strdup(username);
@@ -74,31 +73,31 @@ server<T>::db::db_cred::db_cred(const char *hostname, const char *username, cons
 }
 
 template <typename T>
-char *server<T>::db::db_cred::getHostname(void) const noexcept
+char *Server<T>::db::db_cred::getHostname(void) const noexcept
 {
     return const_cast<char *>(hostname);
 }
 
 template <typename T>
-char *server<T>::db::db_cred::getUsername(void) const noexcept
+char *Server<T>::db::db_cred::getUsername(void) const noexcept
 {
     return const_cast<char *>(username);
 }
 
 template <typename T>
-char *server<T>::db::db_cred::getPassword(void) const noexcept
+char *Server<T>::db::db_cred::getPassword(void) const noexcept
 {
     return const_cast<char *>(password);
 }
 
 template <typename T>
-char *server<T>::db::db_cred::getDatabase(void) const noexcept
+char *Server<T>::db::db_cred::getDatabase(void) const noexcept
 {
     return const_cast<char *>(database);
 }
 
 template <typename T>
-int server<T>::db::db_cred::getCred(char *hostname, char *username, char *password, char *database)
+int Server<T>::db::db_cred::getCred(char *hostname, char *username, char *password, char *database)
 {
     system("clear");
 
@@ -158,7 +157,7 @@ int server<T>::db::db_cred::getCred(char *hostname, char *username, char *passwo
 }
 
 template <typename T>
-server<T>::db::db_cred::~db_cred()
+Server<T>::db::db_cred::~db_cred()
 {
     free(this->hostname);
     this->hostname = nullptr;
@@ -173,17 +172,103 @@ server<T>::db::db_cred::~db_cred()
     this->database = nullptr;
 }
 
-/* server */
+/* ignore page */
+
+Ignore::node::node(const char *pageName)
+{
+    this->next = nullptr;
+    this->prev = nullptr;
+    this->pageName = strdup(pageName);
+}
+
+char *Ignore::node::getPageName(void) const noexcept
+{
+    return pageName;
+}
+
+Ignore::node::~node()
+{
+    free(this->pageName);
+    this->pageName = nullptr;
+}
+
+Ignore::Ignore()
+{
+    this->head = nullptr;
+    this->tail = nullptr;
+}
+
+Ignore::node *Ignore::getHead(void) const noexcept
+{
+    return head;
+}
+
+Ignore::node *Ignore::getTail(void) const noexcept
+{
+    return tail;
+}
+
+void Ignore::fetchPages(const char *pageName)
+{
+    node *newnode = new node(pageName);
+
+    if (head == nullptr)
+    {
+        head = newnode;
+        tail = newnode;
+    }
+    else
+    {
+        tail->next = newnode;
+        newnode->prev = tail;
+        tail = newnode;
+    }
+}
+
+Ignore::~Ignore()
+{
+    node *ptr = head;
+
+    while (ptr != nullptr)
+    {
+        node *temp = ptr;
+        ptr = ptr->next;
+        delete temp;
+    }
+}
+
+/* Server */
 
 template <typename T>
-server<T>::server()
+Server<T>::Server()
 {
     this->db = nullptr;
     this->__user = nullptr;
 }
 
 template <typename T>
-bool server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket &__acceptedSocket)
+int Server<T>::readPages(void)
+{
+    std::ifstream file(IGNORE);
+
+    if (!file.is_open())
+    {
+        std::cerr << "--> Encountered an error while attempting to open the file: " << IGNORE << '\n';
+        return EXIT_FAILURE;
+    }
+
+    char line[256];
+
+    while (file.getline(line, 256))
+        ignore.fetchPages(line);
+
+    file.close();
+
+    return EXIT_SUCCESS;
+}
+
+template <typename T>
+bool Server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket &acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
@@ -192,7 +277,7 @@ bool server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket 
 
     if (clientSocketFD > 0)
     {
-        __acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
+        acceptedSocket.getAcceptedSocket(clientAddress, clientSocketFD, clientSocketFD > 0);
         return true;
     }
 
@@ -203,10 +288,10 @@ char *route = nullptr;
 bool changeRoute = false;
 
 template <typename T>
-int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __bytesReceived)
+int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived)
 {
-    uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(__buffer);
-    char *charBuffer = reinterpret_cast<char *>(__buffer);
+    uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
+    char *charBuffer = reinterpret_cast<char *>(buffer);
 
     // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
     if (changeRoute)
@@ -240,33 +325,33 @@ int server<T>::POSTrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
             return EXIT_FAILURE;
 
     if (findString(route, "/addFile"))
-        if (__user->addFilesRoute(__buffer, byteBuffer, acceptedSocketFD, __bytesReceived) == EXIT_FAILURE)
+        if (__user->addFilesRoute(buffer, byteBuffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/change_password"))
-        if (__user->changePasswordRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (__user->changePasswordRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/create_account"))
-        if (__user->createAccountRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (__user->createAccountRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/delete_file"))
-        if (__user->deleteFileRoute(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (__user->deleteFileRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
 
 template <typename T>
-int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
+int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
 {
     bool USE_DEFAULT_ROUTE = false;
 
     const char defaultRoute[] = "interface/login.html";
     const char root[] = "interface";
     char *path = nullptr;
-    char *allocatedBuffer = reinterpret_cast<char *>(__buffer);
+    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
 
     if (allocatedBuffer == nullptr)
         return EXIT_FAILURE;
@@ -292,9 +377,30 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
         if ((strlen(path) == 1 && path[0] == '/'))
             USE_DEFAULT_ROUTE = true;
 
-        if (strcmp(path, "/apology.html") != 0 && strcmp(path, "/login.html") != 0 && strcmp(path, "/changePassword.html") != 0 &&
-            strcmp(path, "/createAccount.html") != 0 && !findString(path, ".css") && !findString(path, ".png") && !__user->getAuthStatus())
-            USE_DEFAULT_ROUTE = true;
+        if (!__user->getAuthStatus())
+        {
+            bool use_default = true;
+
+            for (Ignore::node *ptr = ignore.getHead(); ptr != nullptr; ptr = ptr->next)
+            {
+                if (ptr->getPageName()[0] == '.')
+                    if (findString(path, ptr->getPageName()))
+                    {
+                        use_default = false;
+                        break;
+                    }
+
+                if (use_default)
+                    if (strcmp(path, ptr->getPageName()) == 0)
+                    {
+                        use_default = false;
+                        break;
+                    }
+            }
+
+            if (use_default)
+                USE_DEFAULT_ROUTE = true;
+        }
 
         if (!USE_DEFAULT_ROUTE)
         {
@@ -349,9 +455,9 @@ int server<T>::GETrequestsHandler(T *__buffer, int acceptedSocketFD)
 char *requestType = nullptr;
 
 template <typename T>
-int server<T>::HTTPrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __bytesReceived)
+int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived)
 {
-    char *charBuffer = reinterpret_cast<char *>(__buffer);
+    char *charBuffer = reinterpret_cast<char *>(buffer);
     char *copyBuffer = new char[strlen(charBuffer) + 1];
 
     strcpy(copyBuffer, charBuffer);
@@ -381,14 +487,14 @@ int server<T>::HTTPrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
     }
 
     if (strcmp(requestType, "GET") == 0)
-        if (GETrequestsHandler(__buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (GETrequestsHandler(buffer, acceptedSocketFD) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
         }
 
     if (strcmp(requestType, "POST") == 0)
-        if (POSTrequestsHandler(__buffer, acceptedSocketFD, __bytesReceived) == EXIT_FAILURE)
+        if (POSTrequestsHandler(buffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
@@ -400,9 +506,9 @@ int server<T>::HTTPrequestsHandler(T *__buffer, int acceptedSocketFD, ssize_t __
 }
 
 template <typename T>
-int server<T>::formatFile(const std::string fileName)
+int Server<T>::formatFile(const std::string fileName)
 {
-    // Open the create binary file
+    // Open the binary file
     std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
 
     if (!file.is_open())
@@ -462,7 +568,7 @@ int server<T>::formatFile(const std::string fileName)
 }
 
 template <typename T>
-void server<T>::postRecv(const int acceptedSocketFD)
+void Server<T>::postRecv(const int acceptedSocketFD)
 {
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     std::string file = __user->getFileInQueue();
@@ -471,9 +577,11 @@ void server<T>::postRecv(const int acceptedSocketFD)
     {
         formatFile(file);
 
-        addToFileTable(file.c_str(), 0);
+        addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
 
         __user->clearFileInQueue();
+
+        TOTAL_BYTES_RECV = 0;
 
         if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
             std::cerr << std::setw(5) << " "
@@ -482,9 +590,12 @@ void server<T>::postRecv(const int acceptedSocketFD)
 }
 
 template <typename T>
-void server<T>::receivedDataHandler(const class acceptedSocket __socket)
+void Server<T>::receivedDataHandler(const class acceptedSocket socket)
 {
-    int acceptedSocketFD = __socket.getAcceptedSocketFD();
+    int acceptedSocketFD = socket.getAcceptedSocketFD();
+
+    if (acceptedSocketFD < 0)
+        return;
 
     T buffer[1025];
 
@@ -492,13 +603,13 @@ void server<T>::receivedDataHandler(const class acceptedSocket __socket)
     {
         ssize_t bytesReceived = recv(acceptedSocketFD, buffer, sizeof(buffer), 0);
 
-        if (bytesReceived <= 0)
+        if (bytesReceived <= 0 || !SERVER_RUNNING.load())
         {
             if (DEBUG_FLAG)
                 std::cerr << "\n"
                           << std::setw(5) << " "
                           << "--> Receive failed: "
-                          << __socket.getError() << "\n";
+                          << socket.getError() << "\n";
 
             postRecv(acceptedSocketFD);
 
@@ -518,40 +629,64 @@ void server<T>::receivedDataHandler(const class acceptedSocket __socket)
 
         HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
-
-    if (acceptedSocketFD >= 0)
-        close(acceptedSocketFD);
 }
 
 template <typename T>
-void server<T>::receivedDataHandlerThread(const class acceptedSocket __socket)
+void Server<T>::receivedDataHandlerThread(const class acceptedSocket socket)
 {
-    std::thread(&server::receivedDataHandler, this, __socket).detach();
+    std::thread(&Server::receivedDataHandler, this, socket).detach();
 }
 
 template <typename T>
-void server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &__flag)
+void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &server_running)
 {
-    while (__flag.load())
+    while (server_running)
     {
-        acceptedSocket newAcceptedSocket;
+        // Set up the file descriptor set for select
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(serverSocketFD, &readfds);
 
-        acceptConnection(serverSocketFD, newAcceptedSocket);
+        // Set timeout
+        struct timeval timeout;
+        timeout.tv_sec = 1; // 1 second timeout
+        timeout.tv_usec = 0;
 
-        connectedSockets.push_back(newAcceptedSocket);
+        // Wait for activity on Server socket
+        int activity = select(serverSocketFD + 1, &readfds, NULL, NULL, &timeout);
 
-        receivedDataHandlerThread(newAcceptedSocket);
-    }
+        if (activity == -1)
+        {
+            perror("select");
+            break;
+        }
+        else if (activity == 0)
+            continue;
+        else
+        {
+            acceptedSocket newAcceptedSocket;
+
+            if (!acceptConnection(serverSocketFD, newAcceptedSocket))
+                continue;
+
+            connectedSockets.push_back(newAcceptedSocket);
+
+            receivedDataHandlerThread(newAcceptedSocket);
+        }
+    };
+
+    for (const acceptedSocket &socket : connectedSockets)
+        close(socket.getAcceptedSocketFD());
 }
 
 template <typename T>
-void server<T>::consoleListener(void)
+void Server<T>::consoleListener(std::atomic<bool> &server_running)
 {
     underline(75);
 
     char input[101] = "";
 
-    while (SERVER_RUNNING)
+    while (server_running)
     {
         std::cout << std::setw(5) << " "
                   << "--> ";
@@ -559,13 +694,10 @@ void server<T>::consoleListener(void)
 
         if (strcasecmp(input, "exit") == 0)
         {
-            std::cout << std::setw(5) << " " 
+            std::cout << std::setw(5) << " "
                       << "Shutting down...\n";
 
-            SERVER_RUNNING.store(false);
-
-            if (!DEBUG_FLAG)
-                system("clear");
+            server_running = false;
 
             break;
         }
@@ -573,47 +705,58 @@ void server<T>::consoleListener(void)
 }
 
 template <typename T>
-void server<T>::server_easy_init(int serverSocketFD)
+void Server<T>::server_easy_init(int serverSocketFD)
 {
-    SERVER_RUNNING.store(true);
+    if (readPages() == EXIT_FAILURE)
+        return;
 
-    std::thread(&server::handleClientConnections, this, serverSocketFD, std::ref(SERVER_RUNNING)).detach();
+    SERVER_RUNNING = true;
 
-    consoleListener();
+    std::thread workerThread(&Server::handleClientConnections, this, serverSocketFD, std::ref(SERVER_RUNNING));
+    std::thread consoleThread(&Server::consoleListener, this, std::ref(SERVER_RUNNING));
+
+    consoleThread.join();
+    workerThread.join();
 }
 
 template <typename T>
-int server<T>::bindServer(int serverSocketFD, struct sockaddr_in *__serverAddress)
+int Server<T>::bindServer(int serverSocketFD, struct sockaddr_in *__serverAddress)
 {
     return bind(serverSocketFD, (struct sockaddr *)__serverAddress, sizeof(struct sockaddr_in));
 }
 
 template <typename T>
-std::vector<class server<T>::acceptedSocket> server<T>::getConnectedSockets(void) const noexcept
+std::vector<class Server<T>::acceptedSocket> Server<T>::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
 }
 
 template <typename T>
-bool server<T>::getServerStatus(void) const noexcept
+bool Server<T>::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
 
 template <typename T>
-class server<T>::db *server<T>::getSQLdatabase(void) const noexcept
+Ignore Server<T>::getIgnore(void) const noexcept
+{
+    return ignore;
+}
+
+template <typename T>
+class Server<T>::db *Server<T>::getSQLdatabase(void) const noexcept
 {
     return db;
 }
 
 template <typename T>
-class interface::user *server<T>::getUser(void) const noexcept
+class interface::user *Server<T>::getUser(void) const noexcept
 {
     return __user;
 }
 
 template <typename T>
-void server<T>::SQLfetchUserTable(void)
+void Server<T>::SQLfetchUserTable(void)
 {
     __user->clearUserCredentials();
 
@@ -653,7 +796,7 @@ void server<T>::SQLfetchUserTable(void)
 }
 
 template <typename T>
-void server<T>::SQLfetchFileTable(void)
+void Server<T>::SQLfetchFileTable(void)
 {
     __user->clearUserFiles();
 
@@ -692,7 +835,7 @@ void server<T>::SQLfetchFileTable(void)
 }
 
 template <typename T>
-int server<T>::addToFileTable(const char *fileName, const int fileSize)
+int Server<T>::addToFileTable(const char *fileName, const int fileSize)
 {
     bool found = false;
     std::vector<class user::userFiles> __userFiles = __user->getUserFiles();
@@ -760,7 +903,7 @@ int server<T>::addToFileTable(const char *fileName, const int fileSize)
 }
 
 template <typename T>
-int server<T>::database_easy_init(void)
+int Server<T>::database_easy_init(void)
 {
     if (db != nullptr)
     {
@@ -815,7 +958,7 @@ int server<T>::database_easy_init(void)
         return EXIT_FAILURE;
     }
 
-    if (server<T>::db::db_cred::getCred(hostname, username, password, database) == EXIT_FAILURE)
+    if (Server<T>::db::db_cred::getCred(hostname, username, password, database) == EXIT_FAILURE)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to fetch MySQL schema credentails.\n";
@@ -851,8 +994,8 @@ int server<T>::database_easy_init(void)
 
         con->setSchema(database);
 
-        db = new typename server<T>::db(driver, con, hostname, username, password, database);
-        __user = new interface::user;
+        db = new typename Server<T>::db(driver, con, hostname, username, password, database);
+        __user = new interface::user();
     }
     catch (sql::SQLException &e)
     {
@@ -883,7 +1026,7 @@ int server<T>::database_easy_init(void)
 }
 
 template <typename T>
-server<T>::~server()
+Server<T>::~Server()
 {
     if (this->db != nullptr)
     {
@@ -896,25 +1039,16 @@ server<T>::~server()
         delete this->__user;
         this->__user = nullptr;
     }
-
-    for (struct acceptedSocket &accSock : connectedSockets)
-    {
-        int socketFD = accSock.getAcceptedSocketFD();
-        if (socketFD >= 0) 
-            close(socketFD);
-    }
-    
-    connectedSockets.clear();
 }
 
 int net::INIT(int argc, char *argv[])
 {
     int port = 0;
 
-    //port = getMainArguments(argc, argv);
+    port = getMainArguments(argc, argv);
 
-    // if (port == -1)
-    //     return EXIT_FAILURE;
+    if (port == -1)
+        return EXIT_FAILURE;
 
     SocketUtils serverSocket;
 
@@ -928,9 +1062,9 @@ int net::INIT(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    __server = new server<char>();
+    server = new Server<char>();
 
-    if (__server->database_easy_init() == EXIT_FAILURE)
+    if (server->database_easy_init() == EXIT_FAILURE)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Database initialization failed.\n";
@@ -938,8 +1072,8 @@ int net::INIT(int argc, char *argv[])
         shutdown(serverSocketFD, SHUT_RDWR);
         serverSocket.closeSocket(serverSocketFD);
 
-        delete __server;
-        
+        delete server;
+
         return EXIT_FAILURE;
     }
 
@@ -952,15 +1086,15 @@ int net::INIT(int argc, char *argv[])
 
         shutdown(serverSocketFD, SHUT_RDWR);
         serverSocket.closeSocket(serverSocketFD);
-        
-        delete __server;
+
+        delete server;
 
         return EXIT_FAILURE;
     }
 
-    struct sockaddr_in *serverAddress = serverSocket.IPv4Address(machineIPv4Address, 8080);
+    struct sockaddr_in *serverAddress = serverSocket.IPv4Address(machineIPv4Address, port);
 
-    if (__server->bindServer(serverSocketFD, serverAddress) != 0)
+    if (server->bindServer(serverSocketFD, serverAddress) != 0)
     {
         std::cerr << "\n"
                   << std::setw(5) << " "
@@ -976,7 +1110,7 @@ int net::INIT(int argc, char *argv[])
         serverSocket.closeSocket(serverSocketFD);
 
         free(serverAddress);
-        delete __server;
+        delete server;
         delete[] machineIPv4Address;
 
         return EXIT_FAILURE;
@@ -999,32 +1133,32 @@ int net::INIT(int argc, char *argv[])
               << std::setw(5) << " "
               << "--> Server socket bound successfully!\n"
               << std::setw(5) << " "
-              << "--> Access the server through your web browser via: \e[1m" << machineIPv4Address << ":" << port << "\e[0m\n"
+              << "--> Access the Server through your web browser via: \e[1m" << machineIPv4Address << ":" << port << "\e[0m\n"
               << std::setw(5) << " "
-              << "    In order to shutdown the server type 'exit' in the console!\n";
+              << "    In order to shutdown the Server type 'exit' in the console!\n";
 
     if (listen(serverSocketFD, 10) == -1)
     {
         std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to initiate listening on the server socket.\n";
+                  << "--> Error: Failed to initiate listening on the Server socket.\n";
 
         shutdown(serverSocketFD, SHUT_RDWR);
         serverSocket.closeSocket(serverSocketFD);
 
         free(serverAddress);
-        delete __server;
+        delete server;
         delete[] machineIPv4Address;
 
         return EXIT_FAILURE;
     }
 
-    __server->server_easy_init(serverSocketFD);
+    server->server_easy_init(serverSocketFD);
 
     shutdown(serverSocketFD, SHUT_RDWR);
     serverSocket.closeSocket(serverSocketFD);
 
     free(serverAddress);
-    delete __server;
+    delete server;
     delete[] machineIPv4Address;
 
     return EXIT_SUCCESS;
@@ -1033,7 +1167,13 @@ int net::INIT(int argc, char *argv[])
 /* acceptedSocket */
 
 template <typename T>
-void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
+void Server<T>::acceptedSocket::socketCleanup(void) noexcept
+{
+    this->acceptedSocketFD = -1;
+}
+
+template <typename T>
+void Server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
 {
     this->ipAddress = ipAddress;
     this->acceptedSocketFD = acceptedSocketFD;
@@ -1041,19 +1181,19 @@ void server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAdd
 }
 
 template <typename T>
-struct sockaddr_in server<T>::acceptedSocket::getIpAddress(void) const noexcept
+struct sockaddr_in Server<T>::acceptedSocket::getIpAddress(void) const noexcept
 {
     return ipAddress;
 }
 
 template <typename T>
-int server<T>::acceptedSocket::getError(void) const noexcept
+int Server<T>::acceptedSocket::getError(void) const noexcept
 {
     return error;
 }
 
 template <typename T>
-int server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
+int Server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
 {
     return acceptedSocketFD;
 }

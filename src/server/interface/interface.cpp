@@ -162,7 +162,7 @@ void user::buildIndexHTML(void)
                             <meta charset="UTF-8"/>
                             <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-                            <title>http-server</title>
+                            <title>http-Server</title>
                             
                             <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
                                 integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" rel="stylesheet"/>
@@ -191,7 +191,7 @@ void user::buildIndexHTML(void)
                         <body>
                             <div class="main-container">
                                 <div class="title-container">
-                                    <p>http-server</p>
+                                    <p>http-Server</p>
                                     <a class="btn btn-primary ext-ref" href="login.html">Logout</a>
                                 </div>
                                 <div class="container">
@@ -352,7 +352,7 @@ int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
         return EXIT_FAILURE;
     }
 
-    __server->SQLfetchFileTable();
+    server->SQLfetchFileTable();
 
     buildIndexHTML();
 
@@ -528,7 +528,7 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     // Prepare query to update the user
     std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
-    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));
     prepStmt->setString(2, std::string(username));
@@ -539,7 +539,7 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     delete prepStmt;
 
     // Fetch the user table containg the updated data
-    __server->SQLfetchUserTable();
+    server->SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
@@ -636,7 +636,7 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     // Prepare query to insert the new account information
     std::string query = "INSERT INTO user VALUES (?, ?, ?)";
-    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, uc.size());
     prepStmt->setString(3, std::string(password));
@@ -648,7 +648,7 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     delete prepStmt;
 
     // Fetch the user table containg the updated data
-    __server->SQLfetchUserTable();
+    server->SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
@@ -682,7 +682,7 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     std::string query = "SELECT name FROM file WHERE file_id=(?)";
     sql::ResultSet *res = nullptr;
 
-    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, fileID);
     res = prepStmt->executeQuery();
@@ -696,15 +696,15 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Delete the file from the database using the file ID
     std::string deleteQuery = "DELETE FROM file WHERE file_id=(?)";
 
-    prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
+    prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
 
     prepStmt->setInt(1, fileID);
     prepStmt->executeUpdate();
 
     delete prepStmt;
 
-    __server->SQLfetchFileTable();
-    __server->getUser()->buildIndexHTML();
+    server->SQLfetchFileTable();
+    server->getUser()->buildIndexHTML();
 
     // Using the file name remove the file from local storage
     std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;

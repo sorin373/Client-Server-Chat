@@ -24,7 +24,7 @@
  *                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *                SOFTWARE.
  *
- *  @brief        This C++ header file provides core functionalities for user-related server functionalities.
+ *  @brief        This C++ header file provides core functionalities for user-related Server functionalities.
  *
  */
 
@@ -45,7 +45,7 @@ namespace net
 {
     namespace interface
     {
-        // Class describing a 'user' and it is part of the server's interface namespace.
+        // Class describing a 'user' and it is part of the Server's interface namespace.
         class user
         {
         public:
@@ -96,7 +96,7 @@ namespace net
             // Vector that stores all user files objects
             std::vector<class userFiles> uf;
 
-            // This variable stores the name of the last file that was uploaded to the server. It is used to insert the newly added data into the database.
+            // This variable stores the name of the last file that was uploaded to the Server. It is used to insert the newly added data into the database.
             std::string fileInQueue;
 
             /**
@@ -195,7 +195,7 @@ namespace net
             /**
              *
              * @brief This function handles the '/delete_files' route, sending an appropriate HTTP response to the client.
-             *        It deletes the files from the server. (automatically the files on the local machine will be deleted as well)
+             *        It deletes the files from the Server. (automatically the files on the local machine will be deleted as well)
              *
              * @param buffer Contains the request data.
              * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
@@ -211,12 +211,12 @@ namespace net
             // This functions adds 'userFiles' objects to the 'uf' vector. It uses the 'push_back' function.
             void addToUserFiles(const userFiles __uf) noexcept;
 
-            // This functions asigns to the 'fileInQueue' variable the name of the file uploaded to the server
+            // This functions asigns to the 'fileInQueue' variable the name of the file uploaded to the Server
             void addFileInQueue(const std::string fileName) noexcept;
 
             /**
              * @brief This function is used to dynamically build 'index.html' during runtime.
-             *        When a new file is uploaded to the server the page is rebuilt, generating a number of <tr> elements equal to the number of files sent.
+             *        When a new file is uploaded to the Server the page is rebuilt, generating a number of <tr> elements equal to the number of files sent.
              */
             void buildIndexHTML(void);
 

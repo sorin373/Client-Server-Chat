@@ -1,6 +1,6 @@
 // #include "clientWindow.hpp"
-// #include "../server/serverUtils.hpp"
-// #include "../server/global.hpp"
+// #include "../Server/serverUtils.hpp"
+// #include "../Server/global.hpp"
 
 // #include <QVBoxLayout>
 // #include <QPushButton>
@@ -92,20 +92,20 @@
 //     stopButton->setEnabled(false);
 //     textDisplay->append("Server shutting down...");
 
-//     if (__server) {
-//         // Safely stop the server if __server is valid
+//     if (server) {
+//         // Safely stop the Server if server is valid
 //         std::thread(&Client::__stopServer__, this).detach();
 //     } else {
-//         // Handle the case where __server is invalid
+//         // Handle the case where server is invalid
 //         textDisplay->append("Error: Server object is invalid.");
 //     }
 // }
 
 // void Client::__stopServer__() noexcept
 // {
-//     if (__server) {
-//         // Call haltServer only if __server is valid
-//         __server->haltServer();
+//     if (server) {
+//         // Call haltServer only if server is valid
+//         server->haltServer();
 //     }
 // }
 

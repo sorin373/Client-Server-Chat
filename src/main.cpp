@@ -29,15 +29,15 @@
  *
  * @author         Sorin Tudose
  *
- * @brief          This is a simple C++ HTTP server implementation using the Linux Socket API. The main feature is the ability to upload and download
- *                 files using HTTP requests. Consequently, the data fed into the server is stored locally on my personal computer in a MySQL database
+ * @brief          This is a simple C++ HTTP Server implementation using the Linux Socket API. The main feature is the ability to upload and download
+ *                 files using HTTP requests. Consequently, the data fed into the Server is stored locally on my personal computer in a MySQL database
  *                 using the MySQL cpp connector library.
  *
  *                 (https://dev.mysql.com/doc/connector-cpp/1.1/en/connector-cpp-getting-started-examples.html)
  *
  * @github:        https://github.com/sorin373/HTTP-Server
  *
- * @testit:        In order to successfully run the server on your local machine you first need to setup a database. I uploaded the table formats int GitHub repository
+ * @testit:        In order to successfully run the Server on your local machine you first need to setup a database. I uploaded the table formats int GitHub repository
  *                 as CSV files which can be used to get the app running quickly. Moreover, keep in mind that the executable must be run with SUDO as it needs
  *                 extra permissions to write / read the application files.
  *
@@ -59,8 +59,8 @@ using namespace net;
 
 int main(int argc, char *argv[])
 {
-
     INIT(argc, argv);
+
     // QApplication app(argc, argv);
 
     // ui::Client client;

@@ -6,7 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-net::server<char> *__server = nullptr;
+net::Server<char> *server = nullptr;
 
 bool DEBUG_FLAG = false;
 
@@ -58,7 +58,7 @@ int getMainArguments(int argc, char *argv[])
                   << std::setw(5) << " "
                   << "       [-debug]       Enable debug mode to display HTTP requests.\n"
                   << std::setw(5) << " "
-                  << "       [port]         Specify a particular port number for the server to listen on.\n\n"
+                  << "       [port]         Specify a particular port number for the Server to listen on.\n\n"
                   << std::setw(5) << " "
                   << "--> If no port is provided, the default port will be used.\n\n";
 
@@ -110,7 +110,7 @@ int getMainArguments(int argc, char *argv[])
                               << std::setw(5) << " "
                               << "       [-debug]       Enable debug mode to display HTTP requests.\n"
                               << std::setw(5) << " "
-                              << "       [port]         Specify a particular port number for the server to listen on.\n\n"
+                              << "       [port]         Specify a particular port number for the Server to listen on.\n\n"
                               << std::setw(5) << " "
                               << "--> If no port is provided, the default port will be used.\n\n";
 
@@ -135,7 +135,7 @@ int getMainArguments(int argc, char *argv[])
                           << std::setw(5) << " "
                           << "       [-debug]       Enable debug mode to display HTTP requests.\n"
                           << std::setw(5) << " "
-                          << "       [port]         Specify a particular port number for the server to listen on.\n\n"
+                          << "       [port]         Specify a particular port number for the Server to listen on.\n\n"
                           << std::setw(5) << " "
                           << "--> If no port is provided, the default port will be used.\n\n";
 
@@ -159,7 +159,7 @@ int getMainArguments(int argc, char *argv[])
                           << std::setw(5) << " "
                           << "       [-debug]       Enable debug mode to display HTTP requests.\n"
                           << std::setw(5) << " "
-                          << "       [port]         Specify a particular port number for the server to listen on.\n\n"
+                          << "       [port]         Specify a particular port number for the Server to listen on.\n\n"
                           << std::setw(5) << " "
                           << "--> If no port is provided, the default port will be used.\n\n";
 
@@ -188,7 +188,7 @@ int getMainArguments(int argc, char *argv[])
                   << std::setw(5) << " "
                   << "       [-debug]       Enable debug mode to display HTTP requests.\n"
                   << std::setw(5) << " "
-                  << "       [port]         Specify a particular port number for the server to listen on.\n\n"
+                  << "       [port]         Specify a particular port number for the Server to listen on.\n\n"
                   << std::setw(5) << " "
                   << "--> If no port is provided, the default port will be used.\n\n";
 
