@@ -103,7 +103,7 @@ namespace net
              * @brief This function validates user credentials.
              * @return Returns true on success and false if the user credentials are not valid.
              */
-            bool validateCredentials(const char  __username[], const char __password[]);
+            bool validateCredentials(const char __username[], const char __password[]);
             bool findUsername(const char __username[]);
 
         public:

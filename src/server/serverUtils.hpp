@@ -56,6 +56,12 @@ namespace net
     constexpr char INDEX_HTML_PATH[] = "interface/index.html";
     constexpr char IGNORE[] = "ignore.txt";
 
+    /**
+     * @brief This class stores all file names or extensions that are ignored when the auth checked is performed. 
+     *        For example, when not logged in, the user must be able to access the login page
+     *        These values are stored in the file 'ignore.txt'
+     * @attention Any data added in this file will be ignored by the user auth checking system
+    */
     class Ignore
     {
     public:
@@ -68,9 +74,7 @@ namespace net
             node *next, *prev;
 
             node(const char *pageName);
-
             char *getPageName(void) const noexcept;
-
             ~node();
         };
 
@@ -167,7 +171,7 @@ namespace net
     private:
         static std::atomic<bool> SERVER_RUNNING;
 
-        Ignore ignore;
+        Ignore ignore;                                      // double linked list which contains pages and file extensions that must be ignore when checking for page authorization
 
         std::vector<class acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
         class interface::user *__user;                      // Pointer to the 'user' object.
@@ -203,7 +207,7 @@ namespace net
     public:
         Server();
 
-        inline int readPages(void);
+        inline int read_ignore_data(void);
 
         /*
          * This function does the following:
@@ -284,6 +288,10 @@ namespace net
         // This function retrieves the status of the Server. Returns true if the Server is running, otherwise false.
         bool getServerStatus(void) const noexcept;
 
+        /**
+         *  @brief This function retrives the ignore class variable. It stores the file names and extensions which shall be ignored by the user auth check
+         *  @attention Check class documentation for more information
+         */
         Ignore getIgnore(void) const noexcept;
         
         // This function changes the value of the SERVER_RUNNING var, ultimately stopping the server
