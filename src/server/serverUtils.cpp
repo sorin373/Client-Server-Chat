@@ -247,7 +247,7 @@ Server<T>::Server()
 }
 
 template <typename T>
-int Server<T>::readPages(void)
+inline int Server<T>::readPages(void)
 {
     std::ifstream file(IGNORE);
 
@@ -697,7 +697,7 @@ void Server<T>::consoleListener(std::atomic<bool> &server_running)
             std::cout << std::setw(5) << " "
                       << "Shutting down...\n";
 
-            server_running = false;
+            haltServer();
 
             break;
         }
@@ -741,6 +741,12 @@ template <typename T>
 Ignore Server<T>::getIgnore(void) const noexcept
 {
     return ignore;
+}
+
+template <typename T>
+void Server<T>::haltServer(void) noexcept
+{
+    this->SERVER_RUNNING = false;
 }
 
 template <typename T>

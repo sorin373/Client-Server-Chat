@@ -285,8 +285,8 @@ namespace net
         bool getServerStatus(void) const noexcept;
 
         Ignore getIgnore(void) const noexcept;
-
-        //      Used by QT !!!!!
+        
+        // This function changes the value of the SERVER_RUNNING var, ultimately stopping the server
         void haltServer(void) noexcept;
 
         // This function retrieves a pointer to the "database" object
