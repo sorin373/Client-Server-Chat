@@ -247,7 +247,7 @@ Server<T>::Server()
 }
 
 template <typename T>
-inline int Server<T>::readPages(void)
+inline int Server<T>::read_ignore_data(void)
 {
     std::ifstream file(IGNORE);
 
@@ -707,7 +707,7 @@ void Server<T>::consoleListener(std::atomic<bool> &server_running)
 template <typename T>
 void Server<T>::server_easy_init(int serverSocketFD)
 {
-    if (readPages() == EXIT_FAILURE)
+    if (read_ignore_data() == EXIT_FAILURE)
         return;
 
     SERVER_RUNNING = true;
