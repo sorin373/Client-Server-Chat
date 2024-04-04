@@ -33,10 +33,12 @@
 
 #include "serverUtils.hpp"
 
-// Extern pointer to the instance of the net::server class. This allows all files that include this header file to have access to this variable.
-extern net::server<char> *__server;
+// Extern pointer to the instance of the net::Server class. This allows all files that include this header file to have access to this variable.
+extern net::Server<char> *server;
 
 extern bool DEBUG_FLAG;
+
+extern long long unsigned int TOTAL_BYTES_RECV;
 
 /**
  * @brief This function searches for a substring. 

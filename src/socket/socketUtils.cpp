@@ -10,7 +10,7 @@
 
 using namespace net;
 
-char *exec(const char *cmd)
+static char *exec(const char *cmd)
 {
     FILE *pipe = popen(cmd, "r");
 
