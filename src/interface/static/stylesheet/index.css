@@ -12,11 +12,11 @@ html {
 
 .container {
     width: 100%;
-    height: 100%;
+    height: fit-content;
     max-height: 400px;
     overflow-y: scroll;
     margin-top: 5rem;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
     padding: 0 !important;
 }
 
@@ -53,6 +53,7 @@ html {
     flex-direction: column;
     align-items: center;
     margin-bottom: 5rem;
+    height: 100%;
 }
 
 .title-container p {
@@ -73,7 +74,7 @@ th {
 }
 
 thead {
-    background-color: #dfe4e9;
+    background-color: #f3f3f3;
     border-radius: 0;
     color: rgb(66, 66, 66);
     z-index: 1;
@@ -84,6 +85,8 @@ thead {
 table {
     width: 100%;
     max-width: 1400px;
+    height: auto;
+    max-height: 400px;
     text-align: center;
 }
 
@@ -128,15 +131,20 @@ tbody tr {
     border: solid 0.1px rgb(153, 153, 153);
     border-radius: 5px;
     color: rgb(65, 64, 64);
+    margin: 1rem;
 }
 
 #addFileForm {
-    margin: auto;
-    padding: 0.7rem;
-    margin-top: 3rem;
-    background-color: #ecedee;
+    display: flex;
+    flex-direction: row;
+    margin: auto 0 auto 0 !important;
+    padding: 1rem;
+    background-color: #f6f7f8;
     border-radius: 10px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.25);
+    list-style-type: none;
+    justify-content: center;
+    align-items: center;
 }
 
 .footer {

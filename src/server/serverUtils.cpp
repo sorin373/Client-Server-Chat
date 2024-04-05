@@ -243,7 +243,7 @@ template <typename T>
 Server<T>::Server()
 {
     this->db = nullptr;
-    this->__user = nullptr;
+    this->user = nullptr;
 }
 
 template <typename T>
@@ -321,23 +321,23 @@ int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
     }
 
     if (findString(route, "/userlogin"))
-        if (__user->loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (user->loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/addFile"))
-        if (__user->addFilesRoute(buffer, byteBuffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE)
+        if (user->addFilesRoute(buffer, byteBuffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/change_password"))
-        if (__user->changePasswordRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (user->changePasswordRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/create_account"))
-        if (__user->createAccountRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (user->createAccountRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     if (findString(route, "/delete_file"))
-        if (__user->deleteFileRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
+        if (user->deleteFileRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
             return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -377,7 +377,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
         if ((strlen(path) == 1 && path[0] == '/'))
             USE_DEFAULT_ROUTE = true;
 
-        if (!__user->getAuthStatus())
+        if (!user->getAuthStatus())
         {
             bool use_default = true;
 
@@ -406,8 +406,8 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
         {
             if (strcmp(path, "/login.html") == 0)
             {
-                __user->resetAuthStatus();
-                __user->resetSessionID();
+                user->resetAuthStatus();
+                user->resetSessionID();
             }
 
             char fullPath[strlen(root) + strlen(path) + 1] = "";
@@ -571,7 +571,7 @@ template <typename T>
 void Server<T>::postRecv(const int acceptedSocketFD)
 {
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
-    std::string file = __user->getFileInQueue();
+    std::string file = user->getFileInQueue();
 
     if (!file.empty())
     {
@@ -579,7 +579,7 @@ void Server<T>::postRecv(const int acceptedSocketFD)
 
         addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
 
-        __user->clearFileInQueue();
+        user->clearFileInQueue();
 
         TOTAL_BYTES_RECV = 0;
 
@@ -756,15 +756,15 @@ class Server<T>::db *Server<T>::getSQLdatabase(void) const noexcept
 }
 
 template <typename T>
-class interface::user *Server<T>::getUser(void) const noexcept
+class interface::User *Server<T>::getUser(void) const noexcept
 {
-    return __user;
+    return user;
 }
 
 template <typename T>
 void Server<T>::SQLfetchUserTable(void)
 {
-    __user->clearUserCredentials();
+    user->clearUserCredentials();
 
     sql::Statement *stmt = nullptr;
     sql::ResultSet *res = nullptr;
@@ -786,9 +786,9 @@ void Server<T>::SQLfetchUserTable(void)
         char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(password, sqlstr.asStdString().c_str());
 
-        user::userCredentials t_uc(username, password, id); // create an obj which we are pushing into the vector
+        User::userCredentials t_uc(username, password, id); // create an obj which we are pushing into the vector
 
-        __user->addToUserCredentials(t_uc);
+        user->addToUserCredentials(t_uc);
 
         free(username);
         free(password);
@@ -804,12 +804,12 @@ void Server<T>::SQLfetchUserTable(void)
 template <typename T>
 void Server<T>::SQLfetchFileTable(void)
 {
-    __user->clearUserFiles();
+    user->clearUserFiles();
 
     sql::Statement *stmt = nullptr;
     sql::ResultSet *res = nullptr;
 
-    std::string SQLquery = "SELECT * FROM file WHERE user_id=" + std::to_string(__user->getSessionID());
+    std::string SQLquery = "SELECT * FROM file WHERE user_id=" + std::to_string(user->getSessionID());
 
     stmt = db->getCon()->createStatement();
     res = stmt->executeQuery(SQLquery);
@@ -826,9 +826,9 @@ void Server<T>::SQLfetchFileTable(void)
         char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(fileName, sqlstr.asStdString().c_str());
 
-        user::userFiles t_uf(fileName, userID, fileID, fileSize, downloads);
+        User::userFiles t_uf(fileName, userID, fileID, fileSize, downloads);
 
-        __user->addToUserFiles(t_uf);
+        user->addToUserFiles(t_uf);
 
         free(fileName);
     }
@@ -844,7 +844,7 @@ template <typename T>
 int Server<T>::addToFileTable(const char *fileName, const int fileSize)
 {
     bool found = false;
-    std::vector<class user::userFiles> __userFiles = __user->getUserFiles();
+    std::vector<class User::userFiles> __userFiles = user->getUserFiles();
 
     for (const auto &__uf : __userFiles)
         if (strcmp(__uf.getFileName(), fileName) == 0)
@@ -881,7 +881,7 @@ int Server<T>::addToFileTable(const char *fileName, const int fileSize)
 
         sql::PreparedStatement *prepStmt = db->getCon()->prepareStatement(query);
 
-        prepStmt->setInt(1, __user->getSessionID());
+        prepStmt->setInt(1, user->getSessionID());
         prepStmt->setInt(2, maxID + 1);
         prepStmt->setString(3, std::string(fileName));
         prepStmt->setInt(4, fileSize);
@@ -903,7 +903,7 @@ int Server<T>::addToFileTable(const char *fileName, const int fileSize)
 
     SQLfetchFileTable();
 
-    __user->buildIndexHTML();
+    user->buildIndexHTML();
 
     return EXIT_SUCCESS;
 }
@@ -1001,7 +1001,7 @@ int Server<T>::database_easy_init(void)
         con->setSchema(database);
 
         db = new typename Server<T>::db(driver, con, hostname, username, password, database);
-        __user = new interface::user();
+        user = new interface::User();
     }
     catch (sql::SQLException &e)
     {
@@ -1040,10 +1040,10 @@ Server<T>::~Server()
         this->db = nullptr;
     }
 
-    if (this->__user != nullptr)
+    if (this->user != nullptr)
     {
-        delete this->__user;
-        this->__user = nullptr;
+        delete this->user;
+        this->user = nullptr;
     }
 }
 
