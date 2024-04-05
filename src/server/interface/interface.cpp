@@ -15,102 +15,102 @@
 using namespace net;
 using namespace net::interface;
 
-user::userCredentials::userCredentials(const char *username, const char *password, const int id)
+User::userCredentials::userCredentials(const char *username, const char *password, const int id)
 {
     this->username = strdup(username);
     this->password = strdup(password);
     this->id = id;
 }
 
-char *user::userCredentials::getUsername(void) const noexcept
+char *User::userCredentials::getUsername(void) const noexcept
 {
     return username;
 }
 
-char *user::userCredentials::getPassword(void) const noexcept
+char *User::userCredentials::getPassword(void) const noexcept
 {
     return password;
 }
 
-int user::userCredentials::getId(void) const noexcept
+int User::userCredentials::getId(void) const noexcept
 {
     return id;
 }
 
-user::user()
+User::User()
 {
     this->AUTH_STATUS = false;
     this->SESSION_ID = -1;
 }
 
-std::vector<class user::userCredentials> user::getUserCredentials(void) const noexcept
+std::vector<class User::userCredentials> User::getUserCredentials(void) const noexcept
 {
     return uc;
 }
 
-std::vector<class user::userFiles> user::getUserFiles(void) const noexcept
+std::vector<class User::userFiles> User::getUserFiles(void) const noexcept
 {
     return uf;
 }
 
-std::string user::getFileInQueue(void) const noexcept
+std::string User::getFileInQueue(void) const noexcept
 {
     return fileInQueue;
 }
 
-int user::getSessionID(void) const noexcept
+int User::getSessionID(void) const noexcept
 {
     return SESSION_ID;
 }
 
-bool user::getAuthStatus(void) const noexcept
+bool User::getAuthStatus(void) const noexcept
 {
     return AUTH_STATUS;
 }
 
-void user::resetAuthStatus(void) noexcept
+void User::resetAuthStatus(void) noexcept
 {
     this->AUTH_STATUS = false;
 }
 
-void user::resetSessionID(void) noexcept
+void User::resetSessionID(void) noexcept
 {
     this->SESSION_ID = -1;
 }
 
-void user::clearUserCredentials(void) noexcept
+void User::clearUserCredentials(void) noexcept
 {
     uc.clear();
 }
 
-void user::clearUserFiles(void) noexcept
+void User::clearUserFiles(void) noexcept
 {
     uf.clear();
 }
 
-void user::clearFileInQueue(void) noexcept
+void User::clearFileInQueue(void) noexcept
 {
     fileInQueue.clear();
 }
 
-void user::addToUserCredentials(const user::userCredentials __uc) noexcept
+void User::addToUserCredentials(const User::userCredentials __uc) noexcept
 {
     uc.push_back(__uc);
 }
 
-void user::addToUserFiles(const user::userFiles __uf) noexcept
+void User::addToUserFiles(const User::userFiles __uf) noexcept
 {
     uf.push_back(__uf);
 }
 
-void user::addFileInQueue(const std::string fileName) noexcept
+void User::addFileInQueue(const std::string fileName) noexcept
 {
     this->fileInQueue = fileName;
 }
 
 /* UserFiles table */
 
-user::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const int noDownloads)
+User::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const int noDownloads)
 {
     this->fileName = strdup(fileName);
     this->userID = userID;
@@ -119,32 +119,32 @@ user::userFiles::userFiles(const char *fileName, const int userID, const int fil
     this->noDownloads = noDownloads;
 }
 
-char *user::userFiles::getFileName(void) const noexcept
+char *User::userFiles::getFileName(void) const noexcept
 {
     return fileName;
 }
 
-int user::userFiles::getUserID(void) const noexcept
+int User::userFiles::getUserID(void) const noexcept
 {
     return userID;
 }
 
-int user::userFiles::getFileID(void) const noexcept
+int User::userFiles::getFileID(void) const noexcept
 {
     return fileID;
 }
 
-int user::userFiles::getFileSize(void) const noexcept
+int User::userFiles::getFileSize(void) const noexcept
 {
     return fileSize;
 }
 
-int user::userFiles::getNoDownloads(void) const noexcept
+int User::userFiles::getNoDownloads(void) const noexcept
 {
     return noDownloads;
 }
 
-void user::buildIndexHTML(void)
+void User::buildIndexHTML(void)
 {
     std::ofstream index_html(INDEX_HTML_PATH);
 
@@ -270,7 +270,7 @@ void user::buildIndexHTML(void)
     index_html.close();
 }
 
-bool user::validateCredentials(const char __username[], const char __password[])
+bool User::validateCredentials(const char __username[], const char __password[])
 {
     for (auto &__uc : uc)
         if (strcmp(__username, __uc.getUsername()) == 0 && strcmp(__password, __uc.getPassword()) == 0)
@@ -282,7 +282,7 @@ bool user::validateCredentials(const char __username[], const char __password[])
     return false;
 }
 
-bool user::findUsername(const char __username[])
+bool User::findUsername(const char __username[])
 {
     for (auto &__uc : uc)
         if (strcmp(__username, __uc.getUsername()) == 0)
@@ -291,7 +291,7 @@ bool user::findUsername(const char __username[])
     return false;
 }
 
-int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
+int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
@@ -362,7 +362,7 @@ int user::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
 std::string fileName;
 int fileCount;
 
-int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
 {
     TOTAL_BYTES_RECV += __bytesReceived;
 
@@ -428,7 +428,7 @@ int user::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
     return EXIT_SUCCESS;
 }
 
-int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
+int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /apology.html\r\nConnection: close\r\n\r\n";
@@ -526,8 +526,8 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
         return EXIT_SUCCESS;
     }
 
-    // Prepare query to update the user
-    std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
+    // Prepare query to update the User
+    std::string query = "UPDATE User SET password=(?) WHERE username=(?)";
     sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));
@@ -538,7 +538,7 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     delete prepStmt;
 
-    // Fetch the user table containg the updated data
+    // Fetch the User table containg the updated data
     server->SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
@@ -551,7 +551,7 @@ int user::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     return EXIT_SUCCESS;
 }
 
-int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
+int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /apology.html\r\nConnection: close\r\n\r\n";
@@ -635,7 +635,7 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     }
 
     // Prepare query to insert the new account information
-    std::string query = "INSERT INTO user VALUES (?, ?, ?)";
+    std::string query = "INSERT INTO User VALUES (?, ?, ?)";
     sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, uc.size());
@@ -647,7 +647,7 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     delete prepStmt;
 
-    // Fetch the user table containg the updated data
+    // Fetch the User table containg the updated data
     server->SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
@@ -660,7 +660,7 @@ int user::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     return EXIT_SUCCESS;
 }
 
-int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
+int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
 {
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
 
@@ -720,7 +720,7 @@ int user::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     return EXIT_SUCCESS;
 }
 
-user::~user()
+User::~User()
 {
     for (auto &__uc : uc)
     {

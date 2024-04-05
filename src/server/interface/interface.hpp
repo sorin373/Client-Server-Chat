@@ -46,7 +46,7 @@ namespace net
     namespace interface
     {
         // Class describing a 'user' and it is part of the Server's interface namespace.
-        class user
+        class User
         {
         public:
             // Nested class describing the user credentials object.
@@ -107,7 +107,7 @@ namespace net
             bool findUsername(const char __username[]);
 
         public:
-            user();
+            User();
 
             // This function retrieves a vector where the user credentials are stored
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;
@@ -220,7 +220,7 @@ namespace net
              */
             void buildIndexHTML(void);
 
-            ~user();
+            ~User();
         };
     };
 };

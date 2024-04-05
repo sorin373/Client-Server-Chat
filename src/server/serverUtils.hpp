@@ -120,9 +120,9 @@ namespace net
             };
 
         private:
-            class db_cred *dbCred; // Pointer to the 'db_cred' object.
+            class db_cred   *dbCred; // Pointer to the 'db_cred' object.
             sql::Connection *con;
-            sql::Driver *driver;
+            sql::Driver     *driver;
 
         public:
             db(sql::Driver *driver, sql::Connection *con, const char *hostname, const char *username, const char *password, const char *database);
@@ -174,8 +174,8 @@ namespace net
         Ignore ignore;                                      // double linked list which contains pages and file extensions that must be ignore when checking for page authorization
 
         std::vector<class acceptedSocket> connectedSockets; // Vector that stores all the connected sockets.
-        class interface::user *__user;                      // Pointer to the 'user' object.
-        class db *db;                                       // Pointer to the 'database' object.
+        class interface::User *user;                        // Pointer to the 'user' object.
+        class db              *db;                          // Pointer to the 'database' object.
 
         /**
          * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
@@ -301,7 +301,7 @@ namespace net
         class db *getSQLdatabase(void) const noexcept;
 
         // This function retrieves a pointer to the "user" object
-        class interface::user *getUser(void) const noexcept;
+        class interface::User *getUser(void) const noexcept;
 
         ~Server();
     };
