@@ -103,8 +103,8 @@ namespace net
              * @brief This function validates user credentials.
              * @return Returns true on success and false if the user credentials are not valid.
              */
-            bool validateCredentials(const char __username[], const char __password[]);
-            bool findUsername(const char __username[]);
+            bool validateCredentials(const char username[], const char password[]);
+            bool findUsername(const char username[]);
 
         public:
             User();
@@ -161,12 +161,12 @@ namespace net
              * @param buffer Contains the file data. This is used to retrive the metadata of the request such as the file name and file extension.
              * @param byteBuffer Contains the file data. This is used to write the data into an actual file on the local machine.
              * @param acceptedSocketFileDescriptor The file descriptor for the accepted socket connection used when seding the HTTP response.
-             * @param __bytesReceived The size of the current buffer / byteBuffer
+             * @param bytesReceived The size of the current buffer / byteBuffer
              *
              * @return Returns 0 on success, 1 for errors.
              *
              */
-            int addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived);
+            int addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t bytesReceived);
 
             /**
              *
@@ -206,10 +206,10 @@ namespace net
             int deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor);
 
             // This functions adds 'userCredential' objects to the 'uc' vector. It uses the 'push_back' function.
-            void addToUserCredentials(const userCredentials __uc) noexcept;
+            void addToUserCredentials(const userCredentials t_uc) noexcept;
 
             // This functions adds 'userFiles' objects to the 'uf' vector. It uses the 'push_back' function.
-            void addToUserFiles(const userFiles __uf) noexcept;
+            void addToUserFiles(const userFiles t_uf) noexcept;
 
             // This functions asigns to the 'fileInQueue' variable the name of the file uploaded to the Server
             void addFileInQueue(const std::string fileName) noexcept;

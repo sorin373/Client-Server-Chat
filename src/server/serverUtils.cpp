@@ -21,8 +21,7 @@ using namespace net::interface;
 
 template class Server<char>;
 
-template <typename T>
-std::atomic<bool> Server<T>::SERVER_RUNNING;
+template <typename T> std::atomic<bool> Server<T>::SERVER_RUNNING;
 
 /* db */
 
@@ -296,8 +295,7 @@ int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
     // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
     if (changeRoute)
     {
-        if (route != nullptr)
-            delete[] route;
+        if (route != nullptr) delete[] route;
 
         char *ptr = new char[strlen(charBuffer) + 1];
         strcpy(ptr, charBuffer);
@@ -350,11 +348,11 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
 
     const char defaultRoute[] = "interface/login.html";
     const char root[] = "interface";
-    char *path = nullptr;
-    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
 
-    if (allocatedBuffer == nullptr)
-        return EXIT_FAILURE;
+    char *allocatedBuffer = reinterpret_cast<char *>(buffer);
+    char *path = nullptr;
+
+    if (allocatedBuffer == nullptr) return EXIT_FAILURE;
 
     for (int i = 0, n = strlen(allocatedBuffer); i < n; i++)
         if (allocatedBuffer[i] == '/')
@@ -363,8 +361,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
             break;
         }
 
-    if (path == nullptr)
-        USE_DEFAULT_ROUTE = true;
+    if (path == nullptr) USE_DEFAULT_ROUTE = true;
 
     std::ifstream file;
 
@@ -374,8 +371,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
             if (path[i] == ' ')
                 path[i] = '\0';
 
-        if ((strlen(path) == 1 && path[0] == '/'))
-            USE_DEFAULT_ROUTE = true;
+        if ((strlen(path) == 1 && path[0] == '/')) USE_DEFAULT_ROUTE = true;
 
         if (!user->getAuthStatus())
         {
@@ -398,8 +394,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
                     }
             }
 
-            if (use_default)
-                USE_DEFAULT_ROUTE = true;
+            if (use_default) USE_DEFAULT_ROUTE = true;
         }
 
         if (!USE_DEFAULT_ROUTE)
@@ -412,8 +407,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
 
             char fullPath[strlen(root) + strlen(path) + 1] = "";
 
-            if (!findString(path, "interface"))
-                strcpy(fullPath, root);
+            if (!findString(path, "interface")) strcpy(fullPath, root);
 
             strcat(fullPath, path);
 
@@ -421,8 +415,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
         }
     }
 
-    if (USE_DEFAULT_ROUTE)
-        file.open(defaultRoute, std::ios::binary);
+    if (USE_DEFAULT_ROUTE) file.open(defaultRoute, std::ios::binary);
 
     if (!file.is_open())
     {
@@ -472,8 +465,7 @@ int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
 
     if (ptr != NULL)
     {
-        if (requestType != nullptr)
-            delete[] requestType;
+        if (requestType != nullptr) delete[] requestType;
 
         changeRoute = true;
 
@@ -594,8 +586,7 @@ void Server<T>::receivedDataHandler(const class acceptedSocket socket)
 {
     int acceptedSocketFD = socket.getAcceptedSocketFD();
 
-    if (acceptedSocketFD < 0)
-        return;
+    if (acceptedSocketFD < 0) return;
 
     T buffer[1025];
 
@@ -624,8 +615,7 @@ void Server<T>::receivedDataHandler(const class acceptedSocket socket)
 
         buffer[bytesReceived] = '\0';
 
-        if (DEBUG_FLAG)
-            std::cout << buffer;
+        if (DEBUG_FLAG) std::cout << buffer;
 
         HTTPrequestsHandler(buffer, acceptedSocketFD, bytesReceived);
     }
@@ -649,7 +639,7 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
 
         // Set timeout
         struct timeval timeout;
-        timeout.tv_sec = 1; // 1 second timeout
+        timeout.tv_sec = 1;  // 1 second timeout
         timeout.tv_usec = 0;
 
         // Wait for activity on Server socket
@@ -660,23 +650,20 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
             perror("select");
             break;
         }
-        else if (activity == 0)
-            continue;
+        else if (activity == 0) continue;
         else
         {
             acceptedSocket newAcceptedSocket;
 
-            if (!acceptConnection(serverSocketFD, newAcceptedSocket))
-                continue;
+            if (!acceptConnection(serverSocketFD, newAcceptedSocket)) continue;
 
             connectedSockets.push_back(newAcceptedSocket);
 
             receivedDataHandlerThread(newAcceptedSocket);
         }
-    };
+    }
 
-    for (const acceptedSocket &socket : connectedSockets)
-        close(socket.getAcceptedSocketFD());
+    for (const acceptedSocket &socket : connectedSockets) close(socket.getAcceptedSocketFD());
 }
 
 template <typename T>
@@ -707,8 +694,7 @@ void Server<T>::consoleListener(std::atomic<bool> &server_running)
 template <typename T>
 void Server<T>::server_easy_init(int serverSocketFD)
 {
-    if (read_ignore_data() == EXIT_FAILURE)
-        return;
+    if (read_ignore_data() == EXIT_FAILURE) return;
 
     SERVER_RUNNING = true;
 
@@ -853,8 +839,7 @@ int Server<T>::addToFileTable(const char *fileName, const int fileSize)
             break;
         }
 
-    if (found)
-        return EXIT_SUCCESS;
+    if (found) return EXIT_SUCCESS;
 
     int maxID = 0;
 
@@ -1047,6 +1032,40 @@ Server<T>::~Server()
     }
 }
 
+/* acceptedSocket */
+
+template <typename T>
+void Server<T>::acceptedSocket::socketCleanup(void) noexcept
+{
+    this->acceptedSocketFD = -1;
+}
+
+template <typename T>
+void Server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
+{
+    this->ipAddress = ipAddress;
+    this->acceptedSocketFD = acceptedSocketFD;
+    this->error = error;
+}
+
+template <typename T>
+struct sockaddr_in Server<T>::acceptedSocket::getIpAddress(void) const noexcept
+{
+    return ipAddress;
+}
+
+template <typename T>
+int Server<T>::acceptedSocket::getError(void) const noexcept
+{
+    return error;
+}
+
+template <typename T>
+int Server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
+{
+    return acceptedSocketFD;
+}
+
 int net::INIT(int argc, char *argv[])
 {
     int port = 0;
@@ -1168,38 +1187,4 @@ int net::INIT(int argc, char *argv[])
     delete[] machineIPv4Address;
 
     return EXIT_SUCCESS;
-}
-
-/* acceptedSocket */
-
-template <typename T>
-void Server<T>::acceptedSocket::socketCleanup(void) noexcept
-{
-    this->acceptedSocketFD = -1;
-}
-
-template <typename T>
-void Server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
-{
-    this->ipAddress = ipAddress;
-    this->acceptedSocketFD = acceptedSocketFD;
-    this->error = error;
-}
-
-template <typename T>
-struct sockaddr_in Server<T>::acceptedSocket::getIpAddress(void) const noexcept
-{
-    return ipAddress;
-}
-
-template <typename T>
-int Server<T>::acceptedSocket::getError(void) const noexcept
-{
-    return error;
-}
-
-template <typename T>
-int Server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
-{
-    return acceptedSocketFD;
 }

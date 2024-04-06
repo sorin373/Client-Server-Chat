@@ -93,14 +93,14 @@ void User::clearFileInQueue(void) noexcept
     fileInQueue.clear();
 }
 
-void User::addToUserCredentials(const User::userCredentials __uc) noexcept
+void User::addToUserCredentials(const User::userCredentials t_uc) noexcept
 {
-    uc.push_back(__uc);
+    uc.push_back(t_uc);
 }
 
-void User::addToUserFiles(const User::userFiles __uf) noexcept
+void User::addToUserFiles(const User::userFiles t_uf) noexcept
 {
-    uf.push_back(__uf);
+    uf.push_back(t_uf);
 }
 
 void User::addFileInQueue(const std::string fileName) noexcept
@@ -270,23 +270,22 @@ void User::buildIndexHTML(void)
     index_html.close();
 }
 
-bool User::validateCredentials(const char __username[], const char __password[])
+bool User::validateCredentials(const char username[], const char password[])
 {
-    for (auto &__uc : uc)
-        if (strcmp(__username, __uc.getUsername()) == 0 && strcmp(__password, __uc.getPassword()) == 0)
+    for (auto &t_uc : uc)
+        if (strcmp(username, t_uc.getUsername()) == 0 && strcmp(password, t_uc.getPassword()) == 0)
         {
-            this->SESSION_ID = __uc.getId();
+            this->SESSION_ID = t_uc.getId();
             return true;
         }
 
     return false;
 }
 
-bool User::findUsername(const char __username[])
+bool User::findUsername(const char username[])
 {
-    for (auto &__uc : uc)
-        if (strcmp(__username, __uc.getUsername()) == 0)
-            return true;
+    for (auto &t_uc : uc)
+        if (strcmp(username, t_uc.getUsername()) == 0) return true;
 
     return false;
 }
@@ -309,11 +308,9 @@ int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (temp_username == nullptr)
-        return EXIT_FAILURE;
+    if (temp_username == nullptr) return EXIT_FAILURE;
 
-    if (strlen(temp_username) > NET_USERNAME_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(temp_username) > NET_USERNAME_LENGHT) return EXIT_FAILURE;
 
     ptr = strtok(NULL, " ");
 
@@ -325,11 +322,9 @@ int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (temp_password == nullptr)
-        return EXIT_FAILURE;
+    if (temp_password == nullptr) return EXIT_FAILURE;
 
-    if (strlen(temp_password) > NET_PASSWORD_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(temp_password) > NET_PASSWORD_LENGHT) return EXIT_FAILURE;
 
     if (!validateCredentials(temp_username, temp_password))
     {
@@ -362,9 +357,9 @@ int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
 std::string fileName;
 int fileCount;
 
-int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t __bytesReceived)
+int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t bytesReceived)
 {
-    TOTAL_BYTES_RECV += __bytesReceived;
+    TOTAL_BYTES_RECV += bytesReceived;
 
     if (findString(buffer, "filename="))
     {
@@ -377,8 +372,7 @@ int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
         std::smatch match;
 
         // searches in the string 't_buffer' for matches
-        if (std::regex_search(t_buffer, match, fileNameRegex))
-            fileName = match.str(1);
+        if (std::regex_search(t_buffer, match, fileNameRegex)) fileName = match.str(1);
 
         // Variable used to generate unique name for files which do not have a valid file name
         fileCount++;
@@ -403,25 +397,23 @@ int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
         else
         {
             // Replacing spaces with underlines
-            for (unsigned int i = 0, n = fileName.length(); i < n; i++)
-                if (fileName[i] == ' ')
-                    fileName[i] = '_';
+            for (unsigned int i = 0, n = fileName.length(); i < n; i++) if (fileName[i] == ' ') fileName[i] = '_';
         }
 
-        // Adds the new file in a queue to be inserted in the database
+        // Adds the new file in the queue to be inserted in the database
         addFileInQueue(fileName);
     }
 
-    FILE *file = fopen("interface/storage/temp.bin", "ab");
+    FILE *file = fopen(BINARY_FILE_TEMP_PATH, APPEND_BINARY);
 
     if (file != NULL)
     {
-        fwrite(byteBuffer, sizeof(uint8_t), __bytesReceived, file);
+        fwrite(byteBuffer, sizeof(uint8_t), bytesReceived, file);
         fclose(file);
     }
     else
     {
-        std::cerr << "Failed to open file!\n";
+        std::cerr << "Failed to open file: " << BINARY_FILE_TEMP_PATH << "\n";
         return EXIT_FAILURE;
     }
 
@@ -446,11 +438,9 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (username == nullptr)
-        return EXIT_FAILURE;
+    if (username == nullptr) return EXIT_FAILURE;
 
-    if (strlen(username) > NET_USERNAME_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(username) > NET_USERNAME_LENGHT) return EXIT_FAILURE;
 
     ptr = strtok(NULL, "&");
 
@@ -462,11 +452,9 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (oldPassword == nullptr)
-        return EXIT_FAILURE;
+    if (oldPassword == nullptr) return EXIT_FAILURE;
 
-    if (strlen(oldPassword) > NET_PASSWORD_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(oldPassword) > NET_PASSWORD_LENGHT) return EXIT_FAILURE;
 
     ptr = strtok(NULL, "&");
 
@@ -478,11 +466,9 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (newPassword == nullptr)
-        return EXIT_FAILURE;
+    if (newPassword == nullptr) return EXIT_FAILURE;
 
-    if (strlen(newPassword) > NET_PASSWORD_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(newPassword) > NET_PASSWORD_LENGHT) return EXIT_FAILURE;
 
     ptr = strtok(NULL, " ");
 
@@ -494,11 +480,9 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (confirmation == nullptr)
-        return EXIT_FAILURE;
+    if (confirmation == nullptr) return EXIT_FAILURE;
 
-    if (strlen(confirmation) > strlen(newPassword))
-        return EXIT_FAILURE;
+    if (strlen(confirmation) > strlen(newPassword)) return EXIT_FAILURE;
 
     // Check if old credentials are valid
     if (!validateCredentials(username, oldPassword))
@@ -556,7 +540,6 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     char authorized[] = "HTTP/1.1 302 Found\r\nLocation: /login.html\r\nConnection: close\r\n\r\n";
     char unauthorized[] = "HTTP/1.1 302 Found\r\nLocation: /apology.html\r\nConnection: close\r\n\r\n";
 
-    unsigned int count = 0;
     char *username = nullptr, *password = nullptr, *confirmation = nullptr, *ptr = NULL;
 
     ptr = strstr(buffer, "username=");
@@ -570,11 +553,9 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (username == nullptr)
-        return EXIT_FAILURE;
+    if (username == nullptr) return EXIT_FAILURE;
 
-    if (strlen(username) > NET_USERNAME_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(username) > NET_USERNAME_LENGHT) return EXIT_FAILURE;
 
     ptr = strtok(NULL, "&");
 
@@ -586,11 +567,9 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (password == nullptr)
-        return EXIT_FAILURE;
+    if (password == nullptr) return EXIT_FAILURE;
 
-    if (strlen(password) > NET_PASSWORD_LENGHT)
-        return EXIT_FAILURE;
+    if (strlen(password) > NET_PASSWORD_LENGHT) return EXIT_FAILURE;
 
     ptr = strtok(NULL, " ");
 
@@ -605,8 +584,7 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     if (confirmation == nullptr)
         return EXIT_FAILURE;
 
-    if (strlen(confirmation) > strlen(password))
-        return EXIT_FAILURE;
+    if (strlen(confirmation) > strlen(password)) return EXIT_FAILURE;
 
     // Check if the username already exists in the database
     if (findUsername(username))
@@ -675,8 +653,7 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
                 break;
             }
 
-    if (cfileID != nullptr)
-        fileID = atoi(cfileID);
+    if (cfileID != nullptr) fileID = atoi(cfileID);
 
     // Fetch the file name using the file ID for later use
     std::string query = "SELECT name FROM file WHERE file_id=(?)";
@@ -687,8 +664,7 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     prepStmt->setInt(1, fileID);
     res = prepStmt->executeQuery();
 
-    while (res->next())
-        std::string fileName = res->getString("name");
+    while (res->next()) std::string fileName = res->getString("name");
 
     delete res;
     delete prepStmt;
@@ -722,16 +698,16 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
 
 User::~User()
 {
-    for (auto &__uc : uc)
+    for (userCredentials  &t_uc : uc)
     {
-        free(__uc.getUsername());
-        free(__uc.getPassword());
+        free(t_uc.getUsername());
+        free(t_uc.getPassword());
     }
 
     uc.clear();
 
-    for (auto &__uf : uf)
-        free(__uf.getFileName());
+    for (userFiles &t_uf : uf)
+        free(t_uf.getFileName());
 
     uf.clear();
 }
