@@ -33,6 +33,8 @@
 
 #include "serverUtils.hpp"
 
+#define APPEND_BINARY "ab"
+
 // Extern pointer to the instance of the net::Server class. This allows all files that include this header file to have access to this variable.
 extern net::Server<char> *server;
 

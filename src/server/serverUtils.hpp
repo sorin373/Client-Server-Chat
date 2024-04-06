@@ -49,12 +49,12 @@ namespace net
 {
     /**
      *  @brief 'temp.bin' is a file that is created when uploading a file to the Server
-     *         After being written the file is correctly formated and copied. Finally temp.bin is removed.
+     *         After being written, the file is correctly formated and copied. Finally temp.bin is removed.
      */
     constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
-    constexpr char LOCAL_STORAGE_PATH[] = "interface/storage/";
-    constexpr char INDEX_HTML_PATH[] = "interface/index.html";
-    constexpr char IGNORE[] = "ignore.txt";
+    constexpr char LOCAL_STORAGE_PATH[] =    "interface/storage/";
+    constexpr char INDEX_HTML_PATH[] =       "interface/index.html";
+    constexpr char IGNORE[] =                "ignore.txt";
 
     /**
      * @brief This class stores all file names or extensions that are ignored when the auth checked is performed. 

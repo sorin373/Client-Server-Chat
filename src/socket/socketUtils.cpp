@@ -16,7 +16,7 @@ static char *exec(const char *cmd)
 
     if (!pipe)
     {
-        std::cerr << "Could not execute the command!\n";
+        std::cerr << "Could not execute the command: " << cmd << "\n";
         return nullptr;
     }
 
@@ -53,10 +53,8 @@ struct sockaddr_in *SocketUtils::IPv4Address(const char *ipAddress, int port)
         address->sin_family = AF_INET;
         address->sin_port = htons(port);
 
-        if (strlen(ipAddress) == 0 || strcasecmp(ipAddress, "INADDR_ANY") == 0 || ipAddress == nullptr)
-            address->sin_addr.s_addr = INADDR_ANY;
-        else
-            inet_pton(AF_INET, ipAddress, &address->sin_addr.s_addr);
+        if (strlen(ipAddress) == 0 || strcasecmp(ipAddress, "INADDR_ANY") == 0 || ipAddress == nullptr) address->sin_addr.s_addr = INADDR_ANY;
+        else inet_pton(AF_INET, ipAddress, &address->sin_addr.s_addr);
     }
 
     return address;
