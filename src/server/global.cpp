@@ -30,8 +30,7 @@ bool findString(const char haystack[], const char needle[])
 bool isNumeric(const char *str)
 {
     for (unsigned int i = 0, n = strlen(str); i < n; i++)
-        if (!std::isdigit(str[i]))
-            return false;
+        if (!std::isdigit(str[i])) return false;
 
     return true;
 }

@@ -39,11 +39,8 @@
 #include <vector>
 #include <atomic>
 
-enum : short
-{
-    LENGHT = 256,
-    SQL_LENGHT = 65
-};
+#define LENGHT     256
+#define SQL_LENGHT 65
 
 namespace net
 {
@@ -96,7 +93,7 @@ namespace net
     class Server
     {
     public:
-        // Forward declaration for the class implementing core functionalities of database. However the tables are stored in the interface class.
+        // Class implementing core functionalities of database. However the tables are stored in the interface class.
         class db
         {
         public:
@@ -180,6 +177,7 @@ namespace net
         /**
          * @brief This function handles client connections. It creates a new 'acceptedSocket' object for every incoming connection using the new operator.
          * @param acceptedSocketFD The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param server_running Atomic variable which helps the server stop
          */
         void handleClientConnections(int serverSocketFD, std::atomic<bool> &server_running);
 
@@ -226,7 +224,7 @@ namespace net
         int bindServer(int serverSocketFD, struct sockaddr_in *serverAddress);
 
         /*
-         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.
+         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.4
          *   - It allocates memory for the 'database' object class using the new operator (memory release is handled automatically)
          *   - It allocates memory for the 'user' object class using the new operator (memory release is handled automatically)
          */
@@ -306,7 +304,19 @@ namespace net
         ~Server();
     };
 
-    int INIT(int argc, char *argv[]);
+    /**
+     * @brief Master initialization function for the server functionalities.
+     * 
+     * @param argc Number of command-line arguments.
+     * @param argv Array of command-line arguments.
+     * @param addressFamily The address family to be used (e.g., AF_INET for IPv4).
+     * @param socketType The type of socket to be created (e.g., SOCK_STREAM for TCP).
+     * @param protocol The specific protocol to be used (e.g., IPPROTO_TCP for TCP).
+     * 
+     * @return Returns 0 on success, 1 for errors.
+     */
+    template <typename T> int INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol);
+
 };
 
 #endif // __SERVER_UTILS_HPP__

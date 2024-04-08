@@ -553,8 +553,7 @@ int Server<T>::formatFile(const std::string fileName)
     outFile.close();
 
     // Remove 'temp.bin'
-    if (remove(BINARY_FILE_TEMP_PATH) != 0)
-        std::cerr << "Failed to removed temp.bin!\n";
+    if (remove(BINARY_FILE_TEMP_PATH) != 0) std::cerr << "Failed to remove: " << BINARY_FILE_TEMP_PATH << "\n";
 
     return EXIT_SUCCESS;
 }
@@ -645,13 +644,7 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
         // Wait for activity on Server socket
         int activity = select(serverSocketFD + 1, &readfds, NULL, NULL, &timeout);
 
-        if (activity == -1)
-        {
-            perror("select");
-            break;
-        }
-        else if (activity == 0) continue;
-        else
+        if (activity > 0)
         {
             acceptedSocket newAcceptedSocket;
 
@@ -661,6 +654,12 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
 
             receivedDataHandlerThread(newAcceptedSocket);
         }
+        else if (activity == -1)
+        {
+            perror("select");
+            break;
+        }
+        else continue;
     }
 
     for (const acceptedSocket &socket : connectedSockets) close(socket.getAcceptedSocketFD());
@@ -852,8 +851,8 @@ int Server<T>::addToFileTable(const char *fileName, const int fileSize)
     while (res->next())
     {
         int fileID = res->getInt("file_id");
-        if (fileID > maxID)
-            maxID = fileID;
+
+        if (fileID > maxID) maxID = fileID;
     }
 
     delete stmt;
@@ -1066,7 +1065,8 @@ int Server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
     return acceptedSocketFD;
 }
 
-int net::INIT(int argc, char *argv[])
+template <typename T>
+int net::INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol)
 {
     int port = 0;
 
@@ -1077,7 +1077,7 @@ int net::INIT(int argc, char *argv[])
 
     SocketUtils serverSocket;
 
-    int serverSocketFD = serverSocket.createSocket();
+    int serverSocketFD = serverSocket.createSocket(addressFamily, socketType, protocol);
 
     if (serverSocketFD == -1)
     {
@@ -1087,7 +1087,7 @@ int net::INIT(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    server = new Server<char>();
+    server = new Server<T>();
 
     if (server->database_easy_init() == EXIT_FAILURE)
     {
