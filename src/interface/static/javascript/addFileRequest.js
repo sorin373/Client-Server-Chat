@@ -1,11 +1,3 @@
-/**
- * 
- * @file addFileRequest.js
- * 
- * @brief This JS script sends a form containg the file data that is sent to the HTTP server
- * 
- */
-
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('addFileForm').addEventListener('submit', function (event) {
         event.preventDefault();

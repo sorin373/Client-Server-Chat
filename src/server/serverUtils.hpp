@@ -224,7 +224,7 @@ namespace net
         int bindServer(int serverSocketFD, struct sockaddr_in *serverAddress);
 
         /*
-         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.4
+         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.
          *   - It allocates memory for the 'database' object class using the new operator (memory release is handled automatically)
          *   - It allocates memory for the 'user' object class using the new operator (memory release is handled automatically)
          */
