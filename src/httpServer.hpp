@@ -35,6 +35,8 @@
 #include "server/global.hpp"
 
 // This C++ header file contains the Server class prototype
-#include "server/serverUtils.hpp"
+#ifndef serverUtils_hpp
+    #include "server/serverUtils.hpp"
+#endif
 
 #endif // __HTTP_SERVER_HPP__

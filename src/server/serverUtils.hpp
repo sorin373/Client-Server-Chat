@@ -230,18 +230,6 @@ namespace net
          */
         int database_easy_init(void);
 
-        // This function retrieves the "user" table from the database
-        void SQLfetchUserTable(void);
-
-        // This function retrieves the "file" table from the database
-        void SQLfetchFileTable(void);
-
-        /**
-         * @brief This function adds the files uploaded to the Server.
-         * @return Returns 0 on success, 1 for errors.
-         */
-        int addToFileTable(const char *fileName, const int fileSize);
-
         // This function accepts client connections.
         bool acceptConnection(const int serverSocketFD, class acceptedSocket &acceptedSocket);
 
@@ -315,7 +303,7 @@ namespace net
      * 
      * @return Returns 0 on success, 1 for errors.
      */
-    template <typename T> int INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol);
+    int INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol);
 
 };
 
