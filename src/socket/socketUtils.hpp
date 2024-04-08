@@ -53,7 +53,7 @@ namespace net
          * @brief This function creates a new socket of type SOCK_STREAM in domain AF_INET, using protocol 1 (Internet Control Message Protocol).
          * @return Returns a file descriptor for the new socket, or -1 for errors.
          */
-        int createSocket(void);
+        int createSocket(int addressFamily, int socketType, int protocol);
 
         /**
          * @brief This function opens a connection on the socket file descriptor.
@@ -62,9 +62,10 @@ namespace net
         int connectToServer(int socketFileDescriptor, struct sockaddr_in *address);
 
         /**
-         *  This function configures an IPv4 address structure based on the provided IP address and port number. Returns 0 on success, -1 for errors.
-         *    - Default address: 127.0.0.1
-         *    - Default port:    8080
+         *  @brief This function configures an IPv4 address structure based on the provided IP address and port number. Returns 0 on success, -1 for errors.
+         *  @attention Default address: 127.0.0.1
+         *  @attention Default port:    8080
+         *  @return machine address, nullptr for errors
          */
         struct sockaddr_in *IPv4Address(const char *ipAddress = LOCAL_HOST_ADDRESS, int port = DEFAULT_PORT);
 

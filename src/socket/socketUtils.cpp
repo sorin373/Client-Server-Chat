@@ -39,14 +39,16 @@ static char *exec(const char *cmd)
     return result;
 }
 
-int SocketUtils::createSocket(void)
+int SocketUtils::createSocket(int addressFamily, int socketType, int protocol)
 {
-    return socket(AF_INET, SOCK_STREAM, 0);
+    return socket(addressFamily, socketType, protocol);
 }
 
 struct sockaddr_in *SocketUtils::IPv4Address(const char *ipAddress, int port)
 {
     struct sockaddr_in *address = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in));
+
+    if (address == nullptr) return nullptr;
 
     if (address != nullptr)
     {
@@ -103,6 +105,6 @@ char *SocketUtils::getMachineIPv4Address(void)
 }
 
 void SocketUtils::closeSocket(int socketFileDescriptor)
-{
+{ 
     close(socketFileDescriptor);
 }

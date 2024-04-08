@@ -35,11 +35,8 @@
 #include <string>
 #include <stdlib.h>
 
-enum : short
-{
-    NET_USERNAME_LENGHT = 32,
-    NET_PASSWORD_LENGHT = 64
-};
+#define NET_USERNAME_LENGHT 32
+#define NET_PASSWORD_LENGHT 64
 
 namespace net
 {
