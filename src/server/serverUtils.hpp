@@ -224,23 +224,11 @@ namespace net
         int bindServer(int serverSocketFD, struct sockaddr_in *serverAddress);
 
         /*
-         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.4
+         * This function gets the database credentials and the establishes connection. Returns 0 on success, 1 for errors.
          *   - It allocates memory for the 'database' object class using the new operator (memory release is handled automatically)
          *   - It allocates memory for the 'user' object class using the new operator (memory release is handled automatically)
          */
         int database_easy_init(void);
-
-        // This function retrieves the "user" table from the database
-        void SQLfetchUserTable(void);
-
-        // This function retrieves the "file" table from the database
-        void SQLfetchFileTable(void);
-
-        /**
-         * @brief This function adds the files uploaded to the Server.
-         * @return Returns 0 on success, 1 for errors.
-         */
-        int addToFileTable(const char *fileName, const int fileSize);
 
         // This function accepts client connections.
         bool acceptConnection(const int serverSocketFD, class acceptedSocket &acceptedSocket);
@@ -315,7 +303,7 @@ namespace net
      * 
      * @return Returns 0 on success, 1 for errors.
      */
-    template <typename T> int INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol);
+    int INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol);
 
 };
 

@@ -217,6 +217,18 @@ namespace net
              */
             void buildIndexHTML(void);
 
+            // This function retrieves the "user" table from the database
+            void SQLfetchUserTable(void);
+
+            // This function retrieves the "file" table from the database
+            void SQLfetchFileTable(void);
+
+            /**
+             * @brief This function adds the files uploaded to the Server.
+             * @return Returns 0 on success, 1 for errors.
+             */
+            int addToFileTable(const char *fileName, const int fileSize);
+
             ~User();
         };
     };

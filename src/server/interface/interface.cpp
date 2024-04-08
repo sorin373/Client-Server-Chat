@@ -270,6 +270,148 @@ void User::buildIndexHTML(void)
     index_html.close();
 }
 
+void User::SQLfetchUserTable(void)
+{
+    clearUserCredentials();
+
+    sql::Statement *stmt = nullptr;
+    sql::ResultSet *res = nullptr;
+
+    stmt = server->getSQLdatabase()->getCon()->createStatement();
+    res = stmt->executeQuery("SELECT * FROM user");
+
+    while (res->next())
+    {
+        int id = res->getInt("id");
+
+        sql::SQLString sqlstr;
+
+        sqlstr = res->getString("username");
+        char *username = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(username, sqlstr.asStdString().c_str());
+
+        sqlstr = res->getString("password");
+        char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(password, sqlstr.asStdString().c_str());
+
+        User::userCredentials t_uc(username, password, id); // create an obj which we are pushing into the vector
+
+        addToUserCredentials(t_uc);
+
+        free(username);
+        free(password);
+    }
+
+    res->close();
+    stmt->close();
+
+    delete res;
+    delete stmt;
+}
+
+void User::SQLfetchFileTable(void)
+{
+    clearUserFiles();
+
+    sql::Statement *stmt = nullptr;
+    sql::ResultSet *res = nullptr;
+
+    std::string SQLquery = "SELECT * FROM file WHERE user_id=" + std::to_string(getSessionID());
+
+    stmt = server->getSQLdatabase()->getCon()->createStatement();
+    res = stmt->executeQuery(SQLquery);
+
+    while (res->next())
+    {
+        int userID = res->getInt("user_id");
+        int fileID = res->getInt("file_id");
+        int fileSize = res->getInt("size");
+        int downloads = res->getInt("no_of_downloads");
+
+        sql::SQLString sqlstr;
+        sqlstr = res->getString("name");
+        char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(fileName, sqlstr.asStdString().c_str());
+
+        User::userFiles t_uf(fileName, userID, fileID, fileSize, downloads);
+
+        addToUserFiles(t_uf);
+
+        free(fileName);
+    }
+
+    res->close();
+    stmt->close();
+
+    delete res;
+    delete stmt;
+}
+
+int User::addToFileTable(const char *fileName, const int fileSize)
+{
+    bool found = false;
+
+    for (const interface::User::userFiles &t_uf : uf)
+        if (strcmp(t_uf.getFileName(), fileName) == 0)
+        {
+            found = true;
+            break;
+        }
+
+    if (found) return EXIT_SUCCESS;
+
+    int maxID = 0;
+
+    sql::Statement *stmt = nullptr;
+    sql::ResultSet *res = nullptr;
+
+    stmt = server->getSQLdatabase()->getCon()->createStatement();
+    res = stmt->executeQuery("SELECT file_id FROM file");
+
+    while (res->next())
+    {
+        int fileID = res->getInt("file_id");
+
+        if (fileID > maxID) maxID = fileID;
+    }
+
+    delete stmt;
+    delete res;
+
+    try
+    {
+        std::string tableName = "file";
+        std::string query = "INSERT INTO " + tableName + " (user_id, file_id, name, size, no_of_downloads) VALUES (?, ?, ?, ?, ?)";
+
+        sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
+
+        prepStmt->setInt(1, getSessionID());
+        prepStmt->setInt(2, maxID + 1);
+        prepStmt->setString(3, std::string(fileName));
+        prepStmt->setInt(4, fileSize);
+        prepStmt->setInt(5, 0);
+
+        prepStmt->executeUpdate();
+
+        delete prepStmt;
+    }
+    catch (sql::SQLException &e)
+    {
+        std::cerr << "\n"
+                  << "Error code: " << e.getErrorCode() << "\n"
+                  << "Error message: " << e.what() << "\n"
+                  << "SQLState: " << e.getSQLState() << "\n";
+
+        return EXIT_FAILURE;
+    }
+
+    SQLfetchFileTable();
+
+    buildIndexHTML();
+
+    return EXIT_SUCCESS;
+}
+
 bool User::validateCredentials(const char username[], const char password[])
 {
     for (auto &t_uc : uc)
@@ -347,7 +489,7 @@ int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
         return EXIT_FAILURE;
     }
 
-    server->SQLfetchFileTable();
+    SQLfetchFileTable();
 
     buildIndexHTML();
 
@@ -523,7 +665,7 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     delete prepStmt;
 
     // Fetch the User table containg the updated data
-    server->SQLfetchUserTable();
+    SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
@@ -626,7 +768,7 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     delete prepStmt;
 
     // Fetch the User table containg the updated data
-    server->SQLfetchUserTable();
+    SQLfetchUserTable();
 
     if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
     {
@@ -679,8 +821,8 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
 
     delete prepStmt;
 
-    server->SQLfetchFileTable();
-    server->getUser()->buildIndexHTML();
+    SQLfetchFileTable();
+    buildIndexHTML();
 
     // Using the file name remove the file from local storage
     std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;

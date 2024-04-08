@@ -1,11 +1,3 @@
-/**
- * 
- * @file deleteFileRequest.js
- * 
- * @brief This JS script creates an HTTP POST request through which the fileID, that needs to be deleted from the database, is sent.
- * 
- */
-
 document.addEventListener('DOMContentLoaded', () => {
     const table = document.querySelector('table');
 

@@ -2,7 +2,7 @@
 #include "interface/interface.hpp"
 
 #ifndef serverUtils_hpp
-#include "serverUtils.hpp"
+    #include "serverUtils.hpp"
 #endif
 
 #include <iostream>
@@ -568,7 +568,7 @@ void Server<T>::postRecv(const int acceptedSocketFD)
     {
         formatFile(file);
 
-        addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
+        user->addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
 
         user->clearFileInQueue();
 
@@ -747,152 +747,6 @@ class interface::User *Server<T>::getUser(void) const noexcept
 }
 
 template <typename T>
-void Server<T>::SQLfetchUserTable(void)
-{
-    user->clearUserCredentials();
-
-    sql::Statement *stmt = nullptr;
-    sql::ResultSet *res = nullptr;
-
-    stmt = db->getCon()->createStatement();
-    res = stmt->executeQuery("SELECT * FROM user");
-
-    while (res->next())
-    {
-        int id = res->getInt("id");
-
-        sql::SQLString sqlstr;
-
-        sqlstr = res->getString("username");
-        char *username = (char *)malloc(sqlstr.asStdString().length() + 1);
-        strcpy(username, sqlstr.asStdString().c_str());
-
-        sqlstr = res->getString("password");
-        char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
-        strcpy(password, sqlstr.asStdString().c_str());
-
-        User::userCredentials t_uc(username, password, id); // create an obj which we are pushing into the vector
-
-        user->addToUserCredentials(t_uc);
-
-        free(username);
-        free(password);
-    }
-
-    res->close();
-    stmt->close();
-
-    delete res;
-    delete stmt;
-}
-
-template <typename T>
-void Server<T>::SQLfetchFileTable(void)
-{
-    user->clearUserFiles();
-
-    sql::Statement *stmt = nullptr;
-    sql::ResultSet *res = nullptr;
-
-    std::string SQLquery = "SELECT * FROM file WHERE user_id=" + std::to_string(user->getSessionID());
-
-    stmt = db->getCon()->createStatement();
-    res = stmt->executeQuery(SQLquery);
-
-    while (res->next())
-    {
-        int userID = res->getInt("user_id");
-        int fileID = res->getInt("file_id");
-        int fileSize = res->getInt("size");
-        int downloads = res->getInt("no_of_downloads");
-
-        sql::SQLString sqlstr;
-        sqlstr = res->getString("name");
-        char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
-        strcpy(fileName, sqlstr.asStdString().c_str());
-
-        User::userFiles t_uf(fileName, userID, fileID, fileSize, downloads);
-
-        user->addToUserFiles(t_uf);
-
-        free(fileName);
-    }
-
-    res->close();
-    stmt->close();
-
-    delete res;
-    delete stmt;
-}
-
-template <typename T>
-int Server<T>::addToFileTable(const char *fileName, const int fileSize)
-{
-    bool found = false;
-    std::vector<class User::userFiles> __userFiles = user->getUserFiles();
-
-    for (const auto &__uf : __userFiles)
-        if (strcmp(__uf.getFileName(), fileName) == 0)
-        {
-            found = true;
-            break;
-        }
-
-    if (found) return EXIT_SUCCESS;
-
-    int maxID = 0;
-
-    sql::Statement *stmt = nullptr;
-    sql::ResultSet *res = nullptr;
-
-    stmt = db->getCon()->createStatement();
-    res = stmt->executeQuery("SELECT file_id FROM file");
-
-    while (res->next())
-    {
-        int fileID = res->getInt("file_id");
-
-        if (fileID > maxID) maxID = fileID;
-    }
-
-    delete stmt;
-    delete res;
-
-    try
-    {
-        std::string tableName = "file";
-        std::string query = "INSERT INTO " + tableName + " (user_id, file_id, name, size, no_of_downloads) VALUES (?, ?, ?, ?, ?)";
-
-        sql::PreparedStatement *prepStmt = db->getCon()->prepareStatement(query);
-
-        prepStmt->setInt(1, user->getSessionID());
-        prepStmt->setInt(2, maxID + 1);
-        prepStmt->setString(3, std::string(fileName));
-        prepStmt->setInt(4, fileSize);
-        prepStmt->setInt(5, 0);
-
-        prepStmt->executeUpdate();
-
-        delete prepStmt;
-    }
-    catch (sql::SQLException &e)
-    {
-        std::cerr << "\n"
-                  << "Error code: " << e.getErrorCode() << "\n"
-                  << "Error message: " << e.what() << "\n"
-                  << "SQLState: " << e.getSQLState() << "\n";
-
-        return EXIT_FAILURE;
-    }
-
-    SQLfetchFileTable();
-
-    user->buildIndexHTML();
-
-    return EXIT_SUCCESS;
-}
-
-template <typename T>
 int Server<T>::database_easy_init(void)
 {
     if (db != nullptr)
@@ -1010,7 +864,7 @@ int Server<T>::database_easy_init(void)
     free(password);
     free(database);
 
-    SQLfetchUserTable();
+    user->SQLfetchUserTable();
 
     return EXIT_SUCCESS;
 }
@@ -1065,7 +919,6 @@ int Server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
     return acceptedSocketFD;
 }
 
-template <typename T>
 int net::INIT(int argc, char *argv[], int addressFamily, int socketType, int protocol)
 {
     int port = 0;
@@ -1087,7 +940,7 @@ int net::INIT(int argc, char *argv[], int addressFamily, int socketType, int pro
         return EXIT_FAILURE;
     }
 
-    server = new Server<T>();
+    server = new Server<char>();
 
     if (server->database_easy_init() == EXIT_FAILURE)
     {
