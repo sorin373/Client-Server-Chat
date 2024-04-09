@@ -1,6 +1,4 @@
 #include "interface.hpp"
-
-#include "../serverUtils.hpp"
 #include "../global.hpp"
 
 #include <iostream>
@@ -80,11 +78,19 @@ void User::resetSessionID(void) noexcept
 
 void User::clearUserCredentials(void) noexcept
 {
+    for (userCredentials  &t_uc : uc)
+    {
+        free(t_uc.getUsername());
+        free(t_uc.getPassword());
+    }
+
     uc.clear();
 }
 
 void User::clearUserFiles(void) noexcept
 {
+    for (userFiles &t_uf : uf) free(t_uf.getFileName());
+
     uf.clear();
 }
 
@@ -200,7 +206,7 @@ void User::buildIndexHTML(void)
                                             <tr>
                                                 <th scope="col">#</th>
                                                 <th scope="col">File Name</th>
-                                                <th scope="col">File Size</th>
+                                                <th scope="col">File Size(mb)</th>
                                                 <th scope="col">Downloads</th>
                                                 <th scope="col" style="width: 85px;"></th>
                                             </tr>
@@ -249,10 +255,22 @@ void User::buildIndexHTML(void)
         </table>
         </div>
 
-        <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data"">
-            <input type="file" name="filename">
-            <input type="submit" class="btn btn-primary">
+        <form action="/addFile" method="post" id="addFileForm" enctype="multipart/form-data">
+        <label for="file-upload-btn" id="file-upload">Select a file</label>
+        <input id="file-upload-btn" type="file" name="filename" onchange="displayFileName(this) ">
+        <br>
+        <label id="file-name-label">No file selected</label>
+        <br>
+        <input type="submit" class="btn btn-primary" value="Upload">
         </form>
+        
+        <script>
+            function displayFileName(input) {
+                var fileName = input.files[0].name;
+                var fileNameLabel = document.getElementById('file-name-label');
+                fileNameLabel.innerText = fileName;
+            }
+        </script>
 
         </div>
 
@@ -414,7 +432,7 @@ int User::addToFileTable(const char *fileName, const int fileSize)
 
 bool User::validateCredentials(const char username[], const char password[])
 {
-    for (auto &t_uc : uc)
+    for (userCredentials &t_uc : uc)
         if (strcmp(username, t_uc.getUsername()) == 0 && strcmp(password, t_uc.getPassword()) == 0)
         {
             this->SESSION_ID = t_uc.getId();
@@ -426,7 +444,7 @@ bool User::validateCredentials(const char username[], const char password[])
 
 bool User::findUsername(const char username[])
 {
-    for (auto &t_uc : uc)
+    for (userCredentials &t_uc : uc)
         if (strcmp(username, t_uc.getUsername()) == 0) return true;
 
     return false;
@@ -848,8 +866,7 @@ User::~User()
 
     uc.clear();
 
-    for (userFiles &t_uf : uf)
-        free(t_uf.getFileName());
+    for (userFiles &t_uf : uf) free(t_uf.getFileName());
 
     uf.clear();
 }

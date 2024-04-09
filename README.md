@@ -111,11 +111,10 @@ sudo apt-get install libmysqlcppconn-dev
         std::smatch match;
 
         // searches in the string 't_buffer' for matches
-        if (std::regex_search(t_buffer, match, fileNameRegex))
-            fileName = match.str(1);
+        if (std::regex_search(t_buffer, match, fileNameRegex)) fileName = match.str(1);
 
         // Variable used to generate unique name for files which do not have a valid file name
-        fileCount++; 
+        fileCount++;
 
         if (fileName.length() > 40)
         {
@@ -135,14 +134,12 @@ sudo apt-get install libmysqlcppconn-dev
             fileName = newName;
         }
         else
-        {   
+        {
             // Replacing spaces with underlines
-            for (unsigned int i = 0, n = fileName.length(); i < n; i++)
-                if (fileName[i] == ' ')
-                    fileName[i] = '_';
+            for (unsigned int i = 0, n = fileName.length(); i < n; i++) if (fileName[i] == ' ') fileName[i] = '_';
         }
-        
-        // Adds the new file in a queue to be inserted in the database
+
+        // Adds the new file in the queue to be inserted in the database
         addFileInQueue(fileName);
     }
     ```
@@ -183,8 +180,7 @@ sudo apt-get install libmysqlcppconn-dev
     outFile.close();
 
     // Remove 'temp.bin'
-    if (remove(BINARY_FILE_TEMP_PATH) != 0)
-        std::cerr << "Failed to removed temp.bin!\n";
+    if (remove(BINARY_FILE_TEMP_PATH) != 0) std::cerr << "Failed to remove: " << BINARY_FILE_TEMP_PATH << "\n";
     ```
 
 ## Delete files
@@ -197,13 +193,12 @@ sudo apt-get install libmysqlcppconn-dev
     std::string query = "SELECT name FROM file WHERE file_id=(?)";
     sql::ResultSet *res = nullptr;
 
-    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, fileID);
     res = prepStmt->executeQuery();
 
-    while (res->next())
-        std::string fileName = res->getString("name");
+    while (res->next()) std::string fileName = res->getString("name");
 
     delete res;
     delete prepStmt;
@@ -211,15 +206,15 @@ sudo apt-get install libmysqlcppconn-dev
     // Delete the file from the database using the file ID
     std::string deleteQuery = "DELETE FROM file WHERE file_id=(?)";
 
-    prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
+    prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
 
     prepStmt->setInt(1, fileID);
     prepStmt->executeUpdate();
 
     delete prepStmt;
 
-    __server->SQLfetchFileTable();
-    __server->getUser()->buildIndexHTML();
+    SQLfetchFileTable();
+    buildIndexHTML();
 
     // Using the file name remove the file from local storage
     std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;
@@ -259,8 +254,8 @@ sudo apt-get install libmysqlcppconn-dev
     }
 
     // Prepare query to insert the new account information
-    std::string query = "INSERT INTO user VALUES (?, ?, ?)";
-    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    std::string query = "INSERT INTO User VALUES (?, ?, ?)";
+    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, uc.size());
     prepStmt->setString(3, std::string(password));
@@ -271,15 +266,8 @@ sudo apt-get install libmysqlcppconn-dev
 
     delete prepStmt;
 
-    // Fetch the user table containg the updated data
-    __server->SQLfetchUserTable();
-
-    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
-    {
-        std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send response.\n";
-        return EXIT_FAILURE;
-    }
+    // Fetch the User table containg the updated data
+    SQLfetchUserTable();
     ```
 
 ## Change password
@@ -315,9 +303,9 @@ If these fields contain valid pieces of data, the new user account's password wi
         return EXIT_SUCCESS;
     }
 
-    // Prepare query to update the user
-    std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
-    sql::PreparedStatement *prepStmt = __server->getSQLdatabase()->getCon()->prepareStatement(query);
+    // Prepare query to update the User
+    std::string query = "UPDATE User SET password=(?) WHERE username=(?)";
+    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));
     prepStmt->setString(2, std::string(username));
@@ -327,15 +315,8 @@ If these fields contain valid pieces of data, the new user account's password wi
 
     delete prepStmt;
 
-    // Fetch the user table containg the updated data
-    __server->SQLfetchUserTable();
-
-    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
-    {
-        std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send response.\n";
-        return EXIT_FAILURE;
-    }
+    // Fetch the User table containg the updated data
+    SQLfetchUserTable();
     ```
 
 <hr>
