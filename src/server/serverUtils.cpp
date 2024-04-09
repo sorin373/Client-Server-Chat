@@ -74,25 +74,25 @@ Server<T>::db::db_cred::db_cred(const char *hostname, const char *username, cons
 template <typename T>
 char *Server<T>::db::db_cred::getHostname(void) const noexcept
 {
-    return const_cast<char *>(hostname);
+    return hostname;
 }
 
 template <typename T>
 char *Server<T>::db::db_cred::getUsername(void) const noexcept
 {
-    return const_cast<char *>(username);
+    return username;
 }
 
 template <typename T>
 char *Server<T>::db::db_cred::getPassword(void) const noexcept
 {
-    return const_cast<char *>(password);
+    return password;
 }
 
 template <typename T>
 char *Server<T>::db::db_cred::getDatabase(void) const noexcept
 {
-    return const_cast<char *>(database);
+    return database;
 }
 
 template <typename T>
@@ -568,7 +568,7 @@ void Server<T>::postRecv(const int acceptedSocketFD)
     {
         formatFile(file);
 
-        user->addToFileTable(file.c_str(), TOTAL_BYTES_RECV);
+        user->addToFileTable(file.c_str(), TOTAL_BYTES_RECV / 1000000);
 
         user->clearFileInQueue();
 
