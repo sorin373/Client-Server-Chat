@@ -329,7 +329,7 @@ If these fields contain valid pieces of data, the new user account's password wi
 
 # MySql-Database
 
-![img](/assets/ERD.png)
+![img](/assets/erd.png)
 
 - The `httpServer` database contains two tables: the `file` table and the `user` table.
 - The relationship between the tables is `One-to-Many`.
