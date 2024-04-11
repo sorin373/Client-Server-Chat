@@ -68,17 +68,17 @@ namespace net
             class userFiles
             {
             private:
-                char *fileName;
-                int userID, fileID, fileSize, noDownloads;
+                char *fileName, *date;
+                int userID, fileID, fileSize;
 
             public:
-                userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const int noDownloads);
+                userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const char *date);
 
                 char *getFileName(void) const noexcept;
                 int getUserID(void) const noexcept;
                 int getFileID(void) const noexcept;
                 int getFileSize(void) const noexcept;
-                int getNoDownloads(void) const noexcept;
+                char *getDate(void) const noexcept;
 
                 ~userFiles() = default;
             };
