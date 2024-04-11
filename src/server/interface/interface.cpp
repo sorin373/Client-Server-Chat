@@ -89,7 +89,11 @@ void User::clearUserCredentials(void) noexcept
 
 void User::clearUserFiles(void) noexcept
 {
-    for (userFiles &t_uf : uf) free(t_uf.getFileName());
+    for (userFiles &t_uf : uf) 
+    {
+        free(t_uf.getFileName());
+        free(t_uf.getDate());
+    }   
 
     uf.clear();
 }
@@ -116,13 +120,13 @@ void User::addFileInQueue(const std::string fileName) noexcept
 
 /* UserFiles table */
 
-User::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const int noDownloads)
+User::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const char *date)
 {
     this->fileName = strdup(fileName);
     this->userID = userID;
     this->fileID = fileID;
     this->fileSize = fileSize;
-    this->noDownloads = noDownloads;
+    this->date = strdup(date);
 }
 
 char *User::userFiles::getFileName(void) const noexcept
@@ -145,9 +149,9 @@ int User::userFiles::getFileSize(void) const noexcept
     return fileSize;
 }
 
-int User::userFiles::getNoDownloads(void) const noexcept
+char *User::userFiles::getDate(void) const noexcept
 {
-    return noDownloads;
+    return date;
 }
 
 void User::buildIndexHTML(void)
@@ -207,7 +211,7 @@ void User::buildIndexHTML(void)
                                                 <th scope="col">#</th>
                                                 <th scope="col">File Name</th>
                                                 <th scope="col">File Size(mb)</th>
-                                                <th scope="col">Downloads</th>
+                                                <th scope="col">Upload Date</th>
                                                 <th scope="col" style="width: 85px;"></th>
                                             </tr>
                                         </thead>
@@ -225,7 +229,7 @@ void User::buildIndexHTML(void)
         std::string th1 = "<tr><th scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getFileID()) + "</th>";
         std::string th2 = "<th scope=\"row\">" + std::string(uf[i].getFileName()) + "</th>";
         std::string th3 = "<th scope=\"row\">" + std::to_string(uf[i].getFileSize()) + "</th>";
-        std::string th4 = "<th scope=\"row\">" + std::to_string(uf[i].getNoDownloads()) + "</th>";
+        std::string th4 = "<th scope=\"row\">" + std::string(uf[i].getDate()) + "</th>";
 
         std::string td = R"(<td class="td-btn right-column">
                             <button type="button" class="delete-btn">
@@ -344,18 +348,23 @@ void User::SQLfetchFileTable(void)
         int userID = res->getInt("user_id");
         int fileID = res->getInt("file_id");
         int fileSize = res->getInt("size");
-        int downloads = res->getInt("no_of_downloads");
+        std::string date = res->getString("date");
 
         sql::SQLString sqlstr;
         sqlstr = res->getString("name");
         char *fileName = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(fileName, sqlstr.asStdString().c_str());
 
-        User::userFiles t_uf(fileName, userID, fileID, fileSize, downloads);
+        sqlstr = res->getString("date");
+        char *t_date = (char *)malloc(sqlstr.asStdString().length() + 1);
+        strcpy(t_date, sqlstr.asStdString().c_str());
+
+        User::userFiles t_uf(fileName, userID, fileID, fileSize, t_date);
 
         addToUserFiles(t_uf);
 
         free(fileName);
+        free(t_date);
     }
 
     res->close();
@@ -393,13 +402,28 @@ int User::addToFileTable(const char *fileName, const int fileSize)
         if (fileID > maxID) maxID = fileID;
     }
 
+    stmt->close();
+    res->close();
+
+    delete stmt;
+    delete res;
+
+    stmt = server->getSQLdatabase()->getCon()->createStatement();
+    res = stmt->executeQuery("SELECT sysdate() As date FROM dual");
+
+    res->next();
+
+    std::string date = res->getString("date");
+
+    stmt->close();
+    res->close();
+
     delete stmt;
     delete res;
 
     try
     {
-        std::string tableName = "file";
-        std::string query = "INSERT INTO " + tableName + " (user_id, file_id, name, size, no_of_downloads) VALUES (?, ?, ?, ?, ?)";
+        std::string query = "INSERT INTO file (user_id, file_id, name, size, date) VALUES (?, ?, ?, ?, ?)";
 
         sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
@@ -407,9 +431,11 @@ int User::addToFileTable(const char *fileName, const int fileSize)
         prepStmt->setInt(2, maxID + 1);
         prepStmt->setString(3, std::string(fileName));
         prepStmt->setInt(4, fileSize);
-        prepStmt->setInt(5, 0);
+        prepStmt->setString(5, date);
 
         prepStmt->executeUpdate();
+
+        prepStmt->close();
 
         delete prepStmt;
     }
@@ -773,7 +799,7 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     }
 
     // Prepare query to insert the new account information
-    std::string query = "INSERT INTO User VALUES (?, ?, ?)";
+    std::string query = "INSERT INTO user VALUES (?, ?, ?)";
     sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setInt(1, uc.size());
@@ -866,7 +892,11 @@ User::~User()
 
     uc.clear();
 
-    for (userFiles &t_uf : uf) free(t_uf.getFileName());
+    for (userFiles &t_uf : uf) 
+    {
+        free(t_uf.getFileName());
+        free(t_uf.getDate());
+    }
 
     uf.clear();
 }
