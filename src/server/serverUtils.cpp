@@ -442,7 +442,9 @@ int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
 
     if (ptr == NULL)
     {
-        strcpy(copyBuffer, charBuffer);
+        strncpy(copyBuffer, charBuffer, bytesReceived);
+        copyBuffer[bytesReceived] = '\0';
+
         ptr = strstr(copyBuffer, "POST");
     }
 
@@ -585,7 +587,7 @@ void Server<T>::receivedDataHandler(const class acceptedSocket socket)
             if (DEBUG_FLAG)
                 std::cerr << "\n"
                           << std::setw(5) << " "
-                          << "--> Receive failed: "
+                          << "--> Receive failed (R_01): "
                           << socket.getError() << "\n";
 
             postRecv(acceptedSocketFD);
@@ -643,7 +645,7 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
         }
         else if (activity == -1)
         {
-            perror("select");
+            perror("Something went wrong!");
             break;
         }
         else continue;
@@ -668,7 +670,7 @@ void Server<T>::consoleListener(std::atomic<bool> &server_running)
         if (strcasecmp(input, "exit") == 0)
         {
             std::cout << std::setw(5) << " "
-                      << "Shutting down...\n";
+                      << "--> \nShutting down...\n";
 
             haltServer();
 

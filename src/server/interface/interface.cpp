@@ -205,11 +205,11 @@ void User::buildIndexHTML(void)
                         <body>
                             <div class="main-container">
                                 <div class="title-container">
-                                    <input type="text" id="inputSearch" autofocus onkeyup="search() " placeholder="Search for files..">
+                                    <input type="text" id="inputSearch" autofocus onkeyup="search() " placeholder="Search file">
                                     <a class="btn btn-primary ext-ref" href="login.html">Logout</a>
                                 </div>
                                 <div class="container">
-                                    <table class="table" style="margin: auto;">
+                                    <table id="tableID" class="table" style="margin: auto;">
                                         <thead>
                                             <tr>
                                                 <th scope="col">#</th>
@@ -728,7 +728,7 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     }
 
     // Prepare query to update the User
-    std::string query = "UPDATE User SET password=(?) WHERE username=(?)";
+    std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
     sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));

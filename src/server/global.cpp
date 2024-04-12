@@ -4,7 +4,6 @@
 #include <cstring>
 #include <iomanip>
 #include <termios.h>
-#include <unistd.h>
 
 net::Server<char> *server = nullptr;
 

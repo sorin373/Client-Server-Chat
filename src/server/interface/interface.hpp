@@ -102,6 +102,11 @@ namespace net
              * @return Returns true on success and false if the user credentials are not valid.
              */
             bool validateCredentials(const char username[], const char password[]);
+
+            /**
+             * @brief This function searches for a username if it has already been used.
+             * @return Returns true on success and false if the username is not found.
+             */
             bool findUsername(const char username[]);
 
         public:
