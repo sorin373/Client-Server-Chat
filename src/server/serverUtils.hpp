@@ -65,13 +65,13 @@ namespace net
         class node
         {
         private:
-            char *pageName;
+            char *ignore_item;
 
         public:
             node *next, *prev;
 
-            node(const char *pageName);
-            char *getPageName(void) const noexcept;
+            node(const char *ignore_item);
+            char *getIgnoreItem(void) const noexcept;
             ~node();
         };
 
@@ -83,7 +83,7 @@ namespace net
         node *getHead(void) const noexcept;
         node *getTail(void) const noexcept;
 
-        void fetchPages(const char *pageName);
+        inline void fetchIgnoreItems(const char *ignore_item);
 
         ~Ignore();
     };

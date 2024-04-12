@@ -69,15 +69,16 @@ namespace net
             {
             private:
                 char *fileName, *date;
-                int userID, fileID, fileSize;
+                int userID, fileID;
+                double fileSize;
 
             public:
-                userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const char *date);
+                userFiles(const char *fileName, const int userID, const int fileID, const double fileSize, const char *date);
 
                 char *getFileName(void) const noexcept;
                 int getUserID(void) const noexcept;
                 int getFileID(void) const noexcept;
-                int getFileSize(void) const noexcept;
+                double getFileSize(void) const noexcept;
                 char *getDate(void) const noexcept;
 
                 ~userFiles() = default;
@@ -101,10 +102,18 @@ namespace net
              * @return Returns true on success and false if the user credentials are not valid.
              */
             bool validateCredentials(const char username[], const char password[]);
+
+            /**
+             * @brief This function searches for a username if it has already been used.
+             * @return Returns true on success and false if the username is not found.
+             */
             bool findUsername(const char username[]);
 
         public:
             User();
+
+            template <typename T>
+            int routeManager(T *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
 
             // This function retrieves a vector where the user credentials are stored
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;
@@ -227,7 +236,7 @@ namespace net
              * @brief This function adds the files uploaded to the Server.
              * @return Returns 0 on success, 1 for errors.
              */
-            int addToFileTable(const char *fileName, const int fileSize);
+            int addToFileTable(const char *fileName, const double fileSize);
 
             ~User();
         };

@@ -13,6 +13,9 @@
 using namespace net;
 using namespace net::interface;
 
+// Explicit instantiation
+template int User::routeManager<char>(char *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
+
 User::userCredentials::userCredentials(const char *username, const char *password, const int id)
 {
     this->username = strdup(username);
@@ -120,7 +123,7 @@ void User::addFileInQueue(const std::string fileName) noexcept
 
 /* UserFiles table */
 
-User::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const char *date)
+User::userFiles::userFiles(const char *fileName, const int userID, const int fileID, const double fileSize, const char *date)
 {
     this->fileName = strdup(fileName);
     this->userID = userID;
@@ -144,7 +147,7 @@ int User::userFiles::getFileID(void) const noexcept
     return fileID;
 }
 
-int User::userFiles::getFileSize(void) const noexcept
+double User::userFiles::getFileSize(void) const noexcept
 {
     return fileSize;
 }
@@ -183,6 +186,7 @@ void User::buildIndexHTML(void)
                             <link href="static/stylesheet/index.css" rel="stylesheet"/>
                             <script src="static/javascript/deleteFileRequest.js"></script>
                             <script src="static/javascript/addFileRequest.js"></script>
+                            <script src="static/javascript/search.js"></script>
 
                             <style>
                                 a {
@@ -201,11 +205,11 @@ void User::buildIndexHTML(void)
                         <body>
                             <div class="main-container">
                                 <div class="title-container">
-                                    <p>http-Server</p>
+                                    <input type="text" id="inputSearch" autofocus onkeyup="search() " placeholder="Search file">
                                     <a class="btn btn-primary ext-ref" href="login.html">Logout</a>
                                 </div>
                                 <div class="container">
-                                    <table class="table" style="margin: auto;">
+                                    <table id="tableID" class="table" style="margin: auto;">
                                         <thead>
                                             <tr>
                                                 <th scope="col">#</th>
@@ -226,10 +230,10 @@ void User::buildIndexHTML(void)
     {
         strcpy(fileName, uf[i].getFileName());
 
-        std::string th1 = "<tr><th scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getFileID()) + "</th>";
-        std::string th2 = "<th scope=\"row\">" + std::string(uf[i].getFileName()) + "</th>";
-        std::string th3 = "<th scope=\"row\">" + std::to_string(uf[i].getFileSize()) + "</th>";
-        std::string th4 = "<th scope=\"row\">" + std::string(uf[i].getDate()) + "</th>";
+        std::string td1 = "<tr><td scope=\"row\" class=\"left-column\">" + std::to_string(uf[i].getFileID()) + "</td>";
+        std::string td2 = "<td scope=\"row\">" + std::string(uf[i].getFileName()) + "</td>";
+        std::string td3 = "<td scope=\"row\">" + std::to_string(uf[i].getFileSize()) + "</td>";
+        std::string td4 = "<td scope=\"row\">" + std::string(uf[i].getDate()) + "</td>";
 
         std::string td = R"(<td class="td-btn right-column">
                             <button type="button" class="delete-btn">
@@ -249,7 +253,7 @@ void User::buildIndexHTML(void)
                                 </svg>
                             </a></td></tr>)";
 
-        std::string HTMLcontent = th1 + th2 + th3 + th4 + td;
+        std::string HTMLcontent = td1 + td2 + td3 + td4 + td;
 
         index_html << HTMLcontent;
     }
@@ -347,7 +351,7 @@ void User::SQLfetchFileTable(void)
     {
         int userID = res->getInt("user_id");
         int fileID = res->getInt("file_id");
-        int fileSize = res->getInt("size");
+        double fileSize = res->getDouble("size");
         std::string date = res->getString("date");
 
         sql::SQLString sqlstr;
@@ -374,7 +378,7 @@ void User::SQLfetchFileTable(void)
     delete stmt;
 }
 
-int User::addToFileTable(const char *fileName, const int fileSize)
+int User::addToFileTable(const char *fileName, const double fileSize)
 {
     bool found = false;
 
@@ -430,7 +434,7 @@ int User::addToFileTable(const char *fileName, const int fileSize)
         prepStmt->setInt(1, getSessionID());
         prepStmt->setInt(2, maxID + 1);
         prepStmt->setString(3, std::string(fileName));
-        prepStmt->setInt(4, fileSize);
+        prepStmt->setDouble(4, fileSize);
         prepStmt->setString(5, date);
 
         prepStmt->executeUpdate();
@@ -474,6 +478,34 @@ bool User::findUsername(const char username[])
         if (strcmp(username, t_uc.getUsername()) == 0) return true;
 
     return false;
+}
+
+template <typename T>
+int User::routeManager(T *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived)
+{  
+    char *charBuffer = reinterpret_cast<char *>(buffer);
+
+    if (findString(route, "/userlogin"))
+        if (loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
+
+    if (findString(route, "/addFile"))
+    {
+        // uint8_t used, because strict byte-level representation is needed
+        uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer); 
+
+        if (addFilesRoute(charBuffer, byteBuffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE) return EXIT_FAILURE;
+    }
+        
+    if (findString(route, "/change_password"))
+        if (changePasswordRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
+
+    if (findString(route, "/create_account"))
+        if (createAccountRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
+
+    if (findString(route, "/delete_file"))
+        if (deleteFileRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
 }
 
 int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
@@ -551,12 +583,11 @@ int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
     {
         fileName.clear();
 
-        const std::string t_buffer = std::string(buffer);
-
-        // define the pattern
         std::regex fileNameRegex(R"(filename=\"([^\"]+)\")");
         std::smatch match;
 
+        const std::string t_buffer = std::string(buffer);
+        
         // searches in the string 't_buffer' for matches
         if (std::regex_search(t_buffer, match, fileNameRegex)) fileName = match.str(1);
 
@@ -697,7 +728,7 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     }
 
     // Prepare query to update the User
-    std::string query = "UPDATE User SET password=(?) WHERE username=(?)";
+    std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
     sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));
