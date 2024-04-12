@@ -173,7 +173,7 @@ extern net::Server<char> *server;
 
 extern bool DEBUG_FLAG;
 
-extern long long unsigned int TOTAL_BYTES_RECV;
+extern double TOTAL_BYTES_RECV;
 
 /**
  * @brief This function searches for a substring.

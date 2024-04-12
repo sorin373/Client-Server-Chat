@@ -12,7 +12,7 @@ html {
 }
 
 ::selection {
-    background: rgb(143, 189, 255);
+    background: #1770f5;
     color: rgb(255, 255, 255);
 }
 .container {
@@ -20,7 +20,7 @@ html {
     height: fit-content;
     max-height: 400px;
     overflow-y: scroll;
-    margin-top: 5rem;
+    margin-top: 3.5rem;
     box-shadow: 0px 0px 15px rgb(171, 183, 197);
     padding: 0 !important;
 }
@@ -28,12 +28,12 @@ html {
 .title-container {
     width: 100%;
     background-color: #dfe4e9;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     text-align: center;
+    padding: .8rem;
 }
 
 .ext-ref {
@@ -62,7 +62,7 @@ html {
 }
 
 .title-container p {
-    font-size: 20pt;
+    font-size: 25pt;
     font-weight: 600;
     margin: 0.5rem;
     padding: 0rem;
@@ -92,13 +92,14 @@ table {
     max-width: 1400px;
     height: auto;
     max-height: 400px;
-    text-align: center;
+    text-align: left;
 }
 
 thead th {
     font-size: 17pt;
     font-weight: 400;
     color: rgb(66, 66, 66);
+    text-align: left;
 }
 
 #td-btn {
@@ -196,6 +197,23 @@ input[type="file"] {
     margin: 0;
 }
 
+#inputSearch {
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.25);
+    background-position: 10px 10px;
+    background-repeat: no-repeat;
+    width: 300px;
+    font-size: 16px;
+    padding: .5rem;
+    border: 1px solid #ddd;
+    margin-right: auto;
+    border-radius: 10px;
+    outline-color: #a8cdff;
+}
+
+#inputSearch:focus {
+    box-shadow: 0px 0px 10px rgb(167, 208, 255);
+}
+
 @media only screen and (max-width: 770px) {
     table {
         width: 100%;
@@ -242,5 +260,10 @@ input[type="file"] {
     
     table {
         max-width: 400px;
+    }
+
+    .title-container p {
+        font-size: 15pt;
+        padding: .5rem;
     }
 }

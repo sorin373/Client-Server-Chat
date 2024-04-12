@@ -69,15 +69,16 @@ namespace net
             {
             private:
                 char *fileName, *date;
-                int userID, fileID, fileSize;
+                int userID, fileID;
+                double fileSize;
 
             public:
-                userFiles(const char *fileName, const int userID, const int fileID, const int fileSize, const char *date);
+                userFiles(const char *fileName, const int userID, const int fileID, const double fileSize, const char *date);
 
                 char *getFileName(void) const noexcept;
                 int getUserID(void) const noexcept;
                 int getFileID(void) const noexcept;
-                int getFileSize(void) const noexcept;
+                double getFileSize(void) const noexcept;
                 char *getDate(void) const noexcept;
 
                 ~userFiles() = default;
@@ -105,6 +106,9 @@ namespace net
 
         public:
             User();
+
+            template <typename T>
+            int routeManager(T *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
 
             // This function retrieves a vector where the user credentials are stored
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;
@@ -227,7 +231,7 @@ namespace net
              * @brief This function adds the files uploaded to the Server.
              * @return Returns 0 on success, 1 for errors.
              */
-            int addToFileTable(const char *fileName, const int fileSize);
+            int addToFileTable(const char *fileName, const double fileSize);
 
             ~User();
         };

@@ -10,7 +10,7 @@ net::Server<char> *server = nullptr;
 
 bool DEBUG_FLAG = false;
 
-long long unsigned int TOTAL_BYTES_RECV = 0;
+double TOTAL_BYTES_RECV = 0;
 
 bool findString(const char haystack[], const char needle[])
 {

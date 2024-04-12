@@ -173,22 +173,22 @@ Server<T>::db::db_cred::~db_cred()
 
 /* ignore page */
 
-Ignore::node::node(const char *pageName)
+Ignore::node::node(const char *ignore_item)
 {
     this->next = nullptr;
     this->prev = nullptr;
-    this->pageName = strdup(pageName);
+    this->ignore_item = strdup(ignore_item);
 }
 
-char *Ignore::node::getPageName(void) const noexcept
+char *Ignore::node::getIgnoreItem(void) const noexcept
 {
-    return pageName;
+    return ignore_item;
 }
 
 Ignore::node::~node()
 {
-    free(this->pageName);
-    this->pageName = nullptr;
+    free(this->ignore_item);
+    this->ignore_item = nullptr;
 }
 
 Ignore::Ignore()
@@ -207,9 +207,9 @@ Ignore::node *Ignore::getTail(void) const noexcept
     return tail;
 }
 
-void Ignore::fetchPages(const char *pageName)
+inline void Ignore::fetchIgnoreItems(const char *ignore_item)
 {
-    node *newnode = new node(pageName);
+    node *newnode = new node(ignore_item);
 
     if (head == nullptr)
     {
@@ -259,7 +259,7 @@ inline int Server<T>::read_ignore_data(void)
     char line[256];
 
     while (file.getline(line, 256))
-        ignore.fetchPages(line);
+        ignore.fetchIgnoreItems(line);
 
     file.close();
 
@@ -289,7 +289,6 @@ bool changeRoute = false;
 template <typename T>
 int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived)
 {
-    uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer);
     char *charBuffer = reinterpret_cast<char *>(buffer);
 
     // Upon getting the initial buffer, it establishes the pathway for incoming data until 'changeRoute' is reset again.
@@ -310,33 +309,14 @@ int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
             }
 
         for (unsigned int i = 0, n = strlen(route); i < n; i++)
-            if (route[i] == ' ')
-                route[i] = '\0';
+            if (route[i] == ' ') route[i] = '\0';
 
         delete[] ptr;
 
         changeRoute = false;
     }
 
-    if (findString(route, "/userlogin"))
-        if (user->loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE)
-            return EXIT_FAILURE;
-
-    if (findString(route, "/addFile"))
-        if (user->addFilesRoute(buffer, byteBuffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE)
-            return EXIT_FAILURE;
-
-    if (findString(route, "/change_password"))
-        if (user->changePasswordRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
-            return EXIT_FAILURE;
-
-    if (findString(route, "/create_account"))
-        if (user->createAccountRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
-            return EXIT_FAILURE;
-
-    if (findString(route, "/delete_file"))
-        if (user->deleteFileRoute(buffer, acceptedSocketFD) == EXIT_FAILURE)
-            return EXIT_FAILURE;
+    if (user->routeManager<T>(buffer, route, acceptedSocketFD, bytesReceived) == EXIT_FAILURE) return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
@@ -379,15 +359,17 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
 
             for (Ignore::node *ptr = ignore.getHead(); ptr != nullptr; ptr = ptr->next)
             {
-                if (ptr->getPageName()[0] == '.')
-                    if (findString(path, ptr->getPageName()))
+                char *temp = ptr->getIgnoreItem();
+
+                if (temp[0] == '.')
+                    if (findString(path, temp))
                     {
                         use_default = false;
                         break;
                     }
 
                 if (use_default)
-                    if (strcmp(path, ptr->getPageName()) == 0)
+                    if (strcmp(path, ptr->getIgnoreItem()) == 0)
                     {
                         use_default = false;
                         break;
@@ -421,7 +403,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
     {
         if (DEBUG_FLAG)
             std::cerr << std::setw(5) << " "
-                      << "--> Encountered an error while attempting to open the file: " << path << '\n';
+                      << "--> Encountered an error while attempting to open the GET file (f_13)\n";
         return EXIT_FAILURE;
     }
 
@@ -438,7 +420,7 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
     if (send(acceptedSocketFD, response.str().c_str(), response.str().size(), 0) == -1)
     {
         std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send HTTP response.\n";
+                  << "--> Error 01: Failed to send HTTP response: " + response.str();
         return EXIT_FAILURE;
     }
 
@@ -451,9 +433,10 @@ template <typename T>
 int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived)
 {
     char *charBuffer = reinterpret_cast<char *>(buffer);
-    char *copyBuffer = new char[strlen(charBuffer) + 1];
+    char *copyBuffer = new char[bytesReceived + 1];
 
-    strcpy(copyBuffer, charBuffer);
+    strncpy(copyBuffer, charBuffer, bytesReceived);
+    copyBuffer[bytesReceived] = '\0';
 
     char *ptr = strstr(copyBuffer, "GET");
 
@@ -469,23 +452,27 @@ int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
 
         changeRoute = true;
 
-        for (unsigned int i = 0, n = strlen(ptr); i < n; i++)
+        for (unsigned int i = 0; ptr[i] != '\0'; i++)
             if (ptr[i] == ' ')
+            {
                 ptr[i] = '\0';
+                break;
+            }
+                
 
         requestType = new char[strlen(ptr) + 1];
 
         strcpy(requestType, ptr);
     }
 
-    if (strcmp(requestType, "GET") == 0)
+    if (requestType != nullptr && strcasecmp(requestType, "GET") == 0)
         if (GETrequestsHandler(buffer, acceptedSocketFD) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
             return EXIT_FAILURE;
         }
 
-    if (strcmp(requestType, "POST") == 0)
+    if (requestType != nullptr && strcasecmp(requestType, "POST") == 0)
         if (POSTrequestsHandler(buffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE)
         {
             delete[] copyBuffer;
@@ -505,7 +492,7 @@ int Server<T>::formatFile(const std::string fileName)
 
     if (!file.is_open())
     {
-        std::cerr << "Failed to open: " << BINARY_FILE_TEMP_PATH << '\n';
+        std::cerr << "Failed to open (f_11): " << BINARY_FILE_TEMP_PATH << '\n';
         return EXIT_FAILURE;
     }
 
@@ -514,7 +501,7 @@ int Server<T>::formatFile(const std::string fileName)
 
     if (!outFile.is_open())
     {
-        std::cerr << "Failed to open: " << std::string(LOCAL_STORAGE_PATH) + fileName << '\n';
+        std::cerr << "Failed to open (f_12): " << std::string(LOCAL_STORAGE_PATH) + fileName << '\n';
         file.close();
 
         return EXIT_FAILURE;
@@ -568,7 +555,7 @@ void Server<T>::postRecv(const int acceptedSocketFD)
     {
         formatFile(file);
 
-        user->addToFileTable(file.c_str(), TOTAL_BYTES_RECV / 1000000);
+        user->addToFileTable(file.c_str(), TOTAL_BYTES_RECV / 1000000.0000);
 
         user->clearFileInQueue();
 
@@ -576,7 +563,7 @@ void Server<T>::postRecv(const int acceptedSocketFD)
 
         if (send(acceptedSocketFD, response, strlen(response), 0) == -1)
             std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send HTTP response.\n";
+                      << "--> Error 02: Failed to send HTTP response.\n";
     }
 }
 
@@ -593,7 +580,7 @@ void Server<T>::receivedDataHandler(const class acceptedSocket socket)
     {
         ssize_t bytesReceived = recv(acceptedSocketFD, buffer, sizeof(buffer), 0);
 
-        if (bytesReceived <= 0 || !SERVER_RUNNING.load())
+        if (bytesReceived <= 0)
         {
             if (DEBUG_FLAG)
                 std::cerr << "\n"
