@@ -57,7 +57,7 @@ namespace net
      * @brief This class stores all file names or extensions that are ignored when the auth checked is performed. 
      *        For example, when not logged in, the user must be able to access the login page
      *        These values are stored in the file 'ignore.txt'
-     * @attention Any data added in this file will be ignored by the user auth checking system
+     * @attention Any route added in this file will be ignored by the user auth checking system
     */
     class Ignore
     {

@@ -84,7 +84,7 @@ sudo apt-get install libmysqlcppconn-dev
 - When the binding process is performed the user's internet address is read automatically by running `ifconfig` in the background. The **address**, together with the **port number** will be displayed in the console if the server starts successfully, for the user to paste them in the browser.
 - The default port number, the server listens to is **`8080`**.
 - The server supports multiple connections at the same time, the connected sockets being stored in a vector.
-- When running the application you can specify any valid port number if you wish to override the default one. Moreover, when the application is also ran using the `-debug` flag, the server admin (this only means that `-debug` only affects the console output on the machine, the server was started) can vizualize the HTTP requests and serveral other error messages. This, however, does not mean that when in normal mode there are no errors being shown on the screen.
+- When running the application you can specify any valid port number if you wish to override the default one. Moreover, when the application is also ran using the `-debug` flag, the server admin (this means that `-debug` only affects the console output on the machine, the server was started on) can vizualize the HTTP requests and serveral other error messages. This, however, does not mean that when in default mode there are no errors being shown on the screen.
 - Last but not least, the server displays any SQL errors produced by the program.
 
 > **Note** For more information about the sever features there is more documentation in the **[server header file](https://github.com/sorin373/HTTP-Server/blob/main/src/server/serverUtils.hpp)**.
