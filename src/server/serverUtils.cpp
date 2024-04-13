@@ -258,8 +258,7 @@ inline int Server<T>::read_ignore_data(void)
 
     char line[256];
 
-    while (file.getline(line, 256))
-        ignore.fetchIgnoreItems(line);
+    while (file.getline(line, 256)) ignore.fetchIgnoreItems(line);
 
     file.close();
 
@@ -451,7 +450,7 @@ int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
     if (ptr != NULL)
     {
         if (requestType != nullptr) delete[] requestType;
-
+        
         changeRoute = true;
 
         for (unsigned int i = 0; ptr[i] != '\0'; i++)
@@ -459,8 +458,7 @@ int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
             {
                 ptr[i] = '\0';
                 break;
-            }
-                
+            }   
 
         requestType = new char[strlen(ptr) + 1];
 
@@ -620,17 +618,14 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
 {
     while (server_running)
     {
-        // Set up the file descriptor set for select
         fd_set readfds;
         FD_ZERO(&readfds);
         FD_SET(serverSocketFD, &readfds);
 
-        // Set timeout
         struct timeval timeout;
-        timeout.tv_sec = 1;  // 1 second timeout
+        timeout.tv_sec = 1;
         timeout.tv_usec = 0;
 
-        // Wait for activity on Server socket
         int activity = select(serverSocketFD + 1, &readfds, NULL, NULL, &timeout);
 
         if (activity > 0)
@@ -670,7 +665,7 @@ void Server<T>::consoleListener(std::atomic<bool> &server_running)
         if (strcasecmp(input, "exit") == 0)
         {
             std::cout << std::setw(5) << " "
-                      << "--> \nShutting down...\n";
+                      << "--> Shutting down...\n";
 
             haltServer();
 

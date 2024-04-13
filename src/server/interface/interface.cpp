@@ -226,7 +226,7 @@ void User::buildIndexHTML(void)
 
     char fileName[256] = "";
 
-    for (unsigned int i = 0, n = uf.size(); i < n; i++)
+    for (size_t i = 0, n = uf.size(); i < n; i++)
     {
         strcpy(fileName, uf[i].getFileName());
 
@@ -271,6 +271,9 @@ void User::buildIndexHTML(void)
         <br>
         <input type="submit" class="btn btn-primary" value="Upload">
         </form>
+
+        <progress id="uploadProgress" value="0" max="100"></progress>
+        <div id="uploadStatus"></div>
         
         <script>
             function displayFileName(input) {
