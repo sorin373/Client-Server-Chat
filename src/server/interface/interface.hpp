@@ -76,10 +76,10 @@ namespace net
                 userFiles(const char *fileName, const int userID, const int fileID, const double fileSize, const char *date);
 
                 char *getFileName(void) const noexcept;
+                char *getDate(void) const noexcept;
                 int getUserID(void) const noexcept;
                 int getFileID(void) const noexcept;
                 double getFileSize(void) const noexcept;
-                char *getDate(void) const noexcept;
 
                 ~userFiles() = default;
             };

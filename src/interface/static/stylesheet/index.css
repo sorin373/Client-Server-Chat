@@ -146,7 +146,7 @@ input[type="file"] {
 #addFileForm {
     display: flex;
     flex-direction: row;
-    margin: auto 0 auto 0 !important;
+    margin: auto 0 .5rem 0 !important;
     padding: 1rem;
     background-color: #f6f7f8;
     border-radius: 10px;
@@ -154,6 +154,10 @@ input[type="file"] {
     list-style-type: none;
     justify-content: center;
     align-items: center;
+}
+
+#uploadProgress {
+    margin-bottom: 7rem;
 }
 
 #file-upload:hover {
