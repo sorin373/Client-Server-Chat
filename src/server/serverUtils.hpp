@@ -89,7 +89,6 @@ namespace net
     };
 
     // Class implementing core functionalities of an HTTP Server
-    template <typename T>
     class Server
     {
     public:
@@ -245,7 +244,7 @@ namespace net
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived);
+        int POSTrequestsHandler(void *buffer, int acceptedSocketFD, ssize_t bytesReceived);
 
         /**
          * @brief This function handles HTTP GET requests.
@@ -255,7 +254,7 @@ namespace net
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int GETrequestsHandler(T *buffer, int acceptedSocketFD);
+        int GETrequestsHandler(void *buffer, int acceptedSocketFD);
 
         /**
          * @brief This function decides whether the HTTP request is a POST or GET request.
@@ -266,7 +265,7 @@ namespace net
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived);
+        int HTTPrequestsHandler(void *buffer, int acceptedSocketFD, ssize_t bytesReceived);
 
         // This function retrieves a vector where the connected clients are stored
         std::vector<class acceptedSocket> getConnectedSockets(void) const noexcept;

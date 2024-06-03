@@ -19,14 +19,12 @@
 using namespace net;
 using namespace net::interface;
 
-template class Server<char>;
-
-template <typename T> std::atomic<bool> Server<T>::SERVER_RUNNING;
+std::atomic<bool> Server::SERVER_RUNNING;
 
 /* db */
 
-template <typename T>
-Server<T>::db::db(sql::Driver *driver, sql::Connection *con,
+
+Server::db::db(sql::Driver *driver, sql::Connection *con,
                   const char *hostname, const char *username, const char *password, const char *database)
 {
     this->driver = driver;
@@ -34,26 +32,26 @@ Server<T>::db::db(sql::Driver *driver, sql::Connection *con,
     this->dbCred = new db_cred(hostname, username, password, database);
 }
 
-template <typename T>
-sql::Connection *Server<T>::db::getCon(void) const noexcept
+
+sql::Connection *Server::db::getCon(void) const noexcept
 {
     return con;
 }
 
-template <typename T>
-sql::Driver *Server<T>::db::getDriver(void) const noexcept
+
+sql::Driver *Server::db::getDriver(void) const noexcept
 {
     return driver;
 }
 
-template <typename T>
-class Server<T>::db::db_cred *Server<T>::db::getDB_Cred(void) const noexcept
+
+class Server::db::db_cred *Server::db::getDB_Cred(void) const noexcept
 {
     return dbCred;
 }
 
-template <typename T>
-Server<T>::db::~db()
+
+Server::db::~db()
 {
     this->con->close();
     delete this->con;
@@ -62,8 +60,8 @@ Server<T>::db::~db()
 
 /* db_cred */
 
-template <typename T>
-Server<T>::db::db_cred::db_cred(const char *hostname, const char *username, const char *password, const char *database)
+
+Server::db::db_cred::db_cred(const char *hostname, const char *username, const char *password, const char *database)
 {
     this->hostname = strdup(hostname);
     this->username = strdup(username);
@@ -71,32 +69,32 @@ Server<T>::db::db_cred::db_cred(const char *hostname, const char *username, cons
     this->database = strdup(database);
 }
 
-template <typename T>
-char *Server<T>::db::db_cred::getHostname(void) const noexcept
+
+char *Server::db::db_cred::getHostname(void) const noexcept
 {
     return hostname;
 }
 
-template <typename T>
-char *Server<T>::db::db_cred::getUsername(void) const noexcept
+
+char *Server::db::db_cred::getUsername(void) const noexcept
 {
     return username;
 }
 
-template <typename T>
-char *Server<T>::db::db_cred::getPassword(void) const noexcept
+
+char *Server::db::db_cred::getPassword(void) const noexcept
 {
     return password;
 }
 
-template <typename T>
-char *Server<T>::db::db_cred::getDatabase(void) const noexcept
+
+char *Server::db::db_cred::getDatabase(void) const noexcept
 {
     return database;
 }
 
-template <typename T>
-int Server<T>::db::db_cred::getCred(char *hostname, char *username, char *password, char *database)
+
+int Server::db::db_cred::getCred(char *hostname, char *username, char *password, char *database)
 {
     system("clear");
 
@@ -155,8 +153,8 @@ int Server<T>::db::db_cred::getCred(char *hostname, char *username, char *passwo
     return EXIT_SUCCESS;
 }
 
-template <typename T>
-Server<T>::db::db_cred::~db_cred()
+
+Server::db::db_cred::~db_cred()
 {
     free(this->hostname);
     this->hostname = nullptr;
@@ -238,15 +236,15 @@ Ignore::~Ignore()
 
 /* Server */
 
-template <typename T>
-Server<T>::Server()
+
+Server::Server()
 {
     this->db = nullptr;
     this->user = nullptr;
 }
 
-template <typename T>
-inline int Server<T>::read_ignore_data(void)
+
+inline int Server::read_ignore_data(void)
 {
     std::ifstream file(IGNORE);
 
@@ -265,8 +263,8 @@ inline int Server<T>::read_ignore_data(void)
     return EXIT_SUCCESS;
 }
 
-template <typename T>
-bool Server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket &acceptedSocket)
+
+bool Server::acceptConnection(const int serverSocketFD, class acceptedSocket &acceptedSocket)
 {
     struct sockaddr_in clientAddress;
     int clientAddressSize = sizeof(clientAddress);
@@ -285,8 +283,8 @@ bool Server<T>::acceptConnection(const int serverSocketFD, class acceptedSocket 
 char *route = nullptr;
 bool changeRoute = false;
 
-template <typename T>
-int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived)
+
+int Server::POSTrequestsHandler(void *buffer, int acceptedSocketFD, ssize_t bytesReceived)
 {
     char *charBuffer = reinterpret_cast<char *>(buffer);
 
@@ -315,13 +313,13 @@ int Server<T>::POSTrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
         changeRoute = false;
     }
 
-    if (user->routeManager<T>(buffer, route, acceptedSocketFD, bytesReceived) == EXIT_FAILURE) return EXIT_FAILURE;
+    if (user->routeManager(buffer, route, acceptedSocketFD, bytesReceived) == EXIT_FAILURE) return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
 }
 
-template <typename T>
-int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
+
+int Server::GETrequestsHandler(void *buffer, int acceptedSocketFD)
 {
     bool USE_DEFAULT_ROUTE = false;
 
@@ -428,8 +426,8 @@ int Server<T>::GETrequestsHandler(T *buffer, int acceptedSocketFD)
 
 char *requestType = nullptr;
 
-template <typename T>
-int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t bytesReceived)
+
+int Server::HTTPrequestsHandler(void *buffer, int acceptedSocketFD, ssize_t bytesReceived)
 {
     char *charBuffer = reinterpret_cast<char *>(buffer);
     char *copyBuffer = new char[bytesReceived + 1];
@@ -484,8 +482,8 @@ int Server<T>::HTTPrequestsHandler(T *buffer, int acceptedSocketFD, ssize_t byte
     return EXIT_SUCCESS;
 }
 
-template <typename T>
-int Server<T>::formatFile(const std::string fileName)
+
+int Server::formatFile(const std::string fileName)
 {
     // Open the binary file
     std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
@@ -545,8 +543,8 @@ int Server<T>::formatFile(const std::string fileName)
     return EXIT_SUCCESS;
 }
 
-template <typename T>
-void Server<T>::postRecv(const int acceptedSocketFD)
+
+void Server::postRecv(const int acceptedSocketFD)
 {
     char response[] = "HTTP/1.1 302 Found\r\nLocation: /index.html\r\nConnection: close\r\n\r\n";
     std::string file = user->getFileInQueue();
@@ -567,14 +565,14 @@ void Server<T>::postRecv(const int acceptedSocketFD)
     }
 }
 
-template <typename T>
-void Server<T>::receivedDataHandler(const class acceptedSocket socket)
+
+void Server::receivedDataHandler(const class acceptedSocket socket)
 {
     int acceptedSocketFD = socket.getAcceptedSocketFD();
 
     if (acceptedSocketFD < 0) return;
 
-    T buffer[1025];
+    uint8_t buffer[1025];
 
     while (true)
     {
@@ -607,14 +605,14 @@ void Server<T>::receivedDataHandler(const class acceptedSocket socket)
     }
 }
 
-template <typename T>
-void Server<T>::receivedDataHandlerThread(const class acceptedSocket socket)
+
+void Server::receivedDataHandlerThread(const class acceptedSocket socket)
 {
     std::thread(&Server::receivedDataHandler, this, socket).detach();
 }
 
-template <typename T>
-void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &server_running)
+
+void Server::handleClientConnections(int serverSocketFD, std::atomic<bool> &server_running)
 {
     while (server_running)
     {
@@ -649,8 +647,8 @@ void Server<T>::handleClientConnections(int serverSocketFD, std::atomic<bool> &s
     for (const acceptedSocket &socket : connectedSockets) close(socket.getAcceptedSocketFD());
 }
 
-template <typename T>
-void Server<T>::consoleListener(std::atomic<bool> &server_running)
+
+void Server::consoleListener(std::atomic<bool> &server_running)
 {
     underline(75);
 
@@ -674,8 +672,8 @@ void Server<T>::consoleListener(std::atomic<bool> &server_running)
     }
 }
 
-template <typename T>
-void Server<T>::server_easy_init(int serverSocketFD)
+
+void Server::server_easy_init(int serverSocketFD)
 {
     if (read_ignore_data() == EXIT_FAILURE) return;
 
@@ -688,50 +686,50 @@ void Server<T>::server_easy_init(int serverSocketFD)
     workerThread.join();
 }
 
-template <typename T>
-int Server<T>::bindServer(int serverSocketFD, struct sockaddr_in *__serverAddress)
+
+int Server::bindServer(int serverSocketFD, struct sockaddr_in *__serverAddress)
 {
     return bind(serverSocketFD, (struct sockaddr *)__serverAddress, sizeof(struct sockaddr_in));
 }
 
-template <typename T>
-std::vector<class Server<T>::acceptedSocket> Server<T>::getConnectedSockets(void) const noexcept
+
+std::vector<class Server::acceptedSocket> Server::getConnectedSockets(void) const noexcept
 {
     return connectedSockets;
 }
 
-template <typename T>
-bool Server<T>::getServerStatus(void) const noexcept
+
+bool Server::getServerStatus(void) const noexcept
 {
     return SERVER_RUNNING;
 }
 
-template <typename T>
-Ignore Server<T>::getIgnore(void) const noexcept
+
+Ignore Server::getIgnore(void) const noexcept
 {
     return ignore;
 }
 
-template <typename T>
-void Server<T>::haltServer(void) noexcept
+
+void Server::haltServer(void) noexcept
 {
     this->SERVER_RUNNING = false;
 }
 
-template <typename T>
-class Server<T>::db *Server<T>::getSQLdatabase(void) const noexcept
+
+class Server::db *Server::getSQLdatabase(void) const noexcept
 {
     return db;
 }
 
-template <typename T>
-class interface::User *Server<T>::getUser(void) const noexcept
+
+class interface::User *Server::getUser(void) const noexcept
 {
     return user;
 }
 
-template <typename T>
-int Server<T>::database_easy_init(void)
+
+int Server::database_easy_init(void)
 {
     if (db != nullptr)
     {
@@ -786,7 +784,7 @@ int Server<T>::database_easy_init(void)
         return EXIT_FAILURE;
     }
 
-    if (Server<T>::db::db_cred::getCred(hostname, username, password, database) == EXIT_FAILURE)
+    if (Server::db::db_cred::getCred(hostname, username, password, database) == EXIT_FAILURE)
     {
         std::cerr << std::setw(5) << " "
                   << "--> Error: Failed to fetch MySQL schema credentails.\n";
@@ -822,7 +820,7 @@ int Server<T>::database_easy_init(void)
 
         con->setSchema(database);
 
-        db = new typename Server<T>::db(driver, con, hostname, username, password, database);
+        db = new typename Server::db(driver, con, hostname, username, password, database);
         user = new interface::User();
     }
     catch (sql::SQLException &e)
@@ -853,8 +851,8 @@ int Server<T>::database_easy_init(void)
     return EXIT_SUCCESS;
 }
 
-template <typename T>
-Server<T>::~Server()
+
+Server::~Server()
 {
     if (this->db != nullptr)
     {
@@ -871,34 +869,34 @@ Server<T>::~Server()
 
 /* acceptedSocket */
 
-template <typename T>
-void Server<T>::acceptedSocket::socketCleanup(void) noexcept
+
+void Server::acceptedSocket::socketCleanup(void) noexcept
 {
     this->acceptedSocketFD = -1;
 }
 
-template <typename T>
-void Server<T>::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
+
+void Server::acceptedSocket::getAcceptedSocket(const struct sockaddr_in ipAddress, const int acceptedSocketFD, const int error)
 {
     this->ipAddress = ipAddress;
     this->acceptedSocketFD = acceptedSocketFD;
     this->error = error;
 }
 
-template <typename T>
-struct sockaddr_in Server<T>::acceptedSocket::getIpAddress(void) const noexcept
+
+struct sockaddr_in Server::acceptedSocket::getIpAddress(void) const noexcept
 {
     return ipAddress;
 }
 
-template <typename T>
-int Server<T>::acceptedSocket::getError(void) const noexcept
+
+int Server::acceptedSocket::getError(void) const noexcept
 {
     return error;
 }
 
-template <typename T>
-int Server<T>::acceptedSocket::getAcceptedSocketFD(void) const noexcept
+
+int Server::acceptedSocket::getAcceptedSocketFD(void) const noexcept
 {
     return acceptedSocketFD;
 }
@@ -924,7 +922,7 @@ int net::INIT(int argc, char *argv[], int addressFamily, int socketType, int pro
         return EXIT_FAILURE;
     }
 
-    server = new Server<char>();
+    server = new Server();
 
     if (server->database_easy_init() == EXIT_FAILURE)
     {

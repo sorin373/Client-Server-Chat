@@ -112,8 +112,7 @@ namespace net
         public:
             User();
 
-            template <typename T>
-            int routeManager(T *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
+            int routeManager(void *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
 
             // This function retrieves a vector where the user credentials are stored
             std::vector<class userCredentials> getUserCredentials(void) const noexcept;

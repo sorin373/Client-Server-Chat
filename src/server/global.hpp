@@ -37,7 +37,7 @@
 
 #define AF_INET PF_INET
 
-extern net::Server<char> *server; // Extern pointer to the instance of the net::Server class. This allows all files that include this header file to have access to this variable.
+extern net::Server *server; // Extern pointer to the instance of the net::Server class. This allows all files that include this header file to have access to this variable.
 
 extern bool DEBUG_FLAG;
 

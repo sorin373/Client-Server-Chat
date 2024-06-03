@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <termios.h>
 
-net::Server<char> *server = nullptr;
+net::Server *server = nullptr;
 
 bool DEBUG_FLAG = false;
 

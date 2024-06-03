@@ -13,9 +13,6 @@
 using namespace net;
 using namespace net::interface;
 
-// Explicit instantiation
-template int User::routeManager<char>(char *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
-
 User::userCredentials::userCredentials(const char *username, const char *password, const int id)
 {
     this->username = strdup(username);
@@ -483,8 +480,7 @@ bool User::findUsername(const char username[])
     return false;
 }
 
-template <typename T>
-int User::routeManager(T *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived)
+int User::routeManager(void *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived)
 {  
     char *charBuffer = reinterpret_cast<char *>(buffer);
 
