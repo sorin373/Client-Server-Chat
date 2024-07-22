@@ -34,6 +34,10 @@
 #include <vector>
 #include <string>
 #include <stdlib.h>
+#include <netinet/in.h>
+
+#include "../tcp_listener.hpp"
+#include "../back-end/database.hpp"
 
 #define NET_USERNAME_LENGHT 32
 #define NET_PASSWORD_LENGHT 64
@@ -43,7 +47,7 @@ namespace net
     namespace interface
     {
         // Class describing a 'user' and it is part of the Server's interface namespace.
-        class User
+        class User : private tcp_listener
         {
         public:
             // Nested class describing the user credentials object.
@@ -97,6 +101,8 @@ namespace net
             // This variable stores the name of the last file that was uploaded to the Server. It is used to insert the newly added data into the database.
             std::string fileInQueue;
 
+            sql_db *m_sql_db;
+
             /**
              * @brief This function validates user credentials.
              * @return Returns true on success and false if the user credentials are not valid.
@@ -110,6 +116,8 @@ namespace net
             bool findUsername(const char username[]);
 
         public:
+            sql_db* get_m_sql_db() const noexcept { return m_sql_db; }
+
             User();
 
             int routeManager(void *buffer, char *route, int acceptedSocketFD, ssize_t bytesReceived);
@@ -172,6 +180,8 @@ namespace net
              *
              */
             int addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int acceptedSocketFileDescriptor, ssize_t bytesReceived);
+
+            int format_file(const std::string file_name);
 
             /**
              *

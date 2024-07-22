@@ -1,6 +1,13 @@
-#include "httpServer.hpp"
+#include "server/web_server.hpp"
 
 int main(int argc, char *argv[])
 {
-    return net::INIT(argc, argv, AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    net::web_server ws("0.0.0.0", 8080);
+
+    if (ws.ws_init(argc, argv) != 0)
+        return -1;
+
+    ws.run();
+
+    return 0;
 }

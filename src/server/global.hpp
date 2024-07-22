@@ -31,27 +31,11 @@
 #ifndef __GLOBAL_HPP__
 #define __GLOBAL_HPP__
 
-#include "serverUtils.hpp"
-
 #define APPEND_BINARY "ab"
-
-#define AF_INET PF_INET
-
-extern net::Server *server; // Extern pointer to the instance of the net::Server class. This allows all files that include this header file to have access to this variable.
 
 extern bool DEBUG_FLAG;
 
 extern double TOTAL_BYTES_RECV;
-
-/**
- * @brief This function searches for a substring.
- *
- * @param haystack The string where the substring is searched.
- * @param needle The substring that is searched for
- *
- * @return Returns true if the string is found, otherwise false.
- */
-bool findString(const char haystack[], const char needle[]);
 
 /**
  * @brief This function checks if a string is a number by checking if all characters are digits.
@@ -63,12 +47,12 @@ bool isNumeric(const char *str);
  * @brief This function is called at the begining of the main function. It checks if the arguments provided by the user are valid and what is the port value.
  * @return Returns 0 on success, -1 for errors.
  */
-int getMainArguments(int argc, char *argv[]);
+// int getMainArguments(int argc, char *argv[]);
 
 // This function is designed to generate an underline of a specified width.
-void underline(const unsigned int vWidth);
+// void underline(const unsigned int vWidth);
 
 // Function to turn off echoing in terminal
-void toggleEcho(bool enable);
+// void toggleEcho(bool enable);
 
 #endif //__GLOBAL_HPP__

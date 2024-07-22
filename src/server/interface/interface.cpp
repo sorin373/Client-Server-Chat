@@ -10,6 +10,10 @@
 #include <cppconn/resultset.h>
 #include <cppconn/prepared_statement.h>
 
+constexpr char INDEX_HTML_PATH[] =       "interface/index.html";
+constexpr char BINARY_FILE_TEMP_PATH[] = "interface/storage/temp.bin";
+constexpr char LOCAL_STORAGE_PATH[] =    "interface/storage/";
+
 using namespace net;
 using namespace net::interface;
 
@@ -39,6 +43,8 @@ User::User()
 {
     this->AUTH_STATUS = false;
     this->SESSION_ID = -1;
+
+    m_sql_db = (sql_db*)malloc(sizeof(sql_db));
 }
 
 std::vector<class User::userCredentials> User::getUserCredentials(void) const noexcept
@@ -300,11 +306,7 @@ void User::SQLfetchUserTable(void)
 {
     clearUserCredentials();
 
-    sql::Statement *stmt = nullptr;
-    sql::ResultSet *res = nullptr;
-
-    stmt = server->getSQLdatabase()->getCon()->createStatement();
-    res = stmt->executeQuery("SELECT * FROM user");
+    sql::ResultSet *res = m_sql_db->send_query("SELECT * FROM user");
 
     while (res->next())
     {
@@ -320,7 +322,8 @@ void User::SQLfetchUserTable(void)
         char *password = (char *)malloc(sqlstr.asStdString().length() + 1);
         strcpy(password, sqlstr.asStdString().c_str());
 
-        User::userCredentials t_uc(username, password, id); // create an obj which we are pushing into the vector
+        // create an obj which we are pushing into the vector
+        User::userCredentials t_uc(username, password, id);
 
         addToUserCredentials(t_uc);
 
@@ -329,23 +332,14 @@ void User::SQLfetchUserTable(void)
     }
 
     res->close();
-    stmt->close();
-
     delete res;
-    delete stmt;
 }
 
 void User::SQLfetchFileTable(void)
 {
     clearUserFiles();
 
-    sql::Statement *stmt = nullptr;
-    sql::ResultSet *res = nullptr;
-
-    std::string SQLquery = "SELECT * FROM file WHERE user_id=" + std::to_string(getSessionID());
-
-    stmt = server->getSQLdatabase()->getCon()->createStatement();
-    res = stmt->executeQuery(SQLquery);
+    sql::ResultSet *res = m_sql_db->send_query("SELECT * FROM file WHERE user_id=" + std::to_string(getSessionID()));
 
     while (res->next())
     {
@@ -372,10 +366,7 @@ void User::SQLfetchFileTable(void)
     }
 
     res->close();
-    stmt->close();
-
     delete res;
-    delete stmt;
 }
 
 int User::addToFileTable(const char *fileName, const double fileSize)
@@ -393,11 +384,7 @@ int User::addToFileTable(const char *fileName, const double fileSize)
 
     int maxID = 0;
 
-    sql::Statement *stmt = nullptr;
-    sql::ResultSet *res = nullptr;
-
-    stmt = server->getSQLdatabase()->getCon()->createStatement();
-    res = stmt->executeQuery("SELECT file_id FROM file");
+    sql::ResultSet *res = m_sql_db->send_query("SELECT file_id FROM file");
 
     while (res->next())
     {
@@ -406,30 +393,23 @@ int User::addToFileTable(const char *fileName, const double fileSize)
         if (fileID > maxID) maxID = fileID;
     }
 
-    stmt->close();
     res->close();
-
-    delete stmt;
     delete res;
 
-    stmt = server->getSQLdatabase()->getCon()->createStatement();
-    res = stmt->executeQuery("SELECT sysdate() As date FROM dual");
+    res = m_sql_db->send_query("SELECT sysdate() As date FROM dual");
 
     res->next();
 
     std::string date = res->getString("date");
 
-    stmt->close();
     res->close();
-
-    delete stmt;
     delete res;
 
     try
     {
         std::string query = "INSERT INTO file (user_id, file_id, name, size, date) VALUES (?, ?, ?, ?, ?)";
 
-        sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
+        sql::PreparedStatement *prepStmt = m_sql_db->get_connection()->prepareStatement(query);
 
         prepStmt->setInt(1, getSessionID());
         prepStmt->setInt(2, maxID + 1);
@@ -440,7 +420,6 @@ int User::addToFileTable(const char *fileName, const double fileSize)
         prepStmt->executeUpdate();
 
         prepStmt->close();
-
         delete prepStmt;
     }
     catch (sql::SQLException &e)
@@ -484,24 +463,24 @@ int User::routeManager(void *buffer, char *route, int acceptedSocketFD, ssize_t 
 {  
     char *charBuffer = reinterpret_cast<char *>(buffer);
 
-    if (findString(route, "/userlogin"))
+    if (strstr(route, "/userlogin"))
         if (loginRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
 
-    if (findString(route, "/addFile"))
+    if (strstr(route, "/addFile"))
     {
         // uint8_t used, because strict byte-level representation is needed
-        uint8_t *byteBuffer = reinterpret_cast<uint8_t *>(buffer); 
+        BYTE *byteBuffer = reinterpret_cast<BYTE *>(buffer); 
 
         if (addFilesRoute(charBuffer, byteBuffer, acceptedSocketFD, bytesReceived) == EXIT_FAILURE) return EXIT_FAILURE;
     }
         
-    if (findString(route, "/change_password"))
+    if (strstr(route, "/change_password"))
         if (changePasswordRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
 
-    if (findString(route, "/create_account"))
+    if (strstr(route, "/create_account"))
         if (createAccountRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
 
-    if (findString(route, "/delete_file"))
+    if (strstr(route, "/delete_file"))
         if (deleteFileRoute(charBuffer, acceptedSocketFD) == EXIT_FAILURE) return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -544,25 +523,11 @@ int User::loginRoute(char *buffer, int acceptedSocketFileDescriptor)
     if (strlen(temp_password) > NET_PASSWORD_LENGHT) return EXIT_FAILURE;
 
     if (!validateCredentials(temp_username, temp_password))
-    {
-        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
-        {
-            std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
-
-        return EXIT_SUCCESS;
-    }
+        send_to_client(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized));
 
     this->AUTH_STATUS = true;
 
-    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
-    {
-        std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send response.\n";
-        return EXIT_FAILURE;
-    }
+    send_to_client(acceptedSocketFileDescriptor, authorized, strlen(authorized));
 
     SQLfetchFileTable();
 
@@ -578,7 +543,7 @@ int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
 {
     TOTAL_BYTES_RECV += bytesReceived;
 
-    if (findString(buffer, "filename="))
+    if (strstr(buffer, "filename=") != nullptr)
     {
         fileName.clear();
 
@@ -632,6 +597,67 @@ int User::addFilesRoute(const char *buffer, const uint8_t *byteBuffer, int accep
         std::cerr << "Failed to open file: " << BINARY_FILE_TEMP_PATH << "\n";
         return EXIT_FAILURE;
     }
+
+    return EXIT_SUCCESS;
+}
+
+int User::format_file(const std::string file_name)
+{
+    // Open the binary file
+    std::ifstream file(BINARY_FILE_TEMP_PATH, std::ios::binary);
+
+    if (!file.is_open())
+    {
+        std::cerr << "==F== Failed to open (f_11): " << BINARY_FILE_TEMP_PATH << '\n';
+        return EXIT_FAILURE;
+    }
+
+    // Open the new file that will contain the formatted file data
+    std::ofstream outFile(std::string(LOCAL_STORAGE_PATH) + fileName, std::ios::binary);
+
+    if (!outFile.is_open())
+    {
+        std::cerr << "==F== Failed to open (f_12): " << std::string(LOCAL_STORAGE_PATH) + fileName << '\n';
+        file.close();
+
+        return EXIT_FAILURE;
+    }
+
+    std::string line;
+    bool foundBoundary = false;
+
+    while (std::getline(file, line))
+    {
+        // Check for boundary
+        if (!foundBoundary && line.find("------WebKitFormBoundary") != std::string::npos)
+        {
+            foundBoundary = true;
+            continue;
+        }
+
+        if (foundBoundary && line.find("Content-Type:") != std::string::npos)
+        {
+            std::getline(file, line); // Skip line
+
+            while (std::getline(file, line))
+            {
+                // Read until the second boundary is found
+                if (line.find("------WebKitFormBoundary") != std::string::npos)
+                    break;
+
+                outFile << line << std::endl;
+            }
+
+            break;
+        }
+    }
+
+    file.close();
+    outFile.close();
+
+    // Remove 'temp.bin'
+    if (remove(BINARY_FILE_TEMP_PATH) != 0) 
+        std::cerr << "==F== Failed to remove: '" << BINARY_FILE_TEMP_PATH << "'!\n";
 
     return EXIT_SUCCESS;
 }
@@ -703,12 +729,7 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Check if old credentials are valid
     if (!validateCredentials(username, oldPassword))
     {
-        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
-        {
-            std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
+        send_to_client(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized) + 1);
 
         return EXIT_SUCCESS;
     }
@@ -716,19 +737,14 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Check if the new password is the same as the confirmation
     if (strcmp(newPassword, confirmation) != 0)
     {
-        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
-        {
-            std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
+        send_to_client(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized) + 1);
 
         return EXIT_SUCCESS;
     }
 
     // Prepare query to update the User
     std::string query = "UPDATE user SET password=(?) WHERE username=(?)";
-    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = m_sql_db->get_connection()->prepareStatement(query);
 
     prepStmt->setString(1, std::string(newPassword));
     prepStmt->setString(2, std::string(username));
@@ -741,12 +757,7 @@ int User::changePasswordRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Fetch the User table containg the updated data
     SQLfetchUserTable();
 
-    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
-    {
-        std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send response.\n";
-        return EXIT_FAILURE;
-    }
+    send_to_client(acceptedSocketFileDescriptor, authorized, strlen(authorized) + 1);
 
     return EXIT_SUCCESS;
 }
@@ -805,12 +816,7 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Check if the username already exists in the database
     if (findUsername(username))
     {
-        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
-        {
-            std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
+        send_to_client(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized) + 1);
 
         return EXIT_SUCCESS;    
     }
@@ -818,19 +824,14 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Check if the password is the same as the confirmation
     if (strcmp(password, confirmation) != 0)
     {
-        if (send(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized), 0) == -1)
-        {
-            std::cerr << std::setw(5) << " "
-                      << "--> Error: Failed to send response.\n";
-            return EXIT_FAILURE;
-        }
+        send_to_client(acceptedSocketFileDescriptor, unauthorized, strlen(unauthorized) + 1);
 
         return EXIT_SUCCESS;
     }
 
     // Prepare query to insert the new account information
     std::string query = "INSERT INTO user VALUES (?, ?, ?)";
-    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = m_sql_db->get_connection()->prepareStatement(query);
 
     prepStmt->setInt(1, uc.size());
     prepStmt->setString(3, std::string(password));
@@ -844,12 +845,7 @@ int User::createAccountRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Fetch the User table containg the updated data
     SQLfetchUserTable();
 
-    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
-    {
-        std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send response.\n";
-        return EXIT_FAILURE;
-    }
+    send_to_client(acceptedSocketFileDescriptor, authorized, strlen(authorized) + 1);
 
     return EXIT_SUCCESS;
 }
@@ -875,7 +871,7 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     std::string query = "SELECT name FROM file WHERE file_id=(?)";
     sql::ResultSet *res = nullptr;
 
-    sql::PreparedStatement *prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(query);
+    sql::PreparedStatement *prepStmt = m_sql_db->get_connection()->prepareStatement(query);
 
     prepStmt->setInt(1, fileID);
     res = prepStmt->executeQuery();
@@ -888,7 +884,7 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     // Delete the file from the database using the file ID
     std::string deleteQuery = "DELETE FROM file WHERE file_id=(?)";
 
-    prepStmt = server->getSQLdatabase()->getCon()->prepareStatement(deleteQuery);
+    prepStmt = m_sql_db->get_connection()->prepareStatement(deleteQuery);
 
     prepStmt->setInt(1, fileID);
     prepStmt->executeUpdate();
@@ -902,12 +898,7 @@ int User::deleteFileRoute(char *buffer, int acceptedSocketFileDescriptor)
     std::string fileToDelete = std::string(LOCAL_STORAGE_PATH) + fileName;
     remove(fileToDelete.c_str());
 
-    if (send(acceptedSocketFileDescriptor, authorized, strlen(authorized), 0) == -1)
-    {
-        std::cerr << std::setw(5) << " "
-                  << "--> Error: Failed to send response.\n";
-        return EXIT_FAILURE;
-    }
+    send_to_client(acceptedSocketFileDescriptor, authorized, strlen(authorized) + 1);
 
     return EXIT_SUCCESS;
 }
@@ -929,4 +920,6 @@ User::~User()
     }
 
     uf.clear();
+
+    free(m_sql_db);
 }
