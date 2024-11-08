@@ -1,15 +1,14 @@
-#ifndef __TCP_LISTENER_H__
-#define __TCP_LISTENER_H__
+#pragma once
 
 #include <sys/select.h>
 
 #define INVALID_SOCKET -1
 
-typedef int           SOCKET;
-typedef unsigned char BYTE;
-
 namespace net
 {
+    typedef int           SOCKET;
+    typedef unsigned char BYTE;
+
     void ZeroMemory(void *ptr, unsigned int size);
 
     class tcp_listener
@@ -17,7 +16,8 @@ namespace net
     public:
         tcp_listener() noexcept { }
 
-        tcp_listener(const char *ip_address, int port) : m_ip_address(ip_address), m_port(port) { }
+        tcp_listener(const char *ip_address, int port) 
+            : m_ip_address(ip_address), m_port(port) { }
 
         int init();
 
@@ -33,11 +33,9 @@ namespace net
         void send_to_client(SOCKET client_socket, const char *msg, unsigned int size);
 
     private:
-        const char *m_ip_address;
-        int         m_port;
-        SOCKET      m_socket;
-        fd_set      m_master;
+        const char  *m_ip_address;
+        int          m_port;
+        SOCKET       m_socket;
+        fd_set       m_master;
     };
 }
-
-#endif

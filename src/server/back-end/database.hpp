@@ -1,56 +1,57 @@
-#ifndef __DATABASE_HPP__
-#define __DATABASE_HPP__
+#pragma once
 
 #include <mysql_connection.h>
 #include <mysql_driver.h>
 #include <cppconn/resultset.h>
 #include <cstring>
-// #include "hash_table.hpp"
 
-#define DEBUG 0
-
-#define MAX_L 101
+#define MAX_L 32
+#define MAX_SCHEMA_L MAX_L
 
 namespace net
 {
-    namespace MySQL_DB
+    namespace __my_sql
     {
-        class MySQL_Connector_Handler
+        class my_sql_handler
         {
         public:
-            MySQL_Connector_Handler() noexcept : m_conn(nullptr), m_driver(nullptr) { }
+             my_sql_handler() noexcept 
+                : m_connection(nullptr), m_driver(nullptr), m_schema() { }
 
-            int init();
-
-            sql::ResultSet *send_query(const std::string query) const noexcept;
-
-            ~MySQL_Connector_Handler() 
-            { 
-                m_conn->close();
-                delete m_conn;
+            explicit my_sql_handler(char *connection_name, char *username, char *password, char *schema)
+                : m_connection(nullptr), m_driver(nullptr), m_schema()
+            {
+                if (this->init(connection_name, username, password, schema) == -1)
+                    throw std::runtime_error("Failed to connect to the databse!\n");
             }
 
-            virtual void get_table_names() noexcept;
+            int init(const char *connection_name, const char *username, const char *password, const char *schema);
 
-            virtual void get_column_names() noexcept;
+            sql::ResultSet *send_query(const std::string &query);
 
-            sql::Driver* get_driver() const noexcept { return m_driver; }
+            ~my_sql_handler() 
+            { 
+                if (this->m_connection != nullptr)
+                {
+                    this->m_connection->close();
+                    delete this->m_connection;
 
-            sql::Connection* get_connection() const noexcept { return m_conn; }
+                    this->m_connection = nullptr;
+                }
+            }
 
-            const char* get_schema() const noexcept { return m_schema; }
+            sql::Driver* driver() const noexcept 
+            { return this->m_driver; }
+
+            sql::Connection* connection() const noexcept 
+            { return this->m_connection; }
 
         private:
-            // stl::hash_table<int, char> ht;
-            sql::Connection           *m_conn;
+            sql::Connection           *m_connection;
             sql::Driver               *m_driver;
-            char                       m_schema[MAX_L];
+            char                       m_schema[MAX_SCHEMA_L];
         };
-
-        typedef MySQL_Connector_Handler sql_db;
     }
 
-    typedef MySQL_DB::sql_db sql_db;
-}
-
-#endif
+    using MySQL_Handle = __my_sql::my_sql_handler;
+}   

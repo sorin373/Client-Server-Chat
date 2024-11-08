@@ -31,16 +31,16 @@
 #ifndef __HTTP_SERVER_HPP__
 #define __HTTP_SERVER_HPP__
 
-#ifdef __linux__
-    // This C++ header file contains important extern variable declarations and helper functions prototypes
-    #include "server/global.hpp"
+// #ifdef __linux__
+//     // This C++ header file contains important extern variable declarations and helper functions prototypes
+//     #include "server/global.hpp"
 
-    // This C++ header file contains the Server class prototype
-    #ifndef serverUtils_hpp
-        #include "server/serverUtils.hpp"
-    #endif
-#else
-    #error "This code can only be compiled on Linux"
-#endif
+//     // This C++ header file contains the Server class prototype
+//     #ifndef serverUtils_hpp
+//         #include "server/serverUtils.hpp"
+//     #endif
+// #else
+//     #error "This code can only be compiled on Linux"
+// #endif
 
 #endif // __HTTP_SERVER_HPP__

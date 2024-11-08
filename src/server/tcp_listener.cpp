@@ -11,7 +11,7 @@ using namespace net;
 
 void net::ZeroMemory(void *ptr, unsigned int size)
 {
-    BYTE *cptr = (BYTE*)ptr;
+    BYTE *cptr = static_cast<BYTE*>(ptr);
 
     for (unsigned int i = 0; i < size; i++)
         cptr[i] = 0;
