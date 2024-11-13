@@ -1,15 +1,21 @@
 #pragma once
 
-#include <sys/select.h>
+#include "sconfig.hpp"
 
-#define INVALID_SOCKET -1
+#include <sys/select.h>
 
 namespace net
 {
-    typedef int           SOCKET;
-    typedef unsigned char BYTE;
+    inline void ZeroMemory(void *ptr, const unsigned int size)
+    { 
+        if (ptr == nullptr)
+            return;
 
-    void ZeroMemory(void *ptr, unsigned int size);
+        BYTE *__ptr = static_cast<BYTE*>(ptr);
+
+        for (unsigned int i = 0; i < size; ++i)
+            *(__ptr + i) = 0;
+    }
 
     class tcp_listener
     {
@@ -19,7 +25,7 @@ namespace net
         tcp_listener(const char *ip_address, int port) 
             : m_ip_address(ip_address), m_port(port) { }
 
-        int init();
+        int tcp_easy_init();
 
         int run();
 

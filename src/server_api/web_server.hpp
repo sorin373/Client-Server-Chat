@@ -30,8 +30,10 @@
 
 #pragma once
 
+#include <iostream>
+
+#include "sconfig.hpp"
 #include "tcp_listener.hpp"
-#include "interface/interface.hpp"
 
 namespace net
 {
@@ -39,8 +41,11 @@ namespace net
     class web_server : public tcp_listener
     {
     public:
-        web_server(const char *ip_address, int port) 
-            : tcp_listener(ip_address, port), m_user(),
+        web_server() noexcept 
+            : m_request_type(nullptr), m_current_route(nullptr), m_change_route(true) { }
+
+        explicit web_server(const char *ip_address, int port) 
+            : tcp_listener(ip_address, port),
                  m_request_type(nullptr), m_current_route(nullptr), m_change_route(true) { }
 
         /**
@@ -51,32 +56,12 @@ namespace net
          * 
          * @return Returns 0 on success, 1 for errors.
          */
-        int ws_init(int argc, char* argv[]);
+        int ws_easy_init();
 
     protected:
-        virtual void on_client_connected(SOCKET client_socket) override
-        { std::cout << "--> Client socket connected: " << client_socket << "\n"; }
-
-        /**
-         * @brief This function performs post receive operations such as:
-         *        file formatting, adding the file metadata to the database and clearing the file from the queue.
-         * @param client_socket The file descriptor for the accepted socket connection used when seding the HTTP response.
-         */
-        virtual void on_client_disconnected(SOCKET client_socket) override;
-
         virtual void on_message_received(SOCKET client_socket, char *msg, unsigned int size) override;
 
-    private:
-        /**
-         * @brief This function decides whether the HTTP request is a POST or GET request.
-         *
-         * @param buffer Contains the request data.
-         * @param client_socket_FD The file descriptor for the accepted socket connection used when seding the HTTP response.
-         * @param bytes_in The size of the current buffer
-         *
-         * @return Returns 0 on success, 1 for errors.
-         */
-        int request_handler(char *buffer, SOCKET client_socket_FD, unsigned int bytes_in);
+        virtual HTTP_STATUS route_manager(void *buffer, const char *route, SOCKET client_socket_FD, unsigned int bytes_in) = 0;
 
         /**
          * @brief This function handles HTTP GET requests.
@@ -86,7 +71,7 @@ namespace net
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int GET_request_handler(char *buffer, SOCKET client_socket_FD);
+        virtual HTTP_STATUS GET_request_handler(char *buffer, SOCKET client_socket_FD);
 
         /**
          * @brief This function handles HTTP POST requests.
@@ -97,7 +82,18 @@ namespace net
          *
          * @return Returns 0 on success, 1 for errors.
          */
-        int POST_request_handler(char *buffer, SOCKET client_socket_FD, unsigned int bytes_in);
+        virtual HTTP_STATUS POST_request_handler(char *buffer, SOCKET client_socket_FD, unsigned int bytes_in);
+    private:
+        /**
+         * @brief This function decides whether the HTTP request is a POST or GET request.
+         *
+         * @param buffer Contains the request data.
+         * @param client_socket_FD The file descriptor for the accepted socket connection used when seding the HTTP response.
+         * @param bytes_in The size of the current buffer
+         *
+         * @return Returns 0 on success, 1 for errors.
+         */
+        HTTP_STATUS request_handler(char *buffer, SOCKET client_socket_FD, unsigned int bytes_in);
 
         void free_request_type()
         {
@@ -117,9 +113,8 @@ namespace net
             }
         }
 
-        interface::user  m_user;
-        char            *m_request_type;
-        char            *m_current_route;
-        bool             m_change_route;
+        char *m_request_type;
+        char *m_current_route;
+        bool  m_change_route;
     };
 }

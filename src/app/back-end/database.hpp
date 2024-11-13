@@ -5,12 +5,11 @@
 #include <cppconn/resultset.h>
 #include <cstring>
 
-#define MAX_L 32
-#define MAX_SCHEMA_L MAX_L
+#define MAX_SCHEMA_L 32
 
-namespace net
+namespace ws_app
 {
-    namespace __my_sql
+    namespace __detail
     {
         class my_sql_handler
         {
@@ -21,11 +20,11 @@ namespace net
             explicit my_sql_handler(char *connection_name, char *username, char *password, char *schema)
                 : m_connection(nullptr), m_driver(nullptr), m_schema()
             {
-                if (this->init(connection_name, username, password, schema) == -1)
+                if (this->mysql_easy_init(connection_name, username, password, schema) == -1)
                     throw std::runtime_error("Failed to connect to the databse!\n");
             }
 
-            int init(const char *connection_name, const char *username, const char *password, const char *schema);
+            int mysql_easy_init(const char *connection_name, const char *username, const char *password, const char *schema);
 
             sql::ResultSet *send_query(const std::string &query);
 
@@ -47,11 +46,11 @@ namespace net
             { return this->m_connection; }
 
         private:
-            sql::Connection           *m_connection;
-            sql::Driver               *m_driver;
-            char                       m_schema[MAX_SCHEMA_L];
+            sql::Connection  *m_connection;
+            sql::Driver      *m_driver;
+            char              m_schema[MAX_SCHEMA_L];
         };
     }
 
-    using MySQL_Handle = __my_sql::my_sql_handler;
+    using MySQL_Handle = __detail::my_sql_handler;
 }   

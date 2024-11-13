@@ -1,6 +1,0 @@
-/apology.html
-/login.html
-/changePassword.html
-/createAccount.html
-.css
-.png

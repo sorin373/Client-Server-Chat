@@ -21,11 +21,10 @@ link_directories(${FULL_PATH_TO_MYSQL_CONNECTOR_CPP_DIR}/lib)
 
 add_executable(${PROJECT_NAME}
     "main.cpp"
-    "server/interface/interface.cpp"
-    "server/global.cpp"
-    "server/tcp_listener.cpp"
-    "server/web_server.cpp"
-    "server/back-end/database.cpp"
+    "server_api/tcp_listener.cpp"
+    "server_api/web_server.cpp"
+    "app/back-end/database.cpp"
+    "app/ws_app.cpp"
 )
 
 target_link_libraries(${PROJECT_NAME} mysqlcppconn)
@@ -36,7 +35,6 @@ set(DESTINATION_DIR "${CMAKE_BINARY_DIR}")
 file(REMOVE_RECURSE ${DESTINATION_DIR})
 
 file(COPY ${DIR} DESTINATION ${DESTINATION_DIR})
-file(COPY server/ignore.txt DESTINATION ${DESTINATION_DIR})
 
 # Install targets, interface directory, and DLL files with proper permissions
 # file(GLOB DLL_FILES "${CMAKE_BINARY_DIR}/Release/*.dll")
