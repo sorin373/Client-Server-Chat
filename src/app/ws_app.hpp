@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <string>
+#include <cstring>
 #include <netinet/in.h>
 
 namespace ws_app

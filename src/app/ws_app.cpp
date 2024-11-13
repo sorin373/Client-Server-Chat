@@ -3,7 +3,6 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <cstring>
 #include <regex>
 #include <cppconn/prepared_statement.h>
 
